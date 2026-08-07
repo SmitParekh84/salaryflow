@@ -58,6 +58,7 @@ export function OnboardingView() {
     setCustomItems((s) => s.filter((c) => c.id !== id));
   }
 
+  // persist-only helper used by LoginStep before actual sign-in
   const persistBeforeLogin = async () => {
     // save locally
     completeOnboarding({ name }, profile);
@@ -65,19 +66,6 @@ export function OnboardingView() {
     for (const c of customItems) {
       addBill({ name: c.title, amount: c.amount, dueDay: profile.salaryDay, frequency: "monthly", category: "Other", paid: false });
     }
-  };
-
-  const persistAndFinish = async () => {
-    await persistBeforeLogin();
-    try {
-      await syncWithServer?.();
-    } catch (e) {}
-    router.replace("/dashboard");
-  };
-
-  const startDemo = () => {
-    loadSeed();
-    router.replace("/dashboard");
   };
 
   const steps = [
@@ -243,15 +231,6 @@ export function OnboardingView() {
   const isLast = step === steps.length - 1;
 
   const syncWithServer = useFinanceStore((s) => (s as any).syncWithServer);
-
-  const persistBeforeLogin = async () => {
-    // save locally
-    completeOnboarding({ name }, profile);
-    // persist custom items as monthly bills locally
-    for (const c of customItems) {
-      addBill({ name: c.title, amount: c.amount, dueDay: profile.salaryDay, frequency: "monthly", category: "Other", paid: false });
-    }
-  };
 
   const persistAndFinish = async () => {
     await persistBeforeLogin();
