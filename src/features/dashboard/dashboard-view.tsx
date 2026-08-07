@@ -1,0 +1,287 @@
+"use client";
+
+import { StatCard } from "@/components/stat-card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Progress } from "@/components/ui/progress";
+import { projectedGoalDate, upcomingBills } from "@/lib/calculations";
+import { CATEGORY_META } from "@/lib/constants";
+import { useFinanceStore } from "@/lib/store";
+import { formatMoney } from "@/lib/utils";
+import { useSummary } from "@/hooks/use-summary";
+import { CategoryDonut, SpendTrendChart } from "@/features/analytics/charts";
+import { SafeToSpendHero } from "@/features/dashboard/safe-to-spend-hero";
+import { ExpenseForm } from "@/features/expenses/expense-form";
+import { SeedPrompt, TransactionList } from "@/features/expenses/transaction-list";
+import { motion } from "framer-motion";
+import {
+  Activity,
+  CalendarClock,
+  HeartPulse,
+  PiggyBank,
+  Plus,
+  Receipt,
+  Sparkles,
+  Wallet,
+} from "lucide-react";
+import { useState } from "react";
+
+export function DashboardView() {
+  const profile = useFinanceStore((s) => s.profile);
+  const expenses = useFinanceStore((s) => s.expenses);
+  const goals = useFinanceStore((s) => s.goals);
+  const bills = useFinanceStore((s) => s.bills);
+  const summary = useSummary();
+  const [addOpen, setAddOpen] = useState(false);
+
+  const currency = profile.currency;
+  const topGoal = goals[0];
+  const nextBills = upcomingBills(bills).slice(0, 3);
+  const emergency = goals.find((g) => g.type === "Emergency Fund");
+
+  const insights = buildInsights(summary, nextBills.length);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-muted">Welcome back 👋</p>
+          <p className="text-xs text-muted">
+            {summary.daysRemaining} days until your next salary
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {expenses.length === 0 && <SeedPrompt />}
+          <Button size="sm" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4" /> Add
+          </Button>
+        </div>
+      </div>
+
+      <SafeToSpendHero summary={summary} currency={currency} />
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Salary"
+          value={formatMoney(summary.income, currency, true)}
+          icon={Wallet}
+          accent="var(--primary)"
+          delay={0}
+        />
+        <StatCard
+          label="Total spent"
+          value={formatMoney(summary.totalExpenses, currency, true)}
+          icon={Receipt}
+          accent="#f97316"
+          hint={`Fixed ${formatMoney(summary.fixedExpenses, currency, true)}`}
+          delay={0.05}
+        />
+        <StatCard
+          label="Savings this cycle"
+          value={formatMoney(summary.savings, currency, true)}
+          icon={PiggyBank}
+          accent="#22c55e"
+          trend={Math.round(summary.savingsRate)}
+          delay={0.1}
+        />
+        <StatCard
+          label="Health score"
+          value={`${summary.healthScore}/100`}
+          icon={HeartPulse}
+          accent="#a855f7"
+          hint={healthLabel(summary.healthScore)}
+          delay={0.15}
+        />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle>Spending trend · 14 days</CardTitle>
+            <span className="text-xs text-muted">
+              {formatMoney(summary.spentToday, currency)} today
+            </span>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <SpendTrendChart expenses={expenses} currency={currency} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>By category</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CategoryDonut expenses={expenses} currency={currency} />
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Recent transactions */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle>Recent transactions</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            {expenses.length === 0 ? (
+              <EmptyState
+                icon={Receipt}
+                title="No expenses yet"
+                description="Add your first expense to see your safe-to-spend update instantly."
+                action={
+                  <Button size="sm" onClick={() => setAddOpen(true)}>
+                    <Plus className="h-4 w-4" /> Add expense
+                  </Button>
+                }
+              />
+            ) : (
+              <TransactionList
+                expenses={expenses.slice(0, 6)}
+                currency={currency}
+                compact
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="space-y-4">
+          {/* Smart insights */}
+          <Card>
+            <CardHeader className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <CardTitle>Smart insights</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2.5 pt-2">
+              {insights.map((t, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.06 }}
+                  className="flex gap-2 rounded-xl bg-surface-2/60 p-3 text-xs"
+                >
+                  <Activity className="h-4 w-4 shrink-0 text-primary" />
+                  <span>{t}</span>
+                </motion.div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Upcoming bills */}
+          <Card>
+            <CardHeader className="flex items-center gap-2">
+              <CalendarClock className="h-4 w-4 text-warning" />
+              <CardTitle>Upcoming bills</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 pt-2">
+              {nextBills.length === 0 && (
+                <p className="py-4 text-center text-xs text-muted">
+                  No pending bills 🎉
+                </p>
+              )}
+              {nextBills.map((b) => (
+                <div key={b.id} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span>{CATEGORY_META[b.category].emoji}</span>
+                    <span>{b.name}</span>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">{formatMoney(b.amount, currency)}</p>
+                    <p className="text-[10px] text-muted">Due {b.dueDay}th</p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Goals + emergency */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {topGoal && (
+          <Card>
+            <CardHeader className="flex items-center justify-between">
+              <CardTitle>Top goal · {topGoal.name}</CardTitle>
+              <span className="text-xs text-muted">
+                {projectedGoalDate(topGoal)}
+              </span>
+            </CardHeader>
+            <CardContent className="pt-3">
+              <div className="mb-2 flex items-end justify-between">
+                <span className="text-2xl font-bold">
+                  {formatMoney(topGoal.saved, currency, true)}
+                </span>
+                <span className="text-xs text-muted">
+                  of {formatMoney(topGoal.target, currency, true)}
+                </span>
+              </div>
+              <Progress
+                value={(topGoal.saved / topGoal.target) * 100}
+                color="var(--primary)"
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {emergency && (
+          <Card>
+            <CardHeader className="flex items-center justify-between">
+              <CardTitle>Emergency fund</CardTitle>
+              <span className="text-xs font-medium text-success">
+                {Math.round((emergency.saved / emergency.target) * 100)}% funded
+              </span>
+            </CardHeader>
+            <CardContent className="pt-3">
+              <div className="mb-2 flex items-end justify-between">
+                <span className="text-2xl font-bold">
+                  {formatMoney(emergency.saved, currency, true)}
+                </span>
+                <span className="text-xs text-muted">
+                  target {formatMoney(emergency.target, currency, true)}
+                </span>
+              </div>
+              <Progress
+                value={(emergency.saved / emergency.target) * 100}
+                color="var(--success)"
+              />
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <ExpenseForm open={addOpen} onClose={() => setAddOpen(false)} />
+    </div>
+  );
+}
+
+function healthLabel(score: number): string {
+  if (score >= 80) return "Excellent";
+  if (score >= 60) return "Good";
+  if (score >= 40) return "Fair";
+  return "Needs work";
+}
+
+function buildInsights(
+  s: ReturnType<typeof useSummary>,
+  billCount: number
+): string[] {
+  const out: string[] = [];
+  if (s.status === "red")
+    out.push("You've spent more than today's budget. Try to slow down tomorrow.");
+  else if (s.status === "green")
+    out.push("Great pacing — you're spending within your daily safe limit.");
+  out.push(
+    `You can safely spend about ${formatMoney(
+      s.safeToSpendPerDay
+    )} per day until salary.`
+  );
+  if (s.savingsRate >= 20)
+    out.push(`Strong ${Math.round(s.savingsRate)}% savings rate this cycle. Keep it up!`);
+  else
+    out.push(`Savings rate is ${Math.round(s.savingsRate)}%. Aim for 20%+ if you can.`);
+  if (billCount > 0)
+    out.push(`You have ${billCount} bill(s) coming up. Keep buffer aside.`);
+  return out.slice(0, 4);
+}

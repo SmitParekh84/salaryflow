@@ -1,36 +1,146 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SalaryFlow 💸
 
-## Getting Started
+A premium, salary-cycle-driven money app that answers one question every day:
+**how much can I safely spend today?**
 
-First, run the development server:
+Built with **Next.js 16 (App Router + Turbopack)**, **React 19**, **TypeScript**,
+**Tailwind CSS v4**, **Zustand**, **Framer Motion**, **Recharts** and a
+**MongoDB / Mongoose** backend. Installable as a **PWA** on Android, iOS, Windows
+and macOS with offline support.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## ✨ Core idea — Safe To Spend
+
+```
+Safe to spend per day = (Income − Expenses − Investments − Planned savings) ÷ Days until next salary
+Safe to spend today    = Safe to spend per day − Already spent today
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The number is colour-coded **green / yellow / red** and recalculates instantly
+whenever you add an expense.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🗂 Project structure (feature-based)
 
-## Learn More
+```
+src/
+├─ app/                     # Next.js App Router
+│  ├─ (app)/                # Authenticated shell (sidebar + topbar)
+│  │  ├─ dashboard/         # Safe-to-spend, stats, charts, insights
+│  │  ├─ expenses/          # Expense list, search, filters, CRUD
+│  │  ├─ bills/             # Recurring bills + due tracking
+│  │  ├─ goals/             # Savings goals + ETA projection
+│  │  ├─ investments/       # Portfolio + returns
+│  │  ├─ analytics/         # Income vs expense, trends, category breakdown
+│  │  └─ settings/          # Profile, currency, theme, export, reset
+│  ├─ onboarding/           # Multi-step setup wizard
+│  ├─ offline/              # PWA offline fallback page
+│  ├─ api/                  # REST endpoints (health, expenses)
+│  ├─ layout.tsx            # Root layout, theme, PWA registration
+│  └─ page.tsx              # Landing page
+├─ components/              # Shared shell + UI primitives (components/ui)
+├─ features/                # Feature views (dashboard, expenses, …)
+├─ hooks/                   # useSummary, useHydrated
+├─ lib/                     # types, utils, constants, calculations, store, seed, export
+└─ server/                  # Mongoose connection + models
+public/
+├─ manifest.webmanifest     # PWA manifest + shortcuts
+├─ sw.js                    # Service worker (offline + push)
+└─ icons/icon.svg           # App icon
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🚀 Getting started
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm install
+cp .env.example .env.local   # fill in MONGODB_URI + AUTH_SECRET
+npm run dev                  # http://localhost:3000 (Turbopack)
+```
 
-## Deploy on Vercel
+Other scripts:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run build    # production build (Turbopack)
+npm run start    # run production server
+npm run lint     # ESLint
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> The app is fully usable **without a database** — data persists to
+> `localStorage` via Zustand. The MongoDB layer (`src/server`, `src/app/api`)
+> is provided for cloud sync and multi-device use.
+
+Click **“Load demo data”** on the dashboard, or **“Skip and explore with demo
+data”** during onboarding, to populate a realistic dataset.
+
+---
+
+## 🔌 API
+
+| Method | Route                    | Description                       |
+| ------ | ------------------------ | --------------------------------- |
+| GET    | `/api/health`            | DB connectivity check             |
+| GET    | `/api/expenses?userId=…` | List a user's expenses            |
+| POST   | `/api/expenses`          | Create an expense (Zod-validated) |
+
+Environment variables (`.env.local`):
+
+```
+MONGODB_URI=...      # MongoDB Atlas connection string (db: salaryflow)
+AUTH_SECRET=...      # Auth.js secret
+NEXTAUTH_URL=...     # e.g. http://localhost:3000
+```
+
+---
+
+## 📱 PWA
+
+- Web App Manifest with app shortcuts (Add expense, Dashboard, Goals)
+- Service worker: network-first navigation, cache-first assets, offline page
+- Push notification handler
+- Installable on Android, iOS/iPadOS, Windows and macOS
+
+The service worker registers only in production (`npm run build && npm run start`).
+
+---
+
+## 🎨 UI
+
+- Apple/Linear-inspired design system with light + dark themes (`next-themes`)
+- Glassmorphism, soft shadows, rounded 2xl cards
+- Framer Motion micro-interactions, shimmer skeletons, empty states
+- Recharts analytics (area, bar, donut)
+- Fully responsive with a mobile bottom-nav and desktop sidebar
+
+---
+
+## 🐳 Docker
+
+```bash
+docker build -t salaryflow .
+docker run -p 3000:3000 --env-file .env.local salaryflow
+```
+
+---
+
+## 🚢 Deployment
+
+- **Vercel** (recommended): import the repo, add env vars, deploy.
+- **Docker**: build the image above and run on any container host.
+- Set `MONGODB_URI` and `AUTH_SECRET` in your host's environment.
+
+---
+
+## ✅ Production checklist
+
+- [x] Type-safe (strict TS, `tsc --noEmit` clean)
+- [x] Lint clean (`eslint`)
+- [x] Production build passes (all routes)
+- [x] Input validation with Zod (forms + API)
+- [x] Responsive + accessible (aria labels, keyboard escape, focus rings)
+- [x] Offline-capable PWA
+- [ ] Wire Auth.js providers (Google + credentials) to protected routes
+- [ ] Swap localStorage persistence for API sync per authenticated user

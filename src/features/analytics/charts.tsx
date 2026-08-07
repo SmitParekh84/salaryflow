@@ -1,0 +1,244 @@
+"use client";
+
+import { CATEGORY_META } from "@/lib/constants";
+import type { Expense } from "@/lib/types";
+import { formatMoney } from "@/lib/utils";
+import { useMemo } from "react";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+} from "recharts";
+
+export function SpendTrendChart({
+  expenses,
+  currency,
+  days = 14,
+}: {
+  expenses: Expense[];
+  currency: string;
+  days?: number;
+}) {
+  const data = useMemo(() => {
+    const map = new Map<string, number>();
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      map.set(d.toDateString(), 0);
+    }
+    for (const e of expenses) {
+      const key = new Date(e.date).toDateString();
+      if (map.has(key)) map.set(key, (map.get(key) ?? 0) + e.amount);
+    }
+    return Array.from(map.entries()).map(([k, v]) => ({
+      label: new Date(k).toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+      }),
+      amount: Math.round(v),
+    }));
+  }, [expenses, days]);
+
+  return (
+    <ResponsiveContainer width="100%" height={200}>
+      <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+        <defs>
+          <linearGradient id="spendGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <XAxis
+          dataKey="label"
+          tick={{ fontSize: 10, fill: "var(--muted)" }}
+          tickLine={false}
+          axisLine={false}
+          interval="preserveStartEnd"
+          minTickGap={24}
+        />
+        <Tooltip
+          cursor={{ stroke: "var(--border)" }}
+          contentStyle={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: 12,
+            fontSize: 12,
+          }}
+          formatter={(v) => [formatMoney(Number(v), currency), "Spent"]}
+        />
+        <Area
+          type="monotone"
+          dataKey="amount"
+          stroke="var(--primary)"
+          strokeWidth={2.5}
+          fill="url(#spendGrad)"
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+export function CategoryDonut({
+  expenses,
+  currency,
+}: {
+  expenses: Expense[];
+  currency: string;
+}) {
+  const data = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const e of expenses) {
+      map.set(e.category, (map.get(e.category) ?? 0) + e.amount);
+    }
+    return Array.from(map.entries())
+      .map(([name, value]) => ({
+        name,
+        value: Math.round(value),
+        color: CATEGORY_META[name as keyof typeof CATEGORY_META]?.color ?? "#94a3b8",
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [expenses]);
+
+  const total = data.reduce((s, d) => s + d.value, 0);
+
+  if (total === 0) {
+    return (
+      <div className="flex h-[200px] items-center justify-center text-xs text-muted">
+        No spending yet
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-4 sm:flex-row">
+      <ResponsiveContainer width="100%" height={200} className="!w-[200px] shrink-0">
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={58}
+            outerRadius={90}
+            paddingAngle={2}
+            stroke="none"
+          >
+            {data.map((d) => (
+              <Cell key={d.name} fill={d.color} />
+            ))}
+          </Pie>
+          <Tooltip
+            contentStyle={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 12,
+              fontSize: 12,
+            }}
+            formatter={(v) => formatMoney(Number(v), currency)}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="grid w-full grid-cols-1 gap-1.5">
+        {data.slice(0, 6).map((d) => (
+          <div key={d.name} className="flex items-center gap-2 text-xs">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: d.color }}
+            />
+            <span className="flex-1 truncate">{d.name}</span>
+            <span className="font-medium text-muted">
+              {Math.round((d.value / total) * 100)}%
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function IncomeExpenseBars({
+  income,
+  expenses,
+  savings,
+  currency,
+}: {
+  income: number;
+  expenses: number;
+  savings: number;
+  currency: string;
+}) {
+  const data = [
+    { name: "Income", value: Math.round(income), color: "var(--primary)" },
+    { name: "Expenses", value: Math.round(expenses), color: "#f97316" },
+    { name: "Savings", value: Math.round(savings), color: "var(--success)" },
+  ];
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+        <XAxis
+          dataKey="name"
+          tick={{ fontSize: 11, fill: "var(--muted)" }}
+          tickLine={false}
+          axisLine={false}
+        />
+        <Tooltip
+          cursor={{ fill: "color-mix(in srgb, var(--muted) 10%, transparent)" }}
+          contentStyle={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: 12,
+            fontSize: 12,
+          }}
+          formatter={(v) => formatMoney(Number(v), currency)}
+        />
+        <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={56}>
+          {data.map((d) => (
+            <Cell key={d.name} fill={d.color} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+export function MonthlyBars({
+  data,
+  currency,
+}: {
+  data: { label: string; income: number; expense: number }[];
+  currency: string;
+}) {
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <BarChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+        <XAxis
+          dataKey="label"
+          tick={{ fontSize: 11, fill: "var(--muted)" }}
+          tickLine={false}
+          axisLine={false}
+        />
+        <Tooltip
+          cursor={{ fill: "color-mix(in srgb, var(--muted) 10%, transparent)" }}
+          contentStyle={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: 12,
+            fontSize: 12,
+          }}
+          formatter={(v) => formatMoney(Number(v), currency)}
+        />
+        <Legend wrapperStyle={{ fontSize: 11 }} />
+        <Bar dataKey="income" name="Income" fill="var(--primary)" radius={[6, 6, 0, 0]} />
+        <Bar dataKey="expense" name="Expense" fill="#f97316" radius={[6, 6, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+

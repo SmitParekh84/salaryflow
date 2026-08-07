@@ -1,0 +1,38 @@
+{
+  "name": "SalaryFlow — Spend with clarity",
+  "short_name": "SalaryFlow",
+  "description": "Salary-cycle money app that shows exactly how much you can safely spend today.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#070a14",
+  "theme_color": "#4f46e5",
+  "categories": ["finance", "productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add expense",
+      "short_name": "Add",
+      "url": "/expenses",
+      "description": "Quickly log a new expense"
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Home",
+      "url": "/dashboard"
+    },
+    {
+      "name": "Goals",
+      "short_name": "Goals",
+      "url": "/goals"
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "name": "salaryflow-tmp",
+  "name": "salaryflow",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,12 +9,27 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.7.1",
+    "bcryptjs": "^3.0.3",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "framer-motion": "^13.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^1.30.0",
+    "mongoose": "^9.9.1",
     "next": "16.3.0",
+    "next-themes": "^0.4.6",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "react-hook-form": "^7.84.0",
+    "recharts": "^3.10.1",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
