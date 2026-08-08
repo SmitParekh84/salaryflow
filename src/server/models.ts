@@ -13,6 +13,8 @@ const ExpenseSchema = new Schema(
     favorite: { type: Boolean, default: false },
     tags: [String],
     accountId: String,
+    billId: String,
+    billingMonth: String,
     shared: {
       type: new Schema(
         {
@@ -112,7 +114,9 @@ const BankAccountSchema = new Schema(
     balance: { type: Number, required: true, min: 0 },
     status: { type: String, enum: ["active", "closing"], default: "active" },
     plannedTransferTo: String,
-    defaultFor: [{ type: String, enum: ["everyday", "subscriptions", "investments", "obligations"] }],
+    defaultFor: [
+      { type: String, enum: ["everyday", "subscriptions", "investments", "obligations"] },
+    ],
   },
   { timestamps: true },
 );

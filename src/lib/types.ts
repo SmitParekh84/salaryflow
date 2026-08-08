@@ -35,6 +35,8 @@ export interface Expense {
   favorite?: boolean;
   tags?: string[];
   accountId?: string;
+  billId?: string;
+  billingMonth?: string;
   shared?: SharedExpenseDetails;
 }
 

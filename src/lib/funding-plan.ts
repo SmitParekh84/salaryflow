@@ -1,7 +1,13 @@
 import { creditCardUsage } from "./credit-cards";
 import type { BankAccount, Bill, CreditCard, Expense, Income, Investment } from "./types";
 
-export type FundingPlanKind = "credit-card" | "rent" | "subscription" | "utility" | "investment" | "bill";
+export type FundingPlanKind =
+  | "credit-card"
+  | "rent"
+  | "subscription"
+  | "utility"
+  | "investment"
+  | "bill";
 
 export interface FundingPlanItem {
   id: string;
@@ -10,6 +16,10 @@ export interface FundingPlanItem {
   amount: number;
   destinationAccountId?: string;
   timing: string;
+  billId?: string;
+  billingMonth?: string;
+  paidAmount: number;
+  remainingAmount: number;
 }
 
 export interface FundingTransfer {
@@ -37,9 +47,16 @@ export function buildFundingPlan({
   now?: Date;
 }) {
   const reserveAccount =
-    accounts.find((account) => account.status === "active" && account.defaultFor?.includes("obligations")) ??
-    accounts.find((account) => account.status === "active" && account.defaultFor?.includes("subscriptions"));
+    accounts.find(
+      (account) => account.status === "active" && account.defaultFor?.includes("obligations"),
+    ) ??
+    accounts.find(
+      (account) => account.status === "active" && account.defaultFor?.includes("subscriptions"),
+    );
   const items: FundingPlanItem[] = [];
+  const currentBillingMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const previousBillingMonth = `${previousMonth.getFullYear()}-${String(previousMonth.getMonth() + 1).padStart(2, "0")}`;
 
   for (const card of creditCards.filter((card) => card.status === "active")) {
     const usage = creditCardUsage(card, expenses, incomes, now);
@@ -51,6 +68,8 @@ export function buildFundingPlan({
       amount: usage.outstanding,
       destinationAccountId: reserveAccount?.id,
       timing: `Statement closes ${usage.end.toLocaleDateString("en-US", { day: "numeric", month: "short" })}`,
+      paidAmount: 0,
+      remainingAmount: usage.outstanding,
     });
   }
 
@@ -63,6 +82,8 @@ export function buildFundingPlan({
       amount: investment.monthly,
       destinationAccountId: investment.accountId ?? reserveAccount?.id,
       timing: "Monthly SIP",
+      paidAmount: 0,
+      remainingAmount: investment.monthly,
     });
   }
 
@@ -76,13 +97,33 @@ export function buildFundingPlan({
           : bill.category === "Utilities"
             ? "utility"
             : "bill";
+    const billingMonth = kind === "utility" ? previousBillingMonth : currentBillingMonth;
+    const paidAmount = expenses
+      .filter((expense) => expense.billId === bill.id && expense.billingMonth === billingMonth)
+      .reduce((sum, expense) => sum + expense.amount, 0);
+    const amount = kind === "utility" && paidAmount > 0 ? paidAmount : bill.amount;
+    const remainingAmount =
+      kind === "utility" && paidAmount > 0 ? 0 : Math.max(0, amount - paidAmount);
+    const utilityMonth = previousMonth.toLocaleDateString("en-US", { month: "long" });
     items.push({
       id: `bill-${bill.id}`,
       kind,
-      label: bill.name,
-      amount: bill.amount,
+      label:
+        kind === "utility"
+          ? `${bill.name.replace(/\s+Estimate$/i, "")} · ${utilityMonth} bill`
+          : bill.name,
+      amount,
       destinationAccountId: bill.accountId ?? reserveAccount?.id,
-      timing: `Due around day ${bill.dueDay}`,
+      timing:
+        kind === "utility"
+          ? paidAmount > 0
+            ? `Paid the following month`
+            : `Expected the following month · around day ${bill.dueDay}`
+          : `Due around day ${bill.dueDay}`,
+      billId: bill.id,
+      billingMonth,
+      paidAmount,
+      remainingAmount,
     });
   }
 
@@ -96,14 +137,18 @@ export function buildFundingPlan({
       amount: 0,
       items: [],
     };
-    transfer.amount += item.amount;
+    transfer.amount += item.remainingAmount;
     transfer.items.push(item);
     transfersByAccount.set(key, transfer);
   }
 
   return {
     items,
-    transfers: Array.from(transfersByAccount.values()).sort((first, second) => second.amount - first.amount),
-    total: items.reduce((sum, item) => sum + item.amount, 0),
+    transfers: Array.from(transfersByAccount.values()).sort(
+      (first, second) => second.amount - first.amount,
+    ),
+    plannedTotal: items.reduce((sum, item) => sum + item.amount, 0),
+    paidTotal: items.reduce((sum, item) => sum + item.paidAmount, 0),
+    total: items.reduce((sum, item) => sum + item.remainingAmount, 0),
   };
 }

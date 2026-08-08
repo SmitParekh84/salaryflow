@@ -46,7 +46,14 @@ export function DashboardView() {
   const topGoal = goals[0];
   const nextBills = upcomingBills(bills).slice(0, 3);
   const emergency = goals.find((g) => g.type === "Emergency Fund");
-  const fundingPlan = buildFundingPlan({ accounts, bills, creditCards, expenses, incomes, investments });
+  const fundingPlan = buildFundingPlan({
+    accounts,
+    bills,
+    creditCards,
+    expenses,
+    incomes,
+    investments,
+  });
 
   const insights = buildInsights(summary, nextBills.length);
 
@@ -104,12 +111,19 @@ export function DashboardView() {
       <Card className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><PiggyBank className="h-5 w-5" /></div>
-            <div><p className="text-sm font-semibold">Salary-day funding plan</p><p className="text-xs text-muted">Cards, rent, SIPs, subscriptions and utilities</p></div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <PiggyBank className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Salary-day funding plan</p>
+              <p className="text-xs text-muted">Cards, rent, SIPs, subscriptions and utilities</p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <p className="text-xl font-bold">{formatMoney(fundingPlan.total, currency)}</p>
-            <Link href="/funding-plan" className="text-xs font-medium text-primary hover:underline">View transfers</Link>
+            <Link href="/funding-plan" className="text-xs font-medium text-primary hover:underline">
+              View transfers
+            </Link>
           </div>
         </div>
       </Card>

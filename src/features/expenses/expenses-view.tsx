@@ -25,7 +25,6 @@ export function ExpensesView() {
   const filtered = useMemo(() => {
     const term = q.toLowerCase().trim();
     return newestFirst(expenses)
-      .filter((e) => !e.shared)
       .filter((e) => (cat === "all" ? true : e.category === cat))
       .filter((e) =>
         !term
