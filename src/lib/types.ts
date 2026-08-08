@@ -97,6 +97,13 @@ export interface Goal {
   saved: number;
   deadline?: string;
   monthlyContribution: number;
+  contributions?: GoalContribution[];
+}
+
+export interface GoalContribution {
+  id: string;
+  amount: number;
+  date: string;
 }
 
 export type InvestmentType =
@@ -165,7 +172,7 @@ export interface CreditCard {
   status: CreditCardStatus;
 }
 
-export type BudgetBucketKind = "needs" | "wants" | "savings";
+export type BudgetBucketKind = "needs" | "wants" | "savings" | "investments";
 
 export interface BudgetAllocation {
   kind: BudgetBucketKind;

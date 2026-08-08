@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Select } from "@/components/ui/input";
-import { CATEGORIES, CATEGORY_META } from "@/lib/constants";
+import { CATEGORIES } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
 import { formatMoney, newestFirst } from "@/lib/utils";
@@ -80,7 +80,7 @@ export function ExpensesView() {
           <option value="all">All categories</option>
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>
-              {CATEGORY_META[c].emoji} {c}
+              {c}
             </option>
           ))}
         </Select>

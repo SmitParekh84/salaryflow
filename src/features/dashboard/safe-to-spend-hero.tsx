@@ -5,7 +5,7 @@ import type { FinanceSummary } from "@/lib/calculations";
 import { statusColor } from "@/lib/calculations";
 import { formatMoney } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { CalendarDays, TrendingDown, TrendingUp } from "lucide-react";
+import { CalendarDays, Check, TrendingDown, TrendingUp } from "lucide-react";
 
 export function SafeToSpendHero({
   summary,
@@ -24,10 +24,10 @@ export function SafeToSpendHero({
 
   const label =
     summary.status === "green"
-      ? "You're on track 🎯"
+      ? "You're on track"
       : summary.status === "yellow"
-        ? "Watch your pace ⚠️"
-        : "Overspending today 🚨";
+        ? "Watch your pace"
+        : "Overspending today";
 
   return (
     <Card glass className="relative overflow-hidden p-6 sm:p-8">
@@ -67,24 +67,14 @@ export function SafeToSpendHero({
 
             {summary.usedConfirmedSalary && (
               <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-muted">
-                <svg
-                  className="h-3 w-3 text-green-600"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M20 6L9 17l-5-5" />
-                </svg>
+                <Check className="h-3 w-3 text-success" />
                 Using confirmed salary
               </span>
             )}
             {summary.budgetRuleName && (
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                {summary.budgetRuleName} · {formatMoney(summary.savingsTarget, currency)} saved
-                first
+                {formatMoney(summary.savingsTarget, currency)} cash +{" "}
+                {formatMoney(summary.investmentTarget, currency)} investments protected
               </span>
             )}
           </div>

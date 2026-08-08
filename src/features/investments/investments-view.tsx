@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { INVESTMENT_TYPES } from "@/lib/constants";
+import { useSummary } from "@/hooks/use-summary";
 import { useFinanceStore } from "@/lib/store";
 import type { InvestmentType } from "@/lib/types";
 import { cn, formatMoney } from "@/lib/utils";
@@ -20,6 +21,7 @@ export function InvestmentsView() {
   const deleteInvestment = useFinanceStore((s) => s.deleteInvestment);
   const accounts = useFinanceStore((s) => s.accounts);
   const syncWithServer = useFinanceStore((s) => s.syncWithServer);
+  const summary = useSummary();
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -67,7 +69,7 @@ export function InvestmentsView() {
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Portfolio value"
           value={formatMoney(totalValue, currency, true)}
@@ -87,6 +89,17 @@ export function InvestmentsView() {
           icon={TrendingUp}
           accent={gain >= 0 ? "#22c55e" : "#ef4444"}
           trend={Math.round(gainPct)}
+        />
+        <StatCard
+          label="Monthly investment target"
+          value={formatMoney(summary.investmentTarget, currency, true)}
+          icon={TrendingUp}
+          accent="var(--primary)"
+          hint={
+            monthly >= summary.investmentTarget
+              ? "Target covered by monthly SIPs"
+              : `${formatMoney(summary.investmentTarget - monthly, currency, true)} left to allocate`
+          }
         />
       </div>
 

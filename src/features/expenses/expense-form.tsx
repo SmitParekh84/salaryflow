@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import { CATEGORIES, CATEGORY_META, PAYMENT_METHODS } from "@/lib/constants";
+import { CATEGORIES, PAYMENT_METHODS } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
 import { dateInputToIso, localDateInputValue } from "@/lib/utils";
@@ -241,7 +241,7 @@ export function ExpenseForm({
             <Select {...register("category")}>
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
-                  {CATEGORY_META[c].emoji} {c}
+                  {c}
                 </option>
               ))}
             </Select>

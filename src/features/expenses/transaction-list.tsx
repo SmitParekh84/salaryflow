@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { CategoryIcon } from "@/components/category-icon";
 import { CATEGORY_META } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
@@ -46,7 +47,7 @@ export function TransactionList({
                   backgroundColor: `color-mix(in srgb, ${meta.color} 15%, transparent)`,
                 }}
               >
-                {meta.emoji}
+                <CategoryIcon category={e.category} className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{e.merchant || e.category}</p>

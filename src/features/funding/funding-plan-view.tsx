@@ -59,6 +59,7 @@ export function FundingPlanView() {
     investments,
     budgetRule: activeBudgetRule,
     monthlyIncome: salary,
+    savedThisCycle: summary.savedThisCycle,
   });
   const availableAfterPlan = salary - plan.total;
 

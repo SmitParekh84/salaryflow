@@ -86,6 +86,16 @@ const GoalSchema = new Schema(
     saved: { type: Number, default: 0 },
     deadline: Date,
     monthlyContribution: { type: Number, default: 0 },
+    contributions: [
+      new Schema(
+        {
+          id: { type: String, required: true },
+          amount: { type: Number, required: true, min: 0 },
+          date: { type: Date, required: true, default: Date.now },
+        },
+        { _id: false },
+      ),
+    ],
   },
   { timestamps: true },
 );
@@ -144,7 +154,11 @@ const BudgetRuleSchema = new Schema(
       type: [
         new Schema(
           {
-            kind: { type: String, enum: ["needs", "wants", "savings"], required: true },
+            kind: {
+              type: String,
+              enum: ["needs", "wants", "savings", "investments"],
+              required: true,
+            },
             label: { type: String, required: true },
             percentage: { type: Number, required: true, min: 0, max: 100 },
           },

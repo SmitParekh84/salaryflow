@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { CategoryIcon } from "@/components/category-icon";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -155,7 +156,7 @@ export function BillsView() {
                     backgroundColor: `color-mix(in srgb, ${meta.color} 15%, transparent)`,
                   }}
                 >
-                  {meta.emoji}
+                  <CategoryIcon category={b.category} className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{b.name}</p>
@@ -254,7 +255,7 @@ export function BillsView() {
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
-                  {CATEGORY_META[c].emoji} {c}
+                  {c}
                 </option>
               ))}
             </Select>

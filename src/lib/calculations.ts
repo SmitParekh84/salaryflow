@@ -9,6 +9,7 @@ import type {
   Investment,
   SalaryProfile,
   SpendStatus,
+  BudgetBucketKind,
 } from "./types";
 
 /** Days in the current salary cycle and days remaining until next salary. */
@@ -66,6 +67,9 @@ export interface FinanceSummary {
   savings: number;
   savingsTarget: number;
   plannedSavings: number;
+  savedThisCycle: number;
+  investmentTarget: number;
+  plannedInvestments: number;
   spendingBudget: number;
   needsBudget: number;
   wantsBudget: number;
@@ -83,7 +87,11 @@ export interface FinanceSummary {
   usedConfirmedSalary?: boolean;
   budgetRuleName?: string;
   budgetRuleScore?: number;
-  budgetActual?: { needs: number; wants: number; savings: number };
+  budgetActual?: Record<BudgetBucketKind, number>;
+  budgetProgress?: Record<
+    BudgetBucketKind,
+    { target: number; used: number; remaining: number }
+  >;
 }
 
 const FIXED: Record<string, boolean> = {
@@ -99,6 +107,7 @@ export function computeSummary(
   expenses: Expense[],
   incomes: Income[],
   investments: Investment[],
+  goals: Goal[],
   salaryHistory: { amount: number; date: string; confirmed?: boolean; source?: string }[] = [],
   budgetRule?: BudgetRule,
   now = new Date(),
@@ -127,17 +136,26 @@ export function computeSummary(
   const totalExpenses = fixedExpenses + variableExpenses;
 
   const investedThisCycle = investments.reduce((s, i) => s + (i.monthly ?? 0), 0);
+  const savedThisCycle = goals
+    .flatMap((goal) => goal.contributions ?? [])
+    .filter((contribution) => isInCurrentCycle(contribution.date, profile, now))
+    .reduce((sum, contribution) => sum + contribution.amount, 0);
 
-  const allocationPercentage = (kind: "needs" | "wants" | "savings") =>
+  const allocationPercentage = (kind: BudgetBucketKind) =>
     budgetRule?.allocations.find((allocation) => allocation.kind === kind)?.percentage ?? 0;
   const savingsTarget = budgetRule
     ? (income * allocationPercentage("savings")) / 100
     : profile.savingsGoal;
-  const plannedSavings = Math.max(0, savingsTarget - investedThisCycle);
-  const spendingBudget = Math.max(0, income - savingsTarget);
+  const investmentTarget = budgetRule
+    ? (income * allocationPercentage("investments")) / 100
+    : investedThisCycle;
+  const plannedSavings = Math.max(0, savingsTarget);
+  const plannedInvestments = Math.max(0, investmentTarget - investedThisCycle);
+  const spendingBudget = Math.max(0, income - savingsTarget - investmentTarget);
   const needsBudget = budgetRule ? (income * allocationPercentage("needs")) / 100 : 0;
   const wantsBudget = budgetRule ? (income * allocationPercentage("wants")) / 100 : spendingBudget;
-  const remaining = income - totalExpenses - investedThisCycle - plannedSavings;
+  const remaining =
+    income - totalExpenses - investedThisCycle - plannedInvestments - plannedSavings;
 
   const safeToSpendPerDay = Math.max(0, remaining / daysRemaining);
 
@@ -164,7 +182,14 @@ export function computeSummary(
     totalExpenses,
   });
   const budgetEvaluation = budgetRule
-    ? evaluateBudgetRule(budgetRule, income, fixedExpenses, variableExpenses)
+    ? evaluateBudgetRule(
+        budgetRule,
+        income,
+        fixedExpenses,
+        variableExpenses,
+        savedThisCycle,
+        investedThisCycle,
+      )
     : null;
   const healthScore = budgetEvaluation
     ? Math.round(baseHealthScore * 0.75 + budgetEvaluation.score * 0.25)
@@ -179,6 +204,9 @@ export function computeSummary(
     savings,
     savingsTarget,
     plannedSavings,
+    savedThisCycle,
+    investmentTarget,
+    plannedInvestments,
     spendingBudget,
     needsBudget,
     wantsBudget,
@@ -197,6 +225,30 @@ export function computeSummary(
     budgetRuleName: budgetRule?.name,
     budgetRuleScore: budgetEvaluation?.score,
     budgetActual: budgetEvaluation?.actual,
+    budgetProgress: budgetRule
+      ? {
+          needs: {
+            target: needsBudget,
+            used: fixedExpenses,
+            remaining: needsBudget - fixedExpenses,
+          },
+          wants: {
+            target: wantsBudget,
+            used: variableExpenses,
+            remaining: wantsBudget - variableExpenses,
+          },
+          savings: {
+            target: savingsTarget,
+            used: savedThisCycle,
+            remaining: savingsTarget - savedThisCycle,
+          },
+          investments: {
+            target: investmentTarget,
+            used: investedThisCycle,
+            remaining: investmentTarget - investedThisCycle,
+          },
+        }
+      : undefined,
   };
 }
 
@@ -227,7 +279,7 @@ function financialHealthScore(p: {
 export function projectedGoalDate(goal: Goal): string | null {
   if (goal.monthlyContribution <= 0) return null;
   const remaining = goal.target - goal.saved;
-  if (remaining <= 0) return "Achieved 🎉";
+  if (remaining <= 0) return "Achieved";
   const months = Math.ceil(remaining / goal.monthlyContribution);
   const d = new Date();
   d.setMonth(d.getMonth() + months);

@@ -27,6 +27,7 @@ import type {
   UserProfile,
 } from "./types";
 import { uid } from "./utils";
+import { normalizeBudgetRule } from "./budget-rules";
 
 interface FinanceState {
   user: UserProfile;
@@ -160,6 +161,10 @@ function normalizeServerItems<T extends { id: string }>(items: unknown, fallback
   });
 }
 
+function normalizeBudgetRules(items: unknown, fallback: BudgetRule[]): BudgetRule[] {
+  return normalizeServerItems<BudgetRule>(items, fallback).map(normalizeBudgetRule);
+}
+
 function recycleItem(
   entityType: RecycleEntityType,
   entityId: string,
@@ -264,7 +269,18 @@ export const useFinanceStore = create<FinanceState>()(
         })),
       contributeGoal: (id, amount) =>
         set((s) => ({
-          goals: s.goals.map((g) => (g.id === id ? { ...g, saved: g.saved + amount } : g)),
+          goals: s.goals.map((g) =>
+            g.id === id
+              ? {
+                  ...g,
+                  saved: g.saved + amount,
+                  contributions: [
+                    ...(g.contributions ?? []),
+                    { id: uid("goal-contribution"), amount, date: new Date().toISOString() },
+                  ],
+                }
+              : g,
+          ),
         })),
       deleteGoal: (id) => {
         const item = get().goals.find((goal) => goal.id === id);
@@ -396,9 +412,14 @@ export const useFinanceStore = create<FinanceState>()(
               };
             case "budget-rule":
               return {
-                budgetRules: [item.data as unknown as BudgetRule, ...state.budgetRules],
+                budgetRules: [
+                  normalizeBudgetRule(item.data as unknown as BudgetRule),
+                  ...state.budgetRules,
+                ],
                 recycleBin,
               };
+            default:
+              return { recycleBin };
           }
         });
         await get().syncWithServer();
@@ -515,7 +536,7 @@ export const useFinanceStore = create<FinanceState>()(
               investments: normalizeServerItems<Investment>(d.investments, state.investments),
               accounts: normalizeServerItems<BankAccount>(d.accounts, state.accounts),
               creditCards: normalizeServerItems<CreditCard>(d.creditCards, state.creditCards),
-              budgetRules: normalizeServerItems<BudgetRule>(d.budgetRules, state.budgetRules),
+              budgetRules: normalizeBudgetRules(d.budgetRules, state.budgetRules),
               recycleBin: normalizeServerItems<RecycleBinItem>(d.recycleBin, state.recycleBin),
             });
           }
@@ -543,7 +564,7 @@ export const useFinanceStore = create<FinanceState>()(
             investments: normalizeServerItems<Investment>(data.investments, []),
             accounts: normalizeServerItems<BankAccount>(data.accounts, []),
             creditCards: normalizeServerItems<CreditCard>(data.creditCards, []),
-            budgetRules: normalizeServerItems<BudgetRule>(data.budgetRules, []),
+            budgetRules: normalizeBudgetRules(data.budgetRules, []),
             recycleBin: normalizeServerItems<RecycleBinItem>(data.recycleBin, []),
           });
         } catch {
@@ -600,7 +621,7 @@ export const useFinanceStore = create<FinanceState>()(
           investments: normalizeServerItems<Investment>(state.investments, []),
           accounts: normalizeServerItems<BankAccount>(state.accounts, []),
           creditCards: normalizeServerItems<CreditCard>(state.creditCards, []),
-          budgetRules: normalizeServerItems<BudgetRule>(state.budgetRules, []),
+          budgetRules: normalizeBudgetRules(state.budgetRules, []),
           recycleBin: normalizeServerItems<RecycleBinItem>(state.recycleBin, []),
         };
       },

@@ -11,7 +11,7 @@ import { GOAL_TYPES } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { Goal, GoalType } from "@/lib/types";
 import { formatMoney } from "@/lib/utils";
-import { Plus, Target, Trash2 } from "lucide-react";
+import { Bike, CircleCheck, Plus, Smartphone, Target, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 export function GoalsView() {
@@ -20,6 +20,7 @@ export function GoalsView() {
   const addGoal = useFinanceStore((s) => s.addGoal);
   const deleteGoal = useFinanceStore((s) => s.deleteGoal);
   const contributeGoal = useFinanceStore((s) => s.contributeGoal);
+  const syncWithServer = useFinanceStore((s) => s.syncWithServer);
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -30,11 +31,17 @@ export function GoalsView() {
     monthlyContribution: 0,
   });
 
-  const save = () => {
+  const save = async () => {
     if (!form.name || form.target <= 0) return;
     addGoal(form);
     setForm({ name: "", type: "Custom", target: 0, saved: 0, monthlyContribution: 0 });
     setOpen(false);
+    await syncWithServer();
+  };
+
+  const contribute = async (id: string, amount: number) => {
+    contributeGoal(id, amount);
+    await syncWithServer();
   };
 
   return (
@@ -65,7 +72,7 @@ export function GoalsView() {
               goal={g}
               currency={currency}
               onDelete={() => deleteGoal(g.id)}
-              onContribute={(amt) => contributeGoal(g.id, amt)}
+              onContribute={(amount) => void contribute(g.id, amount)}
             />
           ))}
         </div>
@@ -127,7 +134,7 @@ export function GoalsView() {
             <Button variant="secondary" className="flex-1" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button className="flex-1" onClick={save}>
+            <Button className="flex-1" onClick={() => void save()}>
               Create goal
             </Button>
           </div>
@@ -150,13 +157,19 @@ function GoalCard({
 }) {
   const pct = Math.min(100, (goal.saved / goal.target) * 100);
   const done = goal.saved >= goal.target;
+  const GoalIcon = goal.type === "Bike" ? Bike : goal.type === "Phone" ? Smartphone : Target;
   return (
     <Card>
       <CardContent className="space-y-3">
         <div className="flex items-start justify-between">
-          <div>
-            <p className="text-sm font-semibold">{goal.name}</p>
-            <p className="text-xs text-muted">{goal.type}</p>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <GoalIcon className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">{goal.name}</p>
+              <p className="text-xs text-muted">{goal.type}</p>
+            </div>
           </div>
           <button
             onClick={onDelete}
@@ -183,7 +196,13 @@ function GoalCard({
 
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted">
-            {done ? "Achieved 🎉" : `ETA ${projectedGoalDate(goal) ?? "—"}`}
+            {done ? (
+              <span className="flex items-center gap-1 text-success">
+                <CircleCheck className="h-3.5 w-3.5" /> Achieved
+              </span>
+            ) : (
+              `ETA ${projectedGoalDate(goal) ?? "—"}`
+            )}
           </span>
           <span className="font-medium">{Math.round(pct)}%</span>
         </div>

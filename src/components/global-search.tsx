@@ -1,6 +1,6 @@
 "use client";
 
-import { CATEGORY_META } from "@/lib/constants";
+import { CategoryIcon } from "@/components/category-icon";
 import { useFinanceStore } from "@/lib/store";
 import { formatDate, formatMoney, newestFirst } from "@/lib/utils";
 import { Search } from "lucide-react";
@@ -60,7 +60,7 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
             key={e.id}
             className="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-surface-2"
           >
-            <span className="text-lg">{CATEGORY_META[e.category].emoji}</span>
+            <CategoryIcon category={e.category} className="h-5 w-5" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{e.merchant || e.category}</p>
               <p className="text-xs text-muted">

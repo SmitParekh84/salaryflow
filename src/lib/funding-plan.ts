@@ -48,6 +48,7 @@ export function buildFundingPlan({
   investments,
   budgetRule,
   monthlyIncome = 0,
+  savedThisCycle = 0,
   now = new Date(),
 }: {
   accounts: BankAccount[];
@@ -58,6 +59,7 @@ export function buildFundingPlan({
   investments: Investment[];
   budgetRule?: BudgetRule;
   monthlyIncome?: number;
+  savedThisCycle?: number;
   now?: Date;
 }) {
   const reserveAccount =
@@ -101,22 +103,38 @@ export function buildFundingPlan({
   if (budgetRule && monthlyIncome > 0) {
     const savingsPercentage =
       budgetRule.allocations.find((allocation) => allocation.kind === "savings")?.percentage ?? 0;
+    const investmentPercentage =
+      budgetRule.allocations.find((allocation) => allocation.kind === "investments")?.percentage ??
+      0;
     const savingsTarget = (monthlyIncome * savingsPercentage) / 100;
+    const investmentTarget = (monthlyIncome * investmentPercentage) / 100;
     const monthlyInvestments = investments.reduce(
       (sum, investment) => sum + (investment.monthly ?? 0),
       0,
     );
-    const cashSavingsReserve = Math.max(0, savingsTarget - monthlyInvestments);
-    if (cashSavingsReserve > 0) {
+    const investmentTopUp = Math.max(0, investmentTarget - monthlyInvestments);
+    if (investmentTopUp > 0) {
+      items.push({
+        id: `budget-investments-${budgetRule.id}`,
+        kind: "investment",
+        label: `${budgetRule.name} investment top-up`,
+        amount: investmentTopUp,
+        destinationAccountId: reserveAccount?.id,
+        timing: `${investmentPercentage}% target · after monthly SIPs`,
+        paidAmount: 0,
+        remainingAmount: investmentTopUp,
+      });
+    }
+    if (savingsTarget > 0) {
       items.push({
         id: `budget-savings-${budgetRule.id}`,
         kind: "savings",
         label: `${budgetRule.name} savings reserve`,
-        amount: cashSavingsReserve,
+        amount: savingsTarget,
         destinationAccountId: reserveAccount?.id,
-        timing: `${savingsPercentage}% target · SIPs already counted`,
-        paidAmount: 0,
-        remainingAmount: cashSavingsReserve,
+        timing: `${savingsPercentage}% cash savings target`,
+        paidAmount: Math.min(savedThisCycle, savingsTarget),
+        remainingAmount: Math.max(0, savingsTarget - savedThisCycle),
       });
     }
   }

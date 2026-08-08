@@ -17,8 +17,16 @@ import { useState } from "react";
 const BUCKETS: { kind: BudgetBucketKind; label: string }[] = [
   { kind: "needs", label: "Needs" },
   { kind: "wants", label: "Wants" },
-  { kind: "savings", label: "Savings & investing" },
+  { kind: "savings", label: "Cash savings" },
+  { kind: "investments", label: "Investments" },
 ];
+
+const USED_LABELS: Record<BudgetBucketKind, string> = {
+  needs: "Spent this cycle",
+  wants: "Spent this cycle",
+  savings: "Saved this cycle",
+  investments: "Monthly SIPs",
+};
 
 export function RulesView() {
   const rules = useFinanceStore((state) => state.budgetRules);
@@ -31,7 +39,12 @@ export function RulesView() {
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("My budget rule");
-  const [percentages, setPercentages] = useState({ needs: 50, wants: 30, savings: 20 });
+  const [percentages, setPercentages] = useState<Record<BudgetBucketKind, number>>({
+    needs: 50,
+    wants: 20,
+    savings: 15,
+    investments: 15,
+  });
   const activeRule = rules.find((rule) => rule.active);
   const total = percentages.needs + percentages.wants + percentages.savings;
 
@@ -76,8 +89,8 @@ export function RulesView() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="max-w-2xl text-sm leading-relaxed text-muted">
-            Choose a breakdown or create your own. The active rule sets your savings reserve,
-            spending limits, daily safe-to-spend, and Salary Plan amounts across the app.
+            Use four separate limits for needs, wants, cash savings, and investments. The active
+            rule updates safe-to-spend and Salary Plan amounts across the app.
           </p>
         </div>
         <Button size="sm" onClick={() => setOpen(true)}>
@@ -94,7 +107,7 @@ export function RulesView() {
                 <h2 className="font-semibold">{activeRule.name}</h2>
               </div>
               <p className="mt-1 text-xs text-muted">
-                Active across savings, spending, Salary Plan, and health score
+                Active across spending, cash savings, investments, Salary Plan, and health score
               </p>
             </div>
             {summary.budgetRuleScore !== undefined && (
@@ -104,21 +117,34 @@ export function RulesView() {
               </div>
             )}
           </div>
-          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {activeRule.allocations.map((allocation) => {
               const actual = summary.budgetActual?.[allocation.kind] ?? 0;
+              const progress = summary.budgetProgress?.[allocation.kind];
+              const remaining = progress?.remaining ?? 0;
               return (
                 <div key={allocation.kind}>
                   <div className="mb-2 flex items-center justify-between text-xs">
                     <span className="font-medium">{allocation.label}</span>
-                    <span className="text-muted">
-                      {Math.round(actual)}% / {allocation.percentage}%
-                    </span>
+                    <span className="text-muted">{allocation.percentage}% of income</span>
                   </div>
                   <Progress value={(actual / Math.max(1, allocation.percentage)) * 100} />
-                  <p className="mt-1 text-[11px] text-muted">
-                    Plan {formatMoney((summary.income * allocation.percentage) / 100, currency)}
-                  </p>
+                  <div className="mt-2 space-y-1 text-[11px]">
+                    <p className="flex justify-between gap-2 text-muted">
+                      <span>Target</span>
+                      <span>{formatMoney(progress?.target ?? 0, currency)}</span>
+                    </p>
+                    <p className="flex justify-between gap-2 text-muted">
+                      <span>{USED_LABELS[allocation.kind]}</span>
+                      <span>{formatMoney(progress?.used ?? 0, currency)}</span>
+                    </p>
+                    <p
+                      className={`flex justify-between gap-2 font-medium ${remaining < 0 ? "text-danger" : "text-success"}`}
+                    >
+                      <span>{remaining < 0 ? "Over by" : "Remaining"}</span>
+                      <span>{formatMoney(Math.abs(remaining), currency)}</span>
+                    </p>
+                  </div>
                 </div>
               );
             })}
@@ -139,6 +165,9 @@ export function RulesView() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-semibold">{template.name}</p>
+                    {template.key === "wealth-builder-50-20-15-15" && (
+                      <Badge color="var(--primary)">Recommended for you</Badge>
+                    )}
                     {selected && <Badge color="var(--success)">Active</Badge>}
                   </div>
                   <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted">

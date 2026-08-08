@@ -1,6 +1,7 @@
 "use client";
 
 import { StatCard } from "@/components/stat-card";
+import { CategoryIcon } from "@/components/category-icon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -12,7 +13,6 @@ import { SeedPrompt, TransactionList } from "@/features/expenses/transaction-lis
 import { useSummary } from "@/hooks/use-summary";
 import { billCycle } from "@/lib/bill-cycle";
 import { projectedGoalDate, upcomingBills } from "@/lib/calculations";
-import { CATEGORY_META } from "@/lib/constants";
 import { buildFundingPlan } from "@/lib/funding-plan";
 import { useFinanceStore } from "@/lib/store";
 import { formatMoney, newestFirst } from "@/lib/utils";
@@ -20,6 +20,8 @@ import { motion } from "framer-motion";
 import {
   Activity,
   CalendarClock,
+  CircleCheck,
+  Hand,
   HeartPulse,
   ListChecks,
   PiggyBank,
@@ -57,6 +59,7 @@ export function DashboardView() {
     investments,
     budgetRule: activeBudgetRule,
     monthlyIncome: summary.income,
+    savedThisCycle: summary.savedThisCycle,
   });
 
   const insights = buildInsights(summary, nextBills.length);
@@ -65,7 +68,9 @@ export function DashboardView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-muted">Welcome back 👋</p>
+          <p className="flex items-center gap-1.5 text-sm text-muted">
+            Welcome back <Hand className="h-4 w-4" />
+          </p>
           <p className="text-xs text-muted">{summary.daysRemaining} days until your next salary</p>
         </div>
         <div className="flex gap-2">
@@ -95,14 +100,13 @@ export function DashboardView() {
           delay={0.05}
         />
         <StatCard
-          label="Savings this cycle"
-          value={formatMoney(summary.savings, currency, true)}
+          label="Cash savings target"
+          value={formatMoney(summary.savingsTarget, currency, true)}
           icon={PiggyBank}
           accent="#22c55e"
-          trend={Math.round(summary.savingsRate)}
           hint={
             summary.budgetRuleName
-              ? `${formatMoney(summary.savingsTarget, currency, true)} rule target`
+              ? `${formatMoney(summary.investmentTarget, currency, true)} investment target`
               : undefined
           }
           delay={0.1}
@@ -160,6 +164,36 @@ export function DashboardView() {
             </div>
           </div>
           <Progress value={summary.budgetRuleScore} className="mt-4" />
+          {summary.budgetProgress && (
+            <div className="mt-5 grid gap-4 border-t border-border pt-4 sm:grid-cols-2 xl:grid-cols-4">
+              {([
+                ["needs", "Needs", "Spent"],
+                ["wants", "Wants", "Spent"],
+                ["savings", "Cash savings", "Saved"],
+                ["investments", "Investments", "Monthly SIPs"],
+              ] as const).map(([kind, label, usedLabel]) => {
+                const progress = summary.budgetProgress?.[kind];
+                const remaining = progress?.remaining ?? 0;
+                return (
+                  <div key={kind}>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold">{label}</p>
+                      <p className="text-xs text-muted">
+                        {formatMoney(progress?.target ?? 0, currency)} limit
+                      </p>
+                    </div>
+                    <p className="mt-2 text-lg font-bold">
+                      {formatMoney(progress?.used ?? 0, currency)}
+                    </p>
+                    <p className="text-[11px] text-muted">{usedLabel} this cycle</p>
+                    <p className={`mt-1 text-xs font-medium ${remaining < 0 ? "text-danger" : "text-success"}`}>
+                      {formatMoney(Math.abs(remaining), currency)} {remaining < 0 ? "over" : "remaining"}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Card>
       )}
 
@@ -245,12 +279,14 @@ export function DashboardView() {
             </CardHeader>
             <CardContent className="space-y-2 pt-2">
               {nextBills.length === 0 && (
-                <p className="py-4 text-center text-xs text-muted">No pending bills 🎉</p>
+                <p className="flex items-center justify-center gap-1.5 py-4 text-xs text-muted">
+                  <CircleCheck className="h-4 w-4 text-success" /> No pending bills
+                </p>
               )}
               {nextBills.map((b) => (
                 <div key={b.id} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <span>{CATEGORY_META[b.category].emoji}</span>
+                    <CategoryIcon category={b.category} />
                     <span>{b.name}</span>
                   </div>
                   <div className="text-right">

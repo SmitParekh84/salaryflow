@@ -55,6 +55,44 @@ not replace the app with a stock shadcn theme or add a second full design system
 
 Safe To Spend = remaining balance / remaining days until salary. Color-coded green/yellow/red.
 
+## AI integration plan
+
+Use Gemini only through authenticated Next.js server routes. Store `GEMINI_API_KEY` in local and
+Vercel environment variables; never expose it through `NEXT_PUBLIC_*`, client code, logs, or the
+database. The existing reference API at `smitparekh-api` demonstrates REST calls, model fallback,
+rate-limit cooldowns, and bounded inputs. SalaryFlow should reuse those patterns, but use the
+correctly spelled environment variable and finance-specific validation.
+
+### Recommended AI features
+
+1. **Receipt and bill extraction:** Upload or photograph a receipt, resize it in the browser, and
+   send it to `/api/ai/receipt`. Gemini Vision returns strict JSON for merchant, date, total,
+   category, payment method, line items, and confidence. Validate with Zod, show an editable
+   preview, and create the expense only after explicit confirmation.
+2. **Monthly financial coach:** Explain four-bucket progress, unusual category changes, upcoming
+   bills, and goal tradeoffs using server-computed aggregates. AI may recommend actions but must
+   never move balances, mark bills paid, activate rules, or save expenses automatically.
+3. **Expense categorization:** Suggest a category and merchant normalization when a user types a
+   description. Keep deterministic mappings first and use AI only for ambiguous entries.
+4. **Goal planning:** Compare deadlines against the cash-savings bucket and propose contribution
+   splits. Recommendations must preserve the active rule total and clearly identify assumptions.
+5. **Natural-language insights:** Answer questions such as “Why did safe-to-spend fall?” from a
+   minimal, redacted monthly summary rather than sending complete transaction or account records.
+
+### Receipt flow and deployment constraints
+
+- Accept JPEG, PNG, or WebP only; reject unsupported content and client-resize to about 2–3 MB.
+- Do not permanently store receipt images for extraction-only use. If receipt history is later
+  required, add dedicated object storage with signed URLs and retention controls.
+- Vercel Hobby can run this as a serverless route without purchasing a separate Vercel service.
+  Gemini free-tier quotas and Vercel request-size/runtime limits still apply and can change.
+- For reliable free deployment, compress before upload, process one image per request, add per-user
+  rate limits, enforce a timeout, and return a retryable error when Gemini is unavailable.
+- Treat extracted data as untrusted input. Validate amounts and dates, reject prompt instructions
+  found inside images, avoid logging financial contents, and require user confirmation before sync.
+- Add usage metering before enabling AI broadly. Paid Gemini or external image storage is only
+  needed if free-tier quotas, image retention, or production traffic outgrow the free limits.
+
 ## Milestones
 
 1. [x] Scaffold + deps
