@@ -70,10 +70,7 @@ export function RecycleBinView() {
       ) : (
         <div className="divide-y divide-border border-y border-border">
           {items.map((item) => (
-            <div
-              key={item.id}
-              className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center"
-            >
+            <div key={item.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-muted">
                 <Trash2 className="h-4 w-4" />
               </div>

@@ -6,13 +6,18 @@ export function monthKey(date: Date): string {
 }
 
 function sourceDate(bill: Bill, now: Date): Date {
-  return bill.dueDate ? parseFinancialDate(bill.dueDate) : new Date(now.getFullYear(), 0, bill.dueDay);
+  return bill.dueDate
+    ? parseFinancialDate(bill.dueDate)
+    : new Date(now.getFullYear(), 0, bill.dueDay);
 }
 
 export function billOccurrenceDate(bill: Bill, now = new Date()): Date {
   const source = sourceDate(bill, now);
   if (bill.frequency === "yearly") {
-    const day = Math.min(source.getDate(), new Date(now.getFullYear(), source.getMonth() + 1, 0).getDate());
+    const day = Math.min(
+      source.getDate(),
+      new Date(now.getFullYear(), source.getMonth() + 1, 0).getDate(),
+    );
     return new Date(now.getFullYear(), source.getMonth(), day);
   }
 
@@ -22,7 +27,10 @@ export function billOccurrenceDate(bill: Bill, now = new Date()): Date {
     return occurrence;
   }
 
-  const day = Math.min(source.getDate(), new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate());
+  const day = Math.min(
+    source.getDate(),
+    new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(),
+  );
   return new Date(now.getFullYear(), now.getMonth(), day);
 }
 

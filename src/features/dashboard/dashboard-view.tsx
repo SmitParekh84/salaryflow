@@ -10,8 +10,8 @@ import { SafeToSpendHero } from "@/features/dashboard/safe-to-spend-hero";
 import { ExpenseForm } from "@/features/expenses/expense-form";
 import { SeedPrompt, TransactionList } from "@/features/expenses/transaction-list";
 import { useSummary } from "@/hooks/use-summary";
-import { projectedGoalDate, upcomingBills } from "@/lib/calculations";
 import { billCycle } from "@/lib/bill-cycle";
+import { projectedGoalDate, upcomingBills } from "@/lib/calculations";
 import { CATEGORY_META } from "@/lib/constants";
 import { buildFundingPlan } from "@/lib/funding-plan";
 import { useFinanceStore } from "@/lib/store";
@@ -125,9 +125,7 @@ export function DashboardView() {
             </div>
             <div>
               <p className="text-sm font-semibold">Salary-day funding plan</p>
-              <p className="text-xs text-muted">
-                Cards, bills, SIPs, and your active savings rule
-              </p>
+              <p className="text-xs text-muted">Cards, bills, SIPs, and your active savings rule</p>
             </div>
           </div>
           <div className="flex items-center gap-4">

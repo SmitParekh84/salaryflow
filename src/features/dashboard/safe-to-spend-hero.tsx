@@ -19,15 +19,15 @@ export function SafeToSpendHero({
     summary.safeToSpendPerDay > 0
       ? Math.min(100, (summary.spentToday / summary.safeToSpendPerDay) * 100)
       : summary.spentToday > 0
-      ? 100
-      : 0;
+        ? 100
+        : 0;
 
   const label =
     summary.status === "green"
       ? "You're on track 🎯"
       : summary.status === "yellow"
-      ? "Watch your pace ⚠️"
-      : "Overspending today 🚨";
+        ? "Watch your pace ⚠️"
+        : "Overspending today 🚨";
 
   return (
     <Card glass className="relative overflow-hidden p-6 sm:p-8">
@@ -67,13 +67,24 @@ export function SafeToSpendHero({
 
             {summary.usedConfirmedSalary && (
               <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-muted">
-                <svg className="h-3 w-3 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                <svg
+                  className="h-3 w-3 text-green-600"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
                 Using confirmed salary
               </span>
             )}
             {summary.budgetRuleName && (
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                {summary.budgetRuleName} · {formatMoney(summary.savingsTarget, currency)} saved first
+                {summary.budgetRuleName} · {formatMoney(summary.savingsTarget, currency)} saved
+                first
               </span>
             )}
           </div>

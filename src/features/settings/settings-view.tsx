@@ -6,16 +6,8 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { CURRENCIES } from "@/lib/constants";
 import { download, exportExpensesCsv } from "@/lib/export";
 import { useFinanceStore } from "@/lib/store";
+import { Download, FileJson, LogOut, Moon, Sun, Trash2, User } from "lucide-react";
 import { useTheme } from "next-themes";
-import {
-  Download,
-  FileJson,
-  LogOut,
-  Moon,
-  Sun,
-  Trash2,
-  User,
-} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -150,9 +142,7 @@ export function SettingsView() {
               <Input
                 type="number"
                 value={profile.emergencyFundGoal || ""}
-                onChange={(e) =>
-                  updateProfile({ emergencyFundGoal: Number(e.target.value) })
-                }
+                onChange={(e) => updateProfile({ emergencyFundGoal: Number(e.target.value) })}
               />
             </div>
           </div>
