@@ -7,7 +7,7 @@ import { Select } from "@/components/ui/input";
 import { CATEGORIES, CATEGORY_META } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
-import { formatMoney } from "@/lib/utils";
+import { formatMoney, newestFirst } from "@/lib/utils";
 import { ExpenseForm } from "./expense-form";
 import { SeedPrompt, TransactionList } from "./transaction-list";
 import { Plus, Receipt, Search } from "lucide-react";
@@ -24,7 +24,7 @@ export function ExpensesView() {
 
   const filtered = useMemo(() => {
     const term = q.toLowerCase().trim();
-    return expenses
+    return newestFirst(expenses)
       .filter((e) => (cat === "all" ? true : e.category === cat))
       .filter((e) =>
         !term
@@ -32,6 +32,7 @@ export function ExpensesView() {
           : e.merchant?.toLowerCase().includes(term) ||
             e.category.toLowerCase().includes(term) ||
             e.note?.toLowerCase().includes(term) ||
+            e.shared?.friendName.toLowerCase().includes(term) ||
             String(e.amount).includes(term)
       );
   }, [expenses, q, cat]);

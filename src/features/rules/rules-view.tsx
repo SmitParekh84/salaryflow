@@ -1,0 +1,255 @@
+"use client";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input, Label } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
+import { Progress } from "@/components/ui/progress";
+import { useSummary } from "@/hooks/use-summary";
+import { BUDGET_RULE_TEMPLATES, createRuleFromTemplate } from "@/lib/budget-rules";
+import { useFinanceStore } from "@/lib/store";
+import type { BudgetBucketKind } from "@/lib/types";
+import { Check, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { useState } from "react";
+
+const BUCKETS: { kind: BudgetBucketKind; label: string }[] = [
+  { kind: "needs", label: "Needs" },
+  { kind: "wants", label: "Wants" },
+  { kind: "savings", label: "Savings & investing" },
+];
+
+export function RulesView() {
+  const rules = useFinanceStore((state) => state.budgetRules);
+  const addRule = useFinanceStore((state) => state.addBudgetRule);
+  const activateRule = useFinanceStore((state) => state.activateBudgetRule);
+  const deleteRule = useFinanceStore((state) => state.deleteBudgetRule);
+  const syncWithServer = useFinanceStore((state) => state.syncWithServer);
+  const summary = useSummary();
+
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("My budget rule");
+  const [percentages, setPercentages] = useState({ needs: 50, wants: 30, savings: 20 });
+  const activeRule = rules.find((rule) => rule.active);
+  const total = percentages.needs + percentages.wants + percentages.savings;
+
+  async function applyTemplate(templateKey: string) {
+    const existing = rules.find((rule) => rule.templateKey === templateKey);
+    if (existing) {
+      activateRule(existing.id);
+    } else {
+      const template = BUDGET_RULE_TEMPLATES.find((item) => item.key === templateKey);
+      if (!template) return;
+      addRule(createRuleFromTemplate(template));
+    }
+    await syncWithServer();
+  }
+
+  async function saveCustomRule() {
+    if (!name.trim() || total !== 100) return;
+    addRule({
+      name: name.trim(),
+      active: true,
+      allocations: BUCKETS.map((bucket) => ({
+        ...bucket,
+        percentage: percentages[bucket.kind],
+      })),
+    });
+    setOpen(false);
+    await syncWithServer();
+  }
+
+  async function makeActive(id: string) {
+    activateRule(id);
+    await syncWithServer();
+  }
+
+  async function remove(id: string) {
+    deleteRule(id);
+    await syncWithServer();
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="max-w-2xl text-sm leading-relaxed text-muted">
+            Choose a proven breakdown or create your own. Your active rule measures spending and
+            contributes to dashboard health.
+          </p>
+        </div>
+        <Button size="sm" onClick={() => setOpen(true)}>
+          <Plus className="h-4 w-4" /> Custom rule
+        </Button>
+      </div>
+
+      {activeRule && (
+        <Card className="p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                <h2 className="font-semibold">{activeRule.name}</h2>
+              </div>
+              <p className="mt-1 text-xs text-muted">Active rule · included in health score</p>
+            </div>
+            {summary.budgetRuleScore !== undefined && (
+              <div className="text-right">
+                <p className="text-2xl font-bold">{summary.budgetRuleScore}/100</p>
+                <p className="text-xs text-muted">adherence</p>
+              </div>
+            )}
+          </div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            {activeRule.allocations.map((allocation) => {
+              const actual = summary.budgetActual?.[allocation.kind] ?? 0;
+              return (
+                <div key={allocation.kind}>
+                  <div className="mb-2 flex items-center justify-between text-xs">
+                    <span className="font-medium">{allocation.label}</span>
+                    <span className="text-muted">
+                      {Math.round(actual)}% / {allocation.percentage}%
+                    </span>
+                  </div>
+                  <Progress value={(actual / Math.max(1, allocation.percentage)) * 100} />
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      <section>
+        <h2 className="text-base font-semibold">Adviser templates</h2>
+        <div className="mt-3 divide-y divide-border border-y border-border">
+          {BUDGET_RULE_TEMPLATES.map((template) => {
+            const selected = activeRule?.templateKey === template.key;
+            return (
+              <div
+                key={template.key}
+                className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold">{template.name}</p>
+                    {selected && <Badge color="var(--success)">Active</Badge>}
+                  </div>
+                  <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted">
+                    {template.description}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {template.allocations.map((allocation) => (
+                    <span
+                      key={allocation.kind}
+                      className="rounded-lg bg-surface-2 px-2 py-1 text-[11px] font-medium"
+                    >
+                      {allocation.label} {allocation.percentage}%
+                    </span>
+                  ))}
+                </div>
+                <Button
+                  size="sm"
+                  variant={selected ? "secondary" : "primary"}
+                  disabled={selected}
+                  onClick={() => void applyTemplate(template.key)}
+                >
+                  {selected ? (
+                    <>
+                      <Check className="h-4 w-4" /> Active
+                    </>
+                  ) : (
+                    "Use rule"
+                  )}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {rules.some((rule) => !rule.templateKey) && (
+        <section>
+          <h2 className="text-base font-semibold">Custom rules</h2>
+          <div className="mt-3 divide-y divide-border border-y border-border">
+            {rules
+              .filter((rule) => !rule.templateKey)
+              .map((rule) => (
+                <div key={rule.id} className="flex items-center gap-3 py-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-semibold">{rule.name}</p>
+                      {rule.active && <Badge color="var(--success)">Active</Badge>}
+                    </div>
+                    <p className="mt-1 text-xs text-muted">
+                      {rule.allocations
+                        .map((allocation) => `${allocation.label} ${allocation.percentage}%`)
+                        .join(" · ")}
+                    </p>
+                  </div>
+                  {!rule.active && (
+                    <Button size="sm" variant="secondary" onClick={() => void makeActive(rule.id)}>
+                      Activate
+                    </Button>
+                  )}
+                  <button
+                    onClick={() => void remove(rule.id)}
+                    className="rounded-lg p-2 text-danger hover:bg-danger/10"
+                    aria-label={`Delete ${rule.name}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+          </div>
+        </section>
+      )}
+
+      <Modal open={open} onClose={() => setOpen(false)} title="Create budget rule">
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="rule-name">Rule name</Label>
+            <Input
+              id="rule-name"
+              autoFocus
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </div>
+          {BUCKETS.map((bucket) => (
+            <div key={bucket.kind}>
+              <Label htmlFor={`rule-${bucket.kind}`}>{bucket.label} percentage</Label>
+              <Input
+                id={`rule-${bucket.kind}`}
+                type="number"
+                min={0}
+                max={100}
+                value={percentages[bucket.kind]}
+                onChange={(event) =>
+                  setPercentages({ ...percentages, [bucket.kind]: Number(event.target.value) })
+                }
+              />
+            </div>
+          ))}
+          <div
+            className={`rounded-xl px-3 py-2 text-sm ${total === 100 ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}
+          >
+            Total: {total}% {total === 100 ? "· Ready to save" : "· Must equal 100%"}
+          </div>
+          <div className="flex gap-3 pt-1">
+            <Button variant="secondary" className="flex-1" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={total !== 100 || !name.trim()}
+              onClick={() => void saveCustomRule()}
+            >
+              Save & activate
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+}

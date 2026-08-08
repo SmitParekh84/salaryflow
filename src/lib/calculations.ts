@@ -1,5 +1,7 @@
+import { evaluateBudgetRule } from "./budget-rules";
 import type {
   Bill,
+  BudgetRule,
   Expense,
   Goal,
   Income,
@@ -12,11 +14,7 @@ import type {
 export function cycleInfo(profile: SalaryProfile, now = new Date()) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const day = today.getDate();
-  const daysInMonth = new Date(
-    today.getFullYear(),
-    today.getMonth() + 1,
-    0
-  ).getDate();
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
 
   let cycleLength: number;
   let dayInCycle: number;
@@ -24,11 +22,11 @@ export function cycleInfo(profile: SalaryProfile, now = new Date()) {
   switch (profile.cycle) {
     case "weekly":
       cycleLength = 7;
-      dayInCycle = ((day - profile.salaryDay) % 7 + 7) % 7;
+      dayInCycle = (((day - profile.salaryDay) % 7) + 7) % 7;
       break;
     case "biweekly":
       cycleLength = 14;
-      dayInCycle = ((day - profile.salaryDay) % 14 + 14) % 14;
+      dayInCycle = (((day - profile.salaryDay) % 14) + 14) % 14;
       break;
     default: {
       cycleLength = daysInMonth;
@@ -48,7 +46,7 @@ export function cycleInfo(profile: SalaryProfile, now = new Date()) {
 export function isInCurrentCycle(
   isoDate: string,
   profile: SalaryProfile,
-  now = new Date()
+  now = new Date(),
 ): boolean {
   const { daysElapsed } = cycleInfo(profile, now);
   const start = new Date(now);
@@ -77,6 +75,9 @@ export interface FinanceSummary {
   healthScore: number;
   savingsRate: number;
   usedConfirmedSalary?: boolean;
+  budgetRuleName?: string;
+  budgetRuleScore?: number;
+  budgetActual?: { needs: number; wants: number; savings: number };
 }
 
 const FIXED: Record<string, boolean> = {
@@ -93,12 +94,10 @@ export function computeSummary(
   incomes: Income[],
   investments: Investment[],
   salaryHistory: { amount: number; date: string; confirmed?: boolean; source?: string }[] = [],
-  now = new Date()
+  budgetRule?: BudgetRule,
+  now = new Date(),
 ): FinanceSummary {
-  const { daysRemaining, daysElapsed, cycleLength, nextSalary } = cycleInfo(
-    profile,
-    now
-  );
+  const { daysRemaining, daysElapsed, cycleLength, nextSalary } = cycleInfo(profile, now);
 
   const cycleExpenses = expenses.filter((e) => isInCurrentCycle(e.date, profile, now));
   const extraIncome = incomes
@@ -141,7 +140,7 @@ export function computeSummary(
   const savings = Math.max(0, income - totalExpenses - investedThisCycle);
   const savingsRate = income > 0 ? (savings / income) * 100 : 0;
 
-  const healthScore = financialHealthScore({
+  const baseHealthScore = financialHealthScore({
     savingsRate,
     remaining,
     income,
@@ -150,6 +149,12 @@ export function computeSummary(
     cycleLength,
     totalExpenses,
   });
+  const budgetEvaluation = budgetRule
+    ? evaluateBudgetRule(budgetRule, income, fixedExpenses, variableExpenses)
+    : null;
+  const healthScore = budgetEvaluation
+    ? Math.round(baseHealthScore * 0.75 + budgetEvaluation.score * 0.25)
+    : baseHealthScore;
 
   return {
     income,
@@ -170,6 +175,9 @@ export function computeSummary(
     healthScore,
     savingsRate,
     usedConfirmedSalary,
+    budgetRuleName: budgetRule?.name,
+    budgetRuleScore: budgetEvaluation?.score,
+    budgetActual: budgetEvaluation?.actual,
   };
 }
 
@@ -222,6 +230,6 @@ export function statusColor(status: SpendStatus): string {
   return status === "green"
     ? "var(--success)"
     : status === "yellow"
-    ? "var(--warning)"
-    : "var(--danger)";
+      ? "var(--warning)"
+      : "var(--danger)";
 }

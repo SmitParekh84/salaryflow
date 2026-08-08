@@ -2,7 +2,7 @@
 
 import { CATEGORY_META } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
-import { formatDate, formatMoney } from "@/lib/utils";
+import { formatDate, formatMoney, newestFirst } from "@/lib/utils";
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Modal } from "./ui/modal";
@@ -31,9 +31,10 @@ export function GlobalSearch({
   }, []);
 
   const results = useMemo(() => {
-    if (!q.trim()) return expenses.slice(0, 6);
+    const sortedExpenses = newestFirst(expenses);
+    if (!q.trim()) return sortedExpenses.slice(0, 6);
     const term = q.toLowerCase();
-    return expenses
+    return sortedExpenses
       .filter(
         (e) =>
           e.category.toLowerCase().includes(term) ||

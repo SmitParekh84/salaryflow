@@ -6,7 +6,7 @@ import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
 import { cn, formatMoney } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { Heart, Pencil, Trash2 } from "lucide-react";
+import { Heart, Pencil, Trash2, Users } from "lucide-react";
 
 export function TransactionList({
   expenses,
@@ -21,12 +21,16 @@ export function TransactionList({
 }) {
   const deleteExpense = useFinanceStore((s) => s.deleteExpense);
   const toggleFavorite = useFinanceStore((s) => s.toggleFavorite);
+  const accounts = useFinanceStore((s) => s.accounts);
+  const creditCards = useFinanceStore((s) => s.creditCards);
 
   return (
     <div className="divide-y divide-border">
       <AnimatePresence initial={false}>
         {expenses.map((e) => {
           const meta = CATEGORY_META[e.category];
+          const account = accounts.find((item) => item.id === e.accountId);
+          const creditCard = creditCards.find((item) => item.id === e.accountId);
           return (
             <motion.div
               key={e.id}
@@ -50,8 +54,15 @@ export function TransactionList({
                 </p>
                 <p className="truncate text-xs text-muted">
                   {e.category} · {e.paymentMethod}
+                  {account ? ` · ${account.bankName}` : creditCard ? ` · ${creditCard.name}` : ""}
                   {e.note ? ` · ${e.note}` : ""}
                 </p>
+                {e.shared && (
+                  <p className="mt-1 flex items-center gap-1 text-xs text-primary">
+                    <Users className="h-3 w-3" />
+                    You {formatMoney(e.shared.userPaid, currency)} · {e.shared.friendName} {formatMoney(e.shared.friendPaid, currency)} · Total {formatMoney(e.shared.totalAmount, currency)}
+                  </p>
+                )}
               </div>
 
               {!compact && (

@@ -5,7 +5,9 @@ import { cn } from "@/lib/utils";
 import {
   BarChart3,
   CalendarClock,
+  Landmark,
   LayoutDashboard,
+  ListChecks,
   Receipt,
   Settings,
   Target,
@@ -18,6 +20,8 @@ import { usePathname } from "next/navigation";
 
 const ICONS: Record<string, LucideIcon> = {
   LayoutDashboard,
+  Landmark,
+  ListChecks,
   Receipt,
   CalendarClock,
   Target,
@@ -43,8 +47,7 @@ export function Sidebar() {
       <nav className="flex flex-1 flex-col gap-1">
         {NAV_ITEMS.map((item) => {
           const Icon = ICONS[item.icon];
-          const active =
-            pathname === item.href || pathname.startsWith(item.href + "/");
+          const active = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
@@ -53,7 +56,7 @@ export function Sidebar() {
                 "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                 active
                   ? "bg-primary/10 text-primary"
-                  : "text-muted hover:bg-surface-2 hover:text-foreground"
+                  : "text-muted hover:bg-surface-2 hover:text-foreground",
               )}
             >
               {active && (
@@ -78,7 +81,9 @@ export function Sidebar() {
 
 export function MobileNav() {
   const pathname = usePathname();
-  const items = NAV_ITEMS.slice(0, 5);
+  const items = NAV_ITEMS.filter((item) =>
+    ["/dashboard", "/accounts", "/expenses", "/investments", "/rules"].includes(item.href),
+  );
   return (
     <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 glass border-t border-border px-2 pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-center justify-around">
@@ -91,7 +96,7 @@ export function MobileNav() {
               href={item.href}
               className={cn(
                 "flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors",
-                active ? "text-primary" : "text-muted"
+                active ? "text-primary" : "text-muted",
               )}
             >
               <Icon className="h-5 w-5" />

@@ -21,12 +21,7 @@ export type ExpenseCategory =
   | "Business"
   | "Other";
 
-export type PaymentMethod =
-  | "Cash"
-  | "Card"
-  | "UPI"
-  | "Bank Transfer"
-  | "Wallet";
+export type PaymentMethod = "Cash" | "Card" | "UPI" | "Bank Transfer" | "Wallet";
 
 export interface Expense {
   id: string;
@@ -39,14 +34,20 @@ export interface Expense {
   recurring?: boolean;
   favorite?: boolean;
   tags?: string[];
+  accountId?: string;
+  shared?: SharedExpenseDetails;
 }
 
-export type IncomeType =
-  | "Salary"
-  | "Bonus"
-  | "Side Income"
-  | "Freelance"
-  | "Other";
+export interface SharedExpenseDetails {
+  totalAmount: number;
+  friendName: string;
+  friendEmail?: string;
+  userPaid: number;
+  friendPaid: number;
+  inviteRequested?: boolean;
+}
+
+export type IncomeType = "Salary" | "Bonus" | "Side Income" | "Freelance" | "Other";
 
 export interface Income {
   id: string;
@@ -54,6 +55,7 @@ export interface Income {
   type: IncomeType;
   source: string;
   date: string;
+  accountId?: string;
 }
 
 export type BillFrequency = "monthly" | "weekly" | "yearly";
@@ -67,6 +69,7 @@ export interface Bill {
   category: ExpenseCategory;
   paid: boolean;
   maturityDate?: string; // optional ISO date when the bill/contract matures
+  accountId?: string;
 }
 
 export type GoalType =
@@ -113,6 +116,7 @@ export interface Investment {
   invested: number;
   currentValue: number;
   monthly?: number;
+  accountId?: string;
 }
 
 export interface SalaryProfile {
@@ -131,6 +135,47 @@ export interface UserProfile {
   email: string;
   onboarded: boolean;
   isAdmin?: boolean;
+}
+
+export type BankAccountType = "Savings" | "Salary" | "Current" | "Other";
+export type BankAccountStatus = "active" | "closing";
+export type AccountPurpose = "everyday" | "subscriptions" | "investments";
+
+export interface BankAccount {
+  id: string;
+  bankName: string;
+  accountType: BankAccountType;
+  balance: number;
+  status: BankAccountStatus;
+  plannedTransferTo?: string;
+  defaultFor?: AccountPurpose[];
+}
+
+export type CreditCardStatus = "active" | "closed";
+
+export interface CreditCard {
+  id: string;
+  name: string;
+  bankName: string;
+  creditLimit: number;
+  statementDay: number;
+  status: CreditCardStatus;
+}
+
+export type BudgetBucketKind = "needs" | "wants" | "savings";
+
+export interface BudgetAllocation {
+  kind: BudgetBucketKind;
+  label: string;
+  percentage: number;
+}
+
+export interface BudgetRule {
+  id: string;
+  name: string;
+  templateKey?: string;
+  active: boolean;
+  allocations: BudgetAllocation[];
 }
 
 export interface SalaryHistoryEntry {

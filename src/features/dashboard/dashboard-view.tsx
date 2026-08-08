@@ -5,26 +5,28 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Progress } from "@/components/ui/progress";
-import { projectedGoalDate, upcomingBills } from "@/lib/calculations";
-import { CATEGORY_META } from "@/lib/constants";
-import { useFinanceStore } from "@/lib/store";
-import { formatMoney } from "@/lib/utils";
-import { useSummary } from "@/hooks/use-summary";
 import { CategoryDonut, SpendTrendChart } from "@/features/analytics/charts";
 import { SafeToSpendHero } from "@/features/dashboard/safe-to-spend-hero";
 import { ExpenseForm } from "@/features/expenses/expense-form";
 import { SeedPrompt, TransactionList } from "@/features/expenses/transaction-list";
+import { useSummary } from "@/hooks/use-summary";
+import { projectedGoalDate, upcomingBills } from "@/lib/calculations";
+import { CATEGORY_META } from "@/lib/constants";
+import { useFinanceStore } from "@/lib/store";
+import { formatMoney, newestFirst } from "@/lib/utils";
 import { motion } from "framer-motion";
 import {
   Activity,
   CalendarClock,
   HeartPulse,
+  ListChecks,
   PiggyBank,
   Plus,
   Receipt,
   Sparkles,
   Wallet,
 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 export function DashboardView() {
@@ -47,9 +49,7 @@ export function DashboardView() {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-muted">Welcome back 👋</p>
-          <p className="text-xs text-muted">
-            {summary.daysRemaining} days until your next salary
-          </p>
+          <p className="text-xs text-muted">{summary.daysRemaining} days until your next salary</p>
         </div>
         <div className="flex gap-2">
           {expenses.length === 0 && <SeedPrompt />}
@@ -95,6 +95,32 @@ export function DashboardView() {
         />
       </div>
 
+      {summary.budgetRuleName && summary.budgetRuleScore !== undefined && (
+        <Card className="p-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <ListChecks className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">{summary.budgetRuleName}</p>
+                <p className="text-xs text-muted">Active budget rule · included in health score</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-xl font-bold">{summary.budgetRuleScore}/100</p>
+                <p className="text-[10px] text-muted">adherence</p>
+              </div>
+              <Link href="/rules" className="text-xs font-medium text-primary hover:underline">
+                View rule
+              </Link>
+            </div>
+          </div>
+          <Progress value={summary.budgetRuleScore} className="mt-4" />
+        </Card>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="flex items-center justify-between">
@@ -137,11 +163,7 @@ export function DashboardView() {
                 }
               />
             ) : (
-              <TransactionList
-                expenses={expenses.slice(0, 6)}
-                currency={currency}
-                compact
-              />
+              <TransactionList expenses={newestFirst(expenses).slice(0, 6)} currency={currency} compact />
             )}
           </CardContent>
         </Card>
@@ -177,9 +199,7 @@ export function DashboardView() {
             </CardHeader>
             <CardContent className="space-y-2 pt-2">
               {nextBills.length === 0 && (
-                <p className="py-4 text-center text-xs text-muted">
-                  No pending bills 🎉
-                </p>
+                <p className="py-4 text-center text-xs text-muted">No pending bills 🎉</p>
               )}
               {nextBills.map((b) => (
                 <div key={b.id} className="flex items-center justify-between text-sm">
@@ -204,9 +224,7 @@ export function DashboardView() {
           <Card>
             <CardHeader className="flex items-center justify-between">
               <CardTitle>Top goal · {topGoal.name}</CardTitle>
-              <span className="text-xs text-muted">
-                {projectedGoalDate(topGoal)}
-              </span>
+              <span className="text-xs text-muted">{projectedGoalDate(topGoal)}</span>
             </CardHeader>
             <CardContent className="pt-3">
               <div className="mb-2 flex items-end justify-between">
@@ -217,10 +235,7 @@ export function DashboardView() {
                   of {formatMoney(topGoal.target, currency, true)}
                 </span>
               </div>
-              <Progress
-                value={(topGoal.saved / topGoal.target) * 100}
-                color="var(--primary)"
-              />
+              <Progress value={(topGoal.saved / topGoal.target) * 100} color="var(--primary)" />
             </CardContent>
           </Card>
         )}
@@ -242,10 +257,7 @@ export function DashboardView() {
                   target {formatMoney(emergency.target, currency, true)}
                 </span>
               </div>
-              <Progress
-                value={(emergency.saved / emergency.target) * 100}
-                color="var(--success)"
-              />
+              <Progress value={(emergency.saved / emergency.target) * 100} color="var(--success)" />
             </CardContent>
           </Card>
         )}
@@ -263,25 +275,20 @@ function healthLabel(score: number): string {
   return "Needs work";
 }
 
-function buildInsights(
-  s: ReturnType<typeof useSummary>,
-  billCount: number
-): string[] {
+function buildInsights(s: ReturnType<typeof useSummary>, billCount: number): string[] {
   const out: string[] = [];
   if (s.status === "red")
     out.push("You've spent more than today's budget. Try to slow down tomorrow.");
   else if (s.status === "green")
     out.push("Great pacing — you're spending within your daily safe limit.");
-  out.push(
-    `You can safely spend about ${formatMoney(
-      s.safeToSpendPerDay
-    )} per day until salary.`
-  );
+  out.push(`You can safely spend about ${formatMoney(s.safeToSpendPerDay)} per day until salary.`);
   if (s.savingsRate >= 20)
     out.push(`Strong ${Math.round(s.savingsRate)}% savings rate this cycle. Keep it up!`);
-  else
-    out.push(`Savings rate is ${Math.round(s.savingsRate)}%. Aim for 20%+ if you can.`);
-  if (billCount > 0)
-    out.push(`You have ${billCount} bill(s) coming up. Keep buffer aside.`);
+  else out.push(`Savings rate is ${Math.round(s.savingsRate)}%. Aim for 20%+ if you can.`);
+  if (billCount > 0) out.push(`You have ${billCount} bill(s) coming up. Keep buffer aside.`);
+  if (s.budgetRuleScore !== undefined && s.budgetRuleScore < 70)
+    out.push(
+      `${s.budgetRuleName} adherence is ${s.budgetRuleScore}/100. Review flexible spending.`,
+    );
   return out.slice(0, 4);
 }

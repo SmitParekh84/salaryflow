@@ -46,10 +46,33 @@ export function formatMoney(
 }
 
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
+  return parseFinancialDate(iso).toLocaleDateString("en-US", {
     day: "numeric",
     month: "short",
   });
+}
+
+export function parseFinancialDate(value: string): Date {
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!dateOnly) return new Date(value);
+  return new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]), 12);
+}
+
+export function localDateInputValue(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function dateInputToIso(value: string): string {
+  return parseFinancialDate(value).toISOString();
+}
+
+export function newestFirst<T extends { date: string }>(items: T[]): T[] {
+  return [...items].sort(
+    (first, second) => parseFinancialDate(second.date).getTime() - parseFinancialDate(first.date).getTime(),
+  );
 }
 
 export function clamp(n: number, min: number, max: number): number {

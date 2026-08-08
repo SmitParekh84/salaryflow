@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useFinanceStore } from "@/lib/store";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -24,7 +24,9 @@ export default function RegisterPage() {
     if (resendTimer > 0) {
       t = window.setTimeout(() => setResendTimer((v) => v - 1), 1000);
     }
-    return () => { if (t) clearTimeout(t); };
+    return () => {
+      if (t) clearTimeout(t);
+    };
   }, [resendTimer]);
 
   function validateInputs() {
@@ -80,7 +82,9 @@ export default function RegisterPage() {
       const user = j?.data;
       if (user) {
         setUser({ name: user.name || "", email: user.email, onboarded: true });
-        try { await syncWithServer?.(); } catch (e) {}
+        try {
+          await syncWithServer?.();
+        } catch (e) {}
         router.push("/onboarding");
       }
     } catch (err: any) {
@@ -97,27 +101,70 @@ export default function RegisterPage() {
         <form onSubmit={codeSent ? verifyAndRegister : sendOtp} className="space-y-4">
           <div>
             <label className="block text-sm mb-1">Full name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 border rounded" />
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2 border rounded"
+            />
           </div>
           <div>
             <label className="block text-sm mb-1">Email</label>
-            <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 border rounded" type="email" />
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3 py-2 border rounded"
+              type="email"
+            />
           </div>
           <div>
             <label className="block text-sm mb-1">Password</label>
-            <input value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-3 py-2 border rounded" type="password" />
+            <input
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-3 py-2 border rounded"
+              type="password"
+            />
           </div>
           <div>
             <label className="block text-sm mb-1">Confirm password</label>
-            <input value={confirm} onChange={(e) => setConfirm(e.target.value)} className="w-full px-3 py-2 border rounded" type="password" />
+            <input
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              className="w-full px-3 py-2 border rounded"
+              type="password"
+            />
           </div>
 
           {codeSent && (
             <div>
               <label className="block text-sm mb-1">Verification code</label>
               <div className="flex gap-2">
-                <input value={otp} onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ""))} maxLength={6} className="w-full px-3 py-2 border rounded" />
-                <button type="button" onClick={sendOtp} disabled={resendTimer > 0 || loadingSend} className="px-3 py-2 bg-transparent border rounded text-sm">
+                <input
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  onPaste={(e) => {
+                    const pastedCode = e.clipboardData
+                      .getData("text")
+                      .replace(/\D/g, "")
+                      .slice(0, 6);
+                    if (pastedCode) {
+                      e.preventDefault();
+                      setOtp(pastedCode);
+                    }
+                  }}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  autoFocus
+                  className="w-full px-3 py-2 border rounded"
+                />
+                <button
+                  type="button"
+                  onClick={sendOtp}
+                  disabled={resendTimer > 0 || loadingSend}
+                  className="px-3 py-2 bg-transparent border rounded text-sm"
+                >
                   {resendTimer > 0 ? `Resend (${resendTimer}s)` : "Resend"}
                 </button>
               </div>
@@ -127,13 +174,26 @@ export default function RegisterPage() {
           {error && <div className="text-sm text-red-600">{error}</div>}
 
           <div>
-            <button type="submit" className="w-full px-4 py-2 bg-green-600 text-white rounded" disabled={loadingSend || loadingVerify}>
-              {codeSent ? (loadingVerify ? "Verifying…" : "Verify & Create account") : (loadingSend ? "Sending…" : "Send verification code")}
+            <button
+              type="submit"
+              className="w-full px-4 py-2 bg-green-600 text-white rounded"
+              disabled={loadingSend || loadingVerify}
+            >
+              {codeSent
+                ? loadingVerify
+                  ? "Verifying…"
+                  : "Verify & Create account"
+                : loadingSend
+                  ? "Sending…"
+                  : "Send verification code"}
             </button>
           </div>
         </form>
         <div className="mt-4 text-sm text-center">
-          Already have an account? <a href="/login" className="text-blue-600">Sign in</a>
+          Already have an account?{" "}
+          <a href="/login" className="text-blue-600">
+            Sign in
+          </a>
         </div>
       </div>
     </div>

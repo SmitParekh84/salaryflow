@@ -2,17 +2,6 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type {
-  AppNotification,
-  Bill,
-  Expense,
-  Goal,
-  Income,
-  Investment,
-  SalaryProfile,
-  UserProfile,
-} from "./types";
-import { uid } from "./utils";
 import {
   seedBills,
   seedExpenses,
@@ -21,6 +10,21 @@ import {
   seedInvestments,
   seedProfile,
 } from "./seed";
+import type {
+  AppNotification,
+  BankAccount,
+  Bill,
+  BudgetRule,
+  CreditCard,
+  Expense,
+  Goal,
+  Income,
+  Investment,
+  SalaryHistoryEntry,
+  SalaryProfile,
+  UserProfile,
+} from "./types";
+import { uid } from "./utils";
 
 interface FinanceState {
   user: UserProfile;
@@ -30,6 +34,9 @@ interface FinanceState {
   bills: Bill[];
   goals: Goal[];
   investments: Investment[];
+  accounts: BankAccount[];
+  creditCards: CreditCard[];
+  budgetRules: BudgetRule[];
   salaryHistory: SalaryHistoryEntry[];
   notifications: AppNotification[];
 
@@ -65,6 +72,21 @@ interface FinanceState {
   updateInvestment: (id: string, patch: Partial<Investment>) => void;
   deleteInvestment: (id: string) => void;
 
+  // accounts
+  addAccount: (account: Omit<BankAccount, "id">) => void;
+  updateAccount: (id: string, patch: Partial<BankAccount>) => void;
+  deleteAccount: (id: string) => void;
+
+  // credit cards
+  addCreditCard: (card: Omit<CreditCard, "id">) => void;
+  updateCreditCard: (id: string, patch: Partial<CreditCard>) => void;
+  deleteCreditCard: (id: string) => void;
+
+  // budget rules
+  addBudgetRule: (rule: Omit<BudgetRule, "id">) => void;
+  activateBudgetRule: (id: string) => void;
+  deleteBudgetRule: (id: string) => void;
+
   // salary history
   loadSalaryHistory: () => Promise<void> | void;
   addSalaryEntry: (entry: Partial<SalaryHistoryEntry>) => Promise<void> | void;
@@ -75,6 +97,8 @@ interface FinanceState {
   markNotificationRead: (id: string) => void;
   markAllRead: () => void;
 
+  syncWithServer: () => Promise<void>;
+  loadFromServer: () => Promise<void>;
   loadSeed: () => void;
   resetAll: () => void;
 }
@@ -113,6 +137,22 @@ function seedNotifications(): AppNotification[] {
   ];
 }
 
+function normalizeServerItems<T extends { id: string }>(items: unknown, fallback: T[]): T[] {
+  if (!Array.isArray(items)) return fallback;
+
+  return items.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+
+    const record = item as Record<string, unknown>;
+    const rawId = record.id ?? record._id;
+    if (rawId === undefined || rawId === null) return [];
+
+    const data = { ...record };
+    delete data._id;
+    return [{ ...data, id: String(rawId) } as unknown as T];
+  });
+}
+
 export const useFinanceStore = create<FinanceState>()(
   persist(
     (set, get) => ({
@@ -123,6 +163,9 @@ export const useFinanceStore = create<FinanceState>()(
       bills: [],
       goals: [],
       investments: [],
+      accounts: [],
+      creditCards: [],
+      budgetRules: [],
       salaryHistory: [],
       notifications: [],
 
@@ -131,42 +174,33 @@ export const useFinanceStore = create<FinanceState>()(
         set((s) => ({
           user: { ...s.user, ...user, onboarded: true },
           profile,
-          notifications:
-            s.notifications.length === 0 ? seedNotifications() : s.notifications,
+          notifications: s.notifications.length === 0 ? seedNotifications() : s.notifications,
         })),
 
-      updateProfile: (patch) =>
-        set((s) => ({ profile: { ...s.profile, ...patch } })),
+      updateProfile: (patch) => set((s) => ({ profile: { ...s.profile, ...patch } })),
 
       updateUser: (patch) => set((s) => ({ user: { ...s.user, ...patch } })),
 
-      addExpense: (e) =>
-        set((s) => ({ expenses: [{ ...e, id: uid("exp") }, ...s.expenses] })),
+      addExpense: (e) => set((s) => ({ expenses: [{ ...e, id: uid("exp") }, ...s.expenses] })),
       updateExpense: (id, patch) =>
         set((s) => ({
           expenses: s.expenses.map((e) => (e.id === id ? { ...e, ...patch } : e)),
         })),
-      deleteExpense: (id) =>
-        set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) })),
+      deleteExpense: (id) => set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) })),
       toggleFavorite: (id) =>
         set((s) => ({
-          expenses: s.expenses.map((e) =>
-            e.id === id ? { ...e, favorite: !e.favorite } : e
-          ),
+          expenses: s.expenses.map((e) => (e.id === id ? { ...e, favorite: !e.favorite } : e)),
         })),
 
-      addIncome: (i) =>
-        set((s) => ({ incomes: [{ ...i, id: uid("inc") }, ...s.incomes] })),
-      deleteIncome: (id) =>
-        set((s) => ({ incomes: s.incomes.filter((i) => i.id !== id) })),
+      addIncome: (i) => set((s) => ({ incomes: [{ ...i, id: uid("inc") }, ...s.incomes] })),
+      deleteIncome: (id) => set((s) => ({ incomes: s.incomes.filter((i) => i.id !== id) })),
 
       addBill: (b) => set((s) => ({ bills: [...s.bills, { ...b, id: uid("bill") }] })),
       updateBill: (id, patch) =>
         set((s) => ({
           bills: s.bills.map((b) => (b.id === id ? { ...b, ...patch } : b)),
         })),
-      deleteBill: (id) =>
-        set((s) => ({ bills: s.bills.filter((b) => b.id !== id) })),
+      deleteBill: (id) => set((s) => ({ bills: s.bills.filter((b) => b.id !== id) })),
       toggleBillPaid: (id) =>
         set((s) => ({
           bills: s.bills.map((b) => (b.id === id ? { ...b, paid: !b.paid } : b)),
@@ -179,26 +213,57 @@ export const useFinanceStore = create<FinanceState>()(
         })),
       contributeGoal: (id, amount) =>
         set((s) => ({
-          goals: s.goals.map((g) =>
-            g.id === id ? { ...g, saved: g.saved + amount } : g
-          ),
+          goals: s.goals.map((g) => (g.id === id ? { ...g, saved: g.saved + amount } : g)),
         })),
-      deleteGoal: (id) =>
-        set((s) => ({ goals: s.goals.filter((g) => g.id !== id) })),
+      deleteGoal: (id) => set((s) => ({ goals: s.goals.filter((g) => g.id !== id) })),
 
       addInvestment: (i) =>
         set((s) => ({ investments: [...s.investments, { ...i, id: uid("inv") }] })),
       updateInvestment: (id, patch) =>
         set((s) => ({
-          investments: s.investments.map((i) =>
-            i.id === id ? { ...i, ...patch } : i
-          ),
+          investments: s.investments.map((i) => (i.id === id ? { ...i, ...patch } : i)),
         })),
       deleteInvestment: (id) =>
         set((s) => ({ investments: s.investments.filter((i) => i.id !== id) })),
 
+      addAccount: (account) =>
+        set((s) => ({ accounts: [...s.accounts, { ...account, id: uid("acct") }] })),
+      updateAccount: (id, patch) =>
+        set((s) => ({
+          accounts: s.accounts.map((account) =>
+            account.id === id ? { ...account, ...patch } : account,
+          ),
+        })),
+      deleteAccount: (id) =>
+        set((s) => ({ accounts: s.accounts.filter((account) => account.id !== id) })),
+
+      addCreditCard: (card) =>
+        set((s) => ({ creditCards: [...s.creditCards, { ...card, id: uid("card") }] })),
+      updateCreditCard: (id, patch) =>
+        set((s) => ({
+          creditCards: s.creditCards.map((card) => (card.id === id ? { ...card, ...patch } : card)),
+        })),
+      deleteCreditCard: (id) =>
+        set((s) => ({ creditCards: s.creditCards.filter((card) => card.id !== id) })),
+
+      addBudgetRule: (rule) =>
+        set((s) => ({
+          budgetRules: [
+            ...s.budgetRules.map((item) => ({
+              ...item,
+              active: rule.active ? false : item.active,
+            })),
+            { ...rule, id: uid("rule") },
+          ],
+        })),
+      activateBudgetRule: (id) =>
+        set((s) => ({
+          budgetRules: s.budgetRules.map((rule) => ({ ...rule, active: rule.id === id })),
+        })),
+      deleteBudgetRule: (id) =>
+        set((s) => ({ budgetRules: s.budgetRules.filter((rule) => rule.id !== id) })),
+
       // salary history
-      salaryHistory: [],
       loadSalaryHistory: async () => {
         try {
           const res = await fetch("/api/salary/history", { credentials: "include" });
@@ -237,7 +302,10 @@ export const useFinanceStore = create<FinanceState>()(
       },
       deleteSalaryEntry: async (id) => {
         try {
-          const res = await fetch(`/api/salary/history?id=${id}`, { method: "DELETE", credentials: "include" });
+          const res = await fetch(`/api/salary/history?id=${id}`, {
+            method: "DELETE",
+            credentials: "include",
+          });
           if (!res.ok) return;
           set((s) => ({ salaryHistory: s.salaryHistory.filter((h) => h._id !== id) }));
         } catch (e) {}
@@ -245,9 +313,7 @@ export const useFinanceStore = create<FinanceState>()(
 
       markNotificationRead: (id) =>
         set((s) => ({
-          notifications: s.notifications.map((n) =>
-            n.id === id ? { ...n, read: true } : n
-          ),
+          notifications: s.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)),
         })),
       markAllRead: () =>
         set((s) => ({
@@ -265,9 +331,13 @@ export const useFinanceStore = create<FinanceState>()(
               userId: state.user.email || undefined,
               profile: state.profile,
               expenses: state.expenses,
+              incomes: state.incomes,
               bills: state.bills,
               goals: state.goals,
               investments: state.investments,
+              accounts: state.accounts,
+              creditCards: state.creditCards,
+              budgetRules: state.budgetRules,
             }),
             credentials: "include",
           });
@@ -277,15 +347,44 @@ export const useFinanceStore = create<FinanceState>()(
             const d = json.data;
             set({
               profile: d.profile || state.profile,
-              expenses: d.expenses || state.expenses,
-              bills: d.bills || state.bills,
-              goals: d.goals || state.goals,
-              investments: d.investments || state.investments,
+              expenses: normalizeServerItems<Expense>(d.expenses, state.expenses),
+              incomes: normalizeServerItems<Income>(d.incomes, state.incomes),
+              bills: normalizeServerItems<Bill>(d.bills, state.bills),
+              goals: normalizeServerItems<Goal>(d.goals, state.goals),
+              investments: normalizeServerItems<Investment>(d.investments, state.investments),
+              accounts: normalizeServerItems<BankAccount>(d.accounts, state.accounts),
+              creditCards: normalizeServerItems<CreditCard>(d.creditCards, state.creditCards),
+              budgetRules: normalizeServerItems<BudgetRule>(d.budgetRules, state.budgetRules),
             });
           }
         } catch (e) {
           // silent fail — keep local state
           // console.warn('sync failed', e)
+        }
+      },
+
+      loadFromServer: async () => {
+        try {
+          const res = await fetch("/api/sync", { credentials: "include" });
+          if (!res.ok) return;
+          const json = await res.json();
+          if (!json?.data) return;
+
+          const state = get();
+          const data = json.data;
+          set({
+            profile: data.profile || state.profile,
+            expenses: normalizeServerItems<Expense>(data.expenses, []),
+            incomes: normalizeServerItems<Income>(data.incomes, []),
+            bills: normalizeServerItems<Bill>(data.bills, []),
+            goals: normalizeServerItems<Goal>(data.goals, []),
+            investments: normalizeServerItems<Investment>(data.investments, []),
+            accounts: normalizeServerItems<BankAccount>(data.accounts, []),
+            creditCards: normalizeServerItems<CreditCard>(data.creditCards, []),
+            budgetRules: normalizeServerItems<BudgetRule>(data.budgetRules, []),
+          });
+        } catch {
+          // Keep the last locally persisted state while offline.
         }
       },
 
@@ -298,6 +397,9 @@ export const useFinanceStore = create<FinanceState>()(
           bills: seedBills(),
           goals: seedGoals(),
           investments: seedInvestments(),
+          accounts: [],
+          creditCards: [],
+          budgetRules: [],
           salaryHistory: [],
           notifications: seedNotifications(),
         }),
@@ -311,10 +413,31 @@ export const useFinanceStore = create<FinanceState>()(
           bills: [],
           goals: [],
           investments: [],
+          accounts: [],
+          creditCards: [],
+          budgetRules: [],
           salaryHistory: [],
           notifications: [],
         }),
     }),
-    { name: "salaryflow-store", version: 1 }
-  )
+    {
+      name: "salaryflow-store",
+      version: 3,
+      migrate: (persistedState) => {
+        const state = persistedState as Partial<FinanceState>;
+
+        return {
+          ...state,
+          expenses: normalizeServerItems<Expense>(state.expenses, []),
+          incomes: normalizeServerItems<Income>(state.incomes, []),
+          bills: normalizeServerItems<Bill>(state.bills, []),
+          goals: normalizeServerItems<Goal>(state.goals, []),
+          investments: normalizeServerItems<Investment>(state.investments, []),
+          accounts: normalizeServerItems<BankAccount>(state.accounts, []),
+          creditCards: normalizeServerItems<CreditCard>(state.creditCards, []),
+          budgetRules: normalizeServerItems<BudgetRule>(state.budgetRules, []),
+        };
+      },
+    },
+  ),
 );

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useFinanceStore } from "@/lib/store";
 import { format } from "date-fns";
+import { localDateInputValue, newestFirst, parseFinancialDate } from "@/lib/utils";
 
 type Item = { _id: string; amount: number; date: string; confirmed?: boolean; source?: string; note?: string };
 
@@ -10,18 +10,17 @@ export default function SalaryHistoryPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState<number | string>("");
-  const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState<string>(localDateInputValue());
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
-  const user = useFinanceStore((s) => s.user);
 
   const fetchItems = async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/salary/history", { credentials: "include" });
       const j = await res.json();
-      setItems(j.data || []);
-    } catch (e) {
+      setItems(newestFirst(j.data || []));
+    } catch {
       setItems([]);
     } finally {
       setLoading(false);
@@ -29,7 +28,21 @@ export default function SalaryHistoryPage() {
   };
 
   useEffect(() => {
-    fetchItems();
+    let active = true;
+    fetch("/api/salary/history", { credentials: "include" })
+      .then((response) => response.json())
+      .then((result) => {
+        if (active) setItems(newestFirst(result.data || []));
+      })
+      .catch(() => {
+        if (active) setItems([]);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const add = async () => {
@@ -47,7 +60,7 @@ export default function SalaryHistoryPage() {
         setAmount("");
         setNote("");
       }
-    } catch (e) {}
+    } catch {}
     setSaving(false);
   };
 
@@ -60,7 +73,7 @@ export default function SalaryHistoryPage() {
         body: JSON.stringify({ confirmed: !curr }),
       });
       await fetchItems();
-    } catch (e) {}
+    } catch {}
   };
 
   const remove = async (id: string) => {
@@ -68,7 +81,7 @@ export default function SalaryHistoryPage() {
     try {
       await fetch(`/api/salary/history?id=${id}`, { method: "DELETE", credentials: "include" });
       await fetchItems();
-    } catch (e) {}
+    } catch {}
   };
 
   return (
@@ -77,7 +90,7 @@ export default function SalaryHistoryPage() {
       <p className="text-sm text-muted mb-4">Log actual salary credits (overtime, deductions, bonuses) and confirm when payroll posts.</p>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
-        <input className="p-2 border rounded" type="number" value={amount as any} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
+        <input className="p-2 border rounded" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
         <input className="p-2 border rounded" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         <input className="p-2 border rounded" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" />
       </div>
@@ -94,7 +107,7 @@ export default function SalaryHistoryPage() {
             <div>
               <div className="text-sm font-medium">{it.source || "Salary"}</div>
               <div className="text-lg font-semibold">{it.amount.toLocaleString()}</div>
-              <div className="text-xs text-muted">{format(new Date(it.date), "dd LLL yyyy")} {it.note ? `— ${it.note}` : ""}</div>
+              <div className="text-xs text-muted">{format(parseFinancialDate(it.date), "dd LLL yyyy")} {it.note ? `— ${it.note}` : ""}</div>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => toggleConfirm(it._id, !!it.confirmed)} className={`px-3 py-1 rounded text-sm ${it.confirmed ? 'bg-green-600 text-white' : 'bg-surface-2'}`}>{it.confirmed ? 'Confirmed' : 'Confirm'}</button>

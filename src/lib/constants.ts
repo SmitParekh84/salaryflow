@@ -1,14 +1,6 @@
-import type {
-  ExpenseCategory,
-  GoalType,
-  InvestmentType,
-  PaymentMethod,
-} from "./types";
+import type { ExpenseCategory, GoalType, InvestmentType, PaymentMethod } from "./types";
 
-export const CATEGORY_META: Record<
-  ExpenseCategory,
-  { color: string; emoji: string }
-> = {
+export const CATEGORY_META: Record<ExpenseCategory, { color: string; emoji: string }> = {
   Food: { color: "#f97316", emoji: "🍔" },
   Groceries: { color: "#22c55e", emoji: "🛒" },
   Fuel: { color: "#ef4444", emoji: "⛽" },
@@ -32,13 +24,7 @@ export const CATEGORY_META: Record<
 
 export const CATEGORIES = Object.keys(CATEGORY_META) as ExpenseCategory[];
 
-export const PAYMENT_METHODS: PaymentMethod[] = [
-  "UPI",
-  "Card",
-  "Cash",
-  "Bank Transfer",
-  "Wallet",
-];
+export const PAYMENT_METHODS: PaymentMethod[] = ["UPI", "Card", "Cash", "Bank Transfer", "Wallet"];
 
 export const GOAL_TYPES: GoalType[] = [
   "Emergency Fund",
@@ -95,10 +81,12 @@ export const COUNTRIES = [
 
 export const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard" },
+  { href: "/accounts", label: "Accounts", icon: "Landmark" },
   { href: "/expenses", label: "Expenses", icon: "Receipt" },
   { href: "/bills", label: "Bills", icon: "CalendarClock" },
   { href: "/goals", label: "Goals", icon: "Target" },
   { href: "/investments", label: "Investments", icon: "TrendingUp" },
   { href: "/analytics", label: "Analytics", icon: "BarChart3" },
+  { href: "/rules", label: "Budget rules", icon: "ListChecks" },
   { href: "/settings", label: "Settings", icon: "Settings" },
 ] as const;

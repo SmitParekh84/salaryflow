@@ -6,11 +6,10 @@ import { COUNTRIES, CURRENCIES } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { SalaryCycle, SalaryProfile } from "@/lib/types";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, Wallet } from "lucide-react";
+import { ArrowLeft, ArrowRight, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import LoginStep from "./login-step";
-import { useAuth } from "@/lib/useAuth";
 
 const CYCLES: { value: SalaryCycle; label: string }[] = [
   { value: "monthly", label: "Monthly" },
@@ -24,7 +23,7 @@ export function OnboardingView() {
   const completeOnboarding = useFinanceStore((s) => s.completeOnboarding);
   const loadSeed = useFinanceStore((s) => s.loadSeed);
   const addBill = useFinanceStore((s) => s.addBill);
-  const { login } = useAuth();
+  const syncWithServer = useFinanceStore((s) => s.syncWithServer);
 
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
@@ -42,14 +41,18 @@ export function OnboardingView() {
   // custom other items (title + amount) user can add in step 3
   const [customTitle, setCustomTitle] = useState("");
   const [customAmount, setCustomAmount] = useState<number | "">("");
-  const [customItems, setCustomItems] = useState<{ id: string; title: string; amount: number }[]>([]);
+  const [customItems, setCustomItems] = useState<{ id: string; title: string; amount: number }[]>(
+    [],
+  );
 
-  const patch = (p: Partial<SalaryProfile>) =>
-    setProfile((prev) => ({ ...prev, ...p }));
+  const patch = (p: Partial<SalaryProfile>) => setProfile((prev) => ({ ...prev, ...p }));
 
   function addCustom() {
     if (!customTitle.trim() || !customAmount || Number(customAmount) <= 0) return;
-    setCustomItems((s) => [{ id: String(Date.now()), title: customTitle.trim(), amount: Number(customAmount) }, ...s]);
+    setCustomItems((s) => [
+      { id: String(Date.now()), title: customTitle.trim(), amount: Number(customAmount) },
+      ...s,
+    ]);
     setCustomTitle("");
     setCustomAmount("");
   }
@@ -58,14 +61,20 @@ export function OnboardingView() {
     setCustomItems((s) => s.filter((c) => c.id !== id));
   }
 
-  // persist-only helper used by LoginStep before actual sign-in
-  const persistBeforeLogin = async () => {
-    // save locally
-    completeOnboarding({ name }, profile);
-    // persist custom items as monthly bills locally
+  const finishAuthenticatedOnboarding = async (account: { email: string; name?: string }) => {
+    completeOnboarding({ name: account.name || name, email: account.email }, profile);
     for (const c of customItems) {
-      addBill({ name: c.title, amount: c.amount, dueDay: profile.salaryDay, frequency: "monthly", category: "Other", paid: false });
+      addBill({
+        name: c.title,
+        amount: c.amount,
+        dueDay: profile.salaryDay,
+        frequency: "monthly",
+        category: "Other",
+        paid: false,
+      });
     }
+    await syncWithServer?.();
+    router.replace("/dashboard");
   };
 
   const steps = [
@@ -109,10 +118,7 @@ export function OnboardingView() {
             </div>
             <div>
               <Label>Country</Label>
-              <Select
-                value={profile.country}
-                onChange={(e) => patch({ country: e.target.value })}
-              >
+              <Select value={profile.country} onChange={(e) => patch({ country: e.target.value })}>
                 {COUNTRIES.map((c) => (
                   <option key={c}>{c}</option>
                 ))}
@@ -196,19 +202,37 @@ export function OnboardingView() {
           <div className="mt-2">
             <Label>Other monthly items</Label>
             <div className="flex gap-2 mt-2">
-              <Input placeholder="Title (e.g., Rent)" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} />
-              <Input placeholder="Amount" type="number" value={customAmount || ""} onChange={(e) => setCustomAmount(e.target.value ? Number(e.target.value) : "") } />
-              <Button onClick={addCustom} className="whitespace-nowrap">Add</Button>
+              <Input
+                placeholder="Title (e.g., Rent)"
+                value={customTitle}
+                onChange={(e) => setCustomTitle(e.target.value)}
+              />
+              <Input
+                placeholder="Amount"
+                type="number"
+                value={customAmount || ""}
+                onChange={(e) => setCustomAmount(e.target.value ? Number(e.target.value) : "")}
+              />
+              <Button onClick={addCustom} className="whitespace-nowrap">
+                Add
+              </Button>
             </div>
             {customItems.length > 0 && (
               <div className="mt-3 space-y-2">
                 {customItems.map((c) => (
-                  <div key={c.id} className="flex items-center justify-between bg-surface-2 p-2 rounded">
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between bg-surface-2 p-2 rounded"
+                  >
                     <div>
                       <div className="font-medium">{c.title}</div>
-                      <div className="text-sm text-muted">{profile.currency} {c.amount}</div>
+                      <div className="text-sm text-muted">
+                        {profile.currency} {c.amount}
+                      </div>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => removeCustom(c.id)}>Remove</Button>
+                    <Button variant="ghost" size="icon" onClick={() => removeCustom(c.id)}>
+                      Remove
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -218,25 +242,29 @@ export function OnboardingView() {
       ),
     },
     {
-      title: "Sign in",
-      subtitle: "Quick sign in to finish setup.",
+      title: "Save your progress",
+      subtitle: "Use your email to sign in or create an account here.",
       valid: true,
-      content: (
-        <LoginStep onBeforeLogin={persistBeforeLogin} />
-      ),
+      content: <LoginStep name={name} onAuthenticated={finishAuthenticatedOnboarding} />,
     },
   ];
 
   const current = steps[step];
-  const isLast = step === steps.length - 1;
-
-  const syncWithServer = useFinanceStore((s) => (s as any).syncWithServer);
-
   const persistAndFinish = async () => {
-    await persistBeforeLogin();
+    completeOnboarding({ name }, profile);
+    for (const c of customItems) {
+      addBill({
+        name: c.title,
+        amount: c.amount,
+        dueDay: profile.salaryDay,
+        frequency: "monthly",
+        category: "Other",
+        paid: false,
+      });
+    }
     try {
       await syncWithServer?.();
-    } catch (e) {}
+    } catch {}
     router.replace("/dashboard");
   };
 
@@ -294,13 +322,9 @@ export function OnboardingView() {
             )}
 
             {step === steps.length - 1 ? (
-              // on login step: let LoginStep handle sign-in; provide an option to finish without login
-              <div className="flex-1 grid grid-cols-2 gap-3">
-                <Button variant="secondary" onClick={persistAndFinish}>
-                  Finish setup
-                </Button>
-                <div />
-              </div>
+              <Button className="flex-1" variant="secondary" onClick={persistAndFinish}>
+                Finish on this device
+              </Button>
             ) : (
               <Button
                 className="flex-1"

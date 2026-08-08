@@ -18,6 +18,8 @@ export function InvestmentsView() {
   const currency = useFinanceStore((s) => s.profile.currency);
   const addInvestment = useFinanceStore((s) => s.addInvestment);
   const deleteInvestment = useFinanceStore((s) => s.deleteInvestment);
+  const accounts = useFinanceStore((s) => s.accounts);
+  const syncWithServer = useFinanceStore((s) => s.syncWithServer);
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -26,6 +28,7 @@ export function InvestmentsView() {
     invested: 0,
     currentValue: 0,
     monthly: 0,
+    accountId: "",
   });
 
   const totalInvested = investments.reduce((s, i) => s + i.invested, 0);
@@ -34,22 +37,32 @@ export function InvestmentsView() {
   const gainPct = totalInvested > 0 ? (gain / totalInvested) * 100 : 0;
   const monthly = investments.reduce((s, i) => s + (i.monthly ?? 0), 0);
 
-  const save = () => {
+  const openAdd = () => {
+    const defaultAccount = accounts.find(
+      (account) => account.status === "active" && account.defaultFor?.includes("investments"),
+    );
+    setForm((current) => ({ ...current, accountId: defaultAccount?.id ?? "" }));
+    setOpen(true);
+  };
+
+  const save = async () => {
     if (!form.name || form.invested <= 0) return;
     addInvestment({
       ...form,
       currentValue: form.currentValue || form.invested,
       monthly: form.monthly || undefined,
+      accountId: form.accountId || undefined,
     });
-    setForm({ name: "", type: "SIP", invested: 0, currentValue: 0, monthly: 0 });
+    setForm({ name: "", type: "SIP", invested: 0, currentValue: 0, monthly: 0, accountId: "" });
     setOpen(false);
+    await syncWithServer();
   };
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted">{investments.length} holdings</p>
-        <Button size="sm" onClick={() => setOpen(true)}>
+        <Button size="sm" onClick={openAdd}>
           <Plus className="h-4 w-4" /> Add investment
         </Button>
       </div>
@@ -83,7 +96,7 @@ export function InvestmentsView() {
           title="No investments tracked"
           description="Add your SIPs, stocks, gold and more to see portfolio returns."
           action={
-            <Button size="sm" onClick={() => setOpen(true)}>
+            <Button size="sm" onClick={openAdd}>
               <Plus className="h-4 w-4" /> Add investment
             </Button>
           }
@@ -93,6 +106,7 @@ export function InvestmentsView() {
           {investments.map((inv) => {
             const g = inv.currentValue - inv.invested;
             const gp = inv.invested > 0 ? (g / inv.invested) * 100 : 0;
+            const account = accounts.find((item) => item.id === inv.accountId);
             return (
               <div key={inv.id} className="group flex items-center gap-3 py-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -103,6 +117,7 @@ export function InvestmentsView() {
                   <p className="text-xs text-muted">
                     {inv.type}
                     {inv.monthly ? ` · ${formatMoney(inv.monthly, currency)}/mo` : ""}
+                    {account ? ` · ${account.bankName}` : ""}
                   </p>
                 </div>
                 <div className="text-right">
@@ -186,11 +201,22 @@ export function InvestmentsView() {
               onChange={(e) => setForm({ ...form, monthly: Number(e.target.value) })}
             />
           </div>
+          {accounts.length > 0 && (
+            <div>
+              <Label>Paid from</Label>
+              <Select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
+                <option value="">No account selected</option>
+                {accounts.filter((account) => account.status === "active").map((account) => (
+                  <option key={account.id} value={account.id}>{account.bankName}</option>
+                ))}
+              </Select>
+            </div>
+          )}
           <div className="flex gap-3 pt-1">
             <Button variant="secondary" className="flex-1" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button className="flex-1" onClick={save}>
+            <Button className="flex-1" onClick={() => void save()}>
               Add
             </Button>
           </div>

@@ -1,37 +1,43 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useFinanceStore } from "@/lib/store";
+import React, { useEffect, useState } from "react";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const setUser = useFinanceStore((s) => s.updateUser);
-  const setProfile = useFinanceStore((s) => s.updateProfile);
-  const syncWithServer = useFinanceStore((s) => (s as any).syncWithServer);
-  const loadSalaryHistory = useFinanceStore((s) => (s as any).loadSalaryHistory);
-  const router = useRouter();
+  const loadFromServer = useFinanceStore((s) => s.loadFromServer);
+  const loadSalaryHistory = useFinanceStore((s) => s.loadSalaryHistory);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let mounted = true;
-    fetch("/api/auth/me", { credentials: "include" })
-      .then((r) => r.json())
-      .then((j) => {
+
+    async function hydrate() {
+      await Promise.resolve();
+
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "include" });
+        const result = await response.json();
         if (!mounted) return;
-        const user = j?.data || null;
+        const user = result?.data || null;
         if (user) {
           setUser({ name: user.name || "", email: user.email, onboarded: true });
-          // attempt to sync client store with server and load salary history
-          syncWithServer?.();
-          loadSalaryHistory?.();
+          await Promise.all([loadFromServer(), loadSalaryHistory()]);
         }
-      })
-      .catch(() => {
-        /* ignore */
-      });
+      } finally {
+        if (mounted) setReady(true);
+      }
+    }
+
+    void hydrate();
     return () => {
       mounted = false;
     };
-  }, [setUser, setProfile, syncWithServer, loadSalaryHistory, router]);
+  }, [setUser, loadFromServer, loadSalaryHistory]);
+
+  if (!ready) {
+    return <div className="min-h-screen bg-background" aria-label="Loading your finances" />;
+  }
 
   return <>{children}</>;
 }
