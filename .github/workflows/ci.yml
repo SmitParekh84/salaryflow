@@ -23,7 +23,12 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci
+          echo "=== node_modules listing (root) ==="
+          ls -la node_modules | sed -n '1,200p' || true
+          echo "=== check next installed ==="
+          npm ls next --depth=0 || true
 
       - name: Run ESLint
         continue-on-error: true
@@ -31,6 +36,10 @@ jobs:
 
       - name: Type check (tsc)
         run: npx tsc --noEmit
+
+      - name: Verify Next resolution
+        run: |
+          node -e "try{console.log(require.resolve('next/package.json'))}catch(e){console.error('NEXT_RESOLVE_FAILED', e.message); process.exit(1)}"
 
       - name: Build
         run: npm run build
