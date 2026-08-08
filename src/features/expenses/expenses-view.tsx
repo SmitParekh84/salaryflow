@@ -8,10 +8,10 @@ import { CATEGORIES, CATEGORY_META } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
 import { formatMoney, newestFirst } from "@/lib/utils";
-import { ExpenseForm } from "./expense-form";
-import { SeedPrompt, TransactionList } from "./transaction-list";
 import { Plus, Receipt, Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { ExpenseForm } from "./expense-form";
+import { SeedPrompt, TransactionList } from "./transaction-list";
 
 export function ExpensesView() {
   const expenses = useFinanceStore((s) => s.expenses);
@@ -25,6 +25,7 @@ export function ExpensesView() {
   const filtered = useMemo(() => {
     const term = q.toLowerCase().trim();
     return newestFirst(expenses)
+      .filter((e) => !e.shared)
       .filter((e) => (cat === "all" ? true : e.category === cat))
       .filter((e) =>
         !term
@@ -33,7 +34,7 @@ export function ExpensesView() {
             e.category.toLowerCase().includes(term) ||
             e.note?.toLowerCase().includes(term) ||
             e.shared?.friendName.toLowerCase().includes(term) ||
-            String(e.amount).includes(term)
+            String(e.amount).includes(term),
       );
   }, [expenses, q, cat]);
 
@@ -76,11 +77,7 @@ export function ExpensesView() {
             className="h-11 flex-1 bg-transparent text-sm outline-none placeholder:text-muted/70"
           />
         </div>
-        <Select
-          value={cat}
-          onChange={(e) => setCat(e.target.value)}
-          className="max-w-[180px]"
-        >
+        <Select value={cat} onChange={(e) => setCat(e.target.value)} className="max-w-[180px]">
           <option value="all">All categories</option>
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>
@@ -98,11 +95,7 @@ export function ExpensesView() {
             description="Try adjusting your filters or add a new expense."
           />
         ) : (
-          <TransactionList
-            expenses={filtered}
-            currency={currency}
-            onEdit={openEdit}
-          />
+          <TransactionList expenses={filtered} currency={currency} onEdit={openEdit} />
         )}
       </Card>
 

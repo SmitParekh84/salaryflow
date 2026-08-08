@@ -139,7 +139,7 @@ export interface UserProfile {
 
 export type BankAccountType = "Savings" | "Salary" | "Current" | "Other";
 export type BankAccountStatus = "active" | "closing";
-export type AccountPurpose = "everyday" | "subscriptions" | "investments";
+export type AccountPurpose = "everyday" | "subscriptions" | "investments" | "obligations";
 
 export interface BankAccount {
   id: string;

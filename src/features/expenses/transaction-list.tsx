@@ -49,9 +49,7 @@ export function TransactionList({
                 {meta.emoji}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">
-                  {e.merchant || e.category}
-                </p>
+                <p className="truncate text-sm font-medium">{e.merchant || e.category}</p>
                 <p className="truncate text-xs text-muted">
                   {e.category} · {e.paymentMethod}
                   {account ? ` · ${account.bankName}` : creditCard ? ` · ${creditCard.name}` : ""}
@@ -60,7 +58,9 @@ export function TransactionList({
                 {e.shared && (
                   <p className="mt-1 flex items-center gap-1 text-xs text-primary">
                     <Users className="h-3 w-3" />
-                    You {formatMoney(e.shared.userPaid, currency)} · {e.shared.friendName} {formatMoney(e.shared.friendPaid, currency)} · Total {formatMoney(e.shared.totalAmount, currency)}
+                    You {formatMoney(e.shared.userPaid, currency)} · {e.shared.friendName}{" "}
+                    {formatMoney(e.shared.friendPaid, currency)} · Total{" "}
+                    {formatMoney(e.shared.totalAmount, currency)}
                   </p>
                 )}
               </div>
@@ -75,7 +75,7 @@ export function TransactionList({
                     <Heart
                       className={cn(
                         "h-4 w-4",
-                        e.favorite ? "fill-danger text-danger" : "text-muted"
+                        e.favorite ? "fill-danger text-danger" : "text-muted",
                       )}
                     />
                   </button>
@@ -99,9 +99,7 @@ export function TransactionList({
               )}
 
               <div className="text-right">
-                <p className="text-sm font-semibold">
-                  −{formatMoney(e.amount, currency)}
-                </p>
+                <p className="text-sm font-semibold">−{formatMoney(e.amount, currency)}</p>
                 <p className="text-[11px] text-muted">
                   {new Date(e.date).toLocaleDateString("en-US", {
                     day: "numeric",

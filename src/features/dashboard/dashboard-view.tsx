@@ -12,6 +12,7 @@ import { SeedPrompt, TransactionList } from "@/features/expenses/transaction-lis
 import { useSummary } from "@/hooks/use-summary";
 import { projectedGoalDate, upcomingBills } from "@/lib/calculations";
 import { CATEGORY_META } from "@/lib/constants";
+import { buildFundingPlan } from "@/lib/funding-plan";
 import { useFinanceStore } from "@/lib/store";
 import { formatMoney, newestFirst } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -34,6 +35,10 @@ export function DashboardView() {
   const expenses = useFinanceStore((s) => s.expenses);
   const goals = useFinanceStore((s) => s.goals);
   const bills = useFinanceStore((s) => s.bills);
+  const accounts = useFinanceStore((s) => s.accounts);
+  const creditCards = useFinanceStore((s) => s.creditCards);
+  const incomes = useFinanceStore((s) => s.incomes);
+  const investments = useFinanceStore((s) => s.investments);
   const summary = useSummary();
   const [addOpen, setAddOpen] = useState(false);
 
@@ -41,6 +46,7 @@ export function DashboardView() {
   const topGoal = goals[0];
   const nextBills = upcomingBills(bills).slice(0, 3);
   const emergency = goals.find((g) => g.type === "Emergency Fund");
+  const fundingPlan = buildFundingPlan({ accounts, bills, creditCards, expenses, incomes, investments });
 
   const insights = buildInsights(summary, nextBills.length);
 
@@ -94,6 +100,19 @@ export function DashboardView() {
           delay={0.15}
         />
       </div>
+
+      <Card className="p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><PiggyBank className="h-5 w-5" /></div>
+            <div><p className="text-sm font-semibold">Salary-day funding plan</p><p className="text-xs text-muted">Cards, rent, SIPs, subscriptions and utilities</p></div>
+          </div>
+          <div className="flex items-center gap-4">
+            <p className="text-xl font-bold">{formatMoney(fundingPlan.total, currency)}</p>
+            <Link href="/funding-plan" className="text-xs font-medium text-primary hover:underline">View transfers</Link>
+          </div>
+        </div>
+      </Card>
 
       {summary.budgetRuleName && summary.budgetRuleScore !== undefined && (
         <Card className="p-5">
@@ -163,7 +182,11 @@ export function DashboardView() {
                 }
               />
             ) : (
-              <TransactionList expenses={newestFirst(expenses).slice(0, 6)} currency={currency} compact />
+              <TransactionList
+                expenses={newestFirst(expenses).slice(0, 6)}
+                currency={currency}
+                compact
+              />
             )}
           </CardContent>
         </Card>

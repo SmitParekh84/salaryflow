@@ -7,13 +7,7 @@ import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Modal } from "./ui/modal";
 
-export function GlobalSearch({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
+export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => void }) {
   const expenses = useFinanceStore((s) => s.expenses);
   const currency = useFinanceStore((s) => s.profile.currency);
   const [q, setQ] = useState("");
@@ -40,7 +34,7 @@ export function GlobalSearch({
           e.category.toLowerCase().includes(term) ||
           e.merchant?.toLowerCase().includes(term) ||
           e.note?.toLowerCase().includes(term) ||
-          String(e.amount).includes(term)
+          String(e.amount).includes(term),
       )
       .slice(0, 12);
   }, [q, expenses]);
@@ -68,16 +62,12 @@ export function GlobalSearch({
           >
             <span className="text-lg">{CATEGORY_META[e.category].emoji}</span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">
-                {e.merchant || e.category}
-              </p>
+              <p className="truncate text-sm font-medium">{e.merchant || e.category}</p>
               <p className="text-xs text-muted">
                 {e.category} · {formatDate(e.date)}
               </p>
             </div>
-            <p className="text-sm font-semibold">
-              {formatMoney(e.amount, currency)}
-            </p>
+            <p className="text-sm font-semibold">{formatMoney(e.amount, currency)}</p>
           </div>
         ))}
       </div>

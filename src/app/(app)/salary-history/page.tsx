@@ -1,10 +1,17 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { format } from "date-fns";
 import { localDateInputValue, newestFirst, parseFinancialDate } from "@/lib/utils";
+import { format } from "date-fns";
+import { useEffect, useState } from "react";
 
-type Item = { _id: string; amount: number; date: string; confirmed?: boolean; source?: string; note?: string };
+type Item = {
+  _id: string;
+  amount: number;
+  date: string;
+  confirmed?: boolean;
+  source?: string;
+  note?: string;
+};
 
 export default function SalaryHistoryPage() {
   const [items, setItems] = useState<Item[]>([]);
@@ -87,19 +94,45 @@ export default function SalaryHistoryPage() {
   return (
     <div>
       <h1 className="text-2xl font-semibold mb-4">Salary history</h1>
-      <p className="text-sm text-muted mb-4">Log actual salary credits (overtime, deductions, bonuses) and confirm when payroll posts.</p>
+      <p className="text-sm text-muted mb-4">
+        Log actual salary credits (overtime, deductions, bonuses) and confirm when payroll posts.
+      </p>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
-        <input className="p-2 border rounded" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
-        <input className="p-2 border rounded" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        <input className="p-2 border rounded" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" />
+        <input
+          className="p-2 border rounded"
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="Amount"
+        />
+        <input
+          className="p-2 border rounded"
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+        <input
+          className="p-2 border rounded"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Note (optional)"
+        />
       </div>
       <div className="mb-6">
-        <button onClick={add} disabled={saving || !amount} className="rounded bg-primary px-4 py-2 text-white">Add entry</button>
+        <button
+          onClick={add}
+          disabled={saving || !amount}
+          className="rounded bg-primary px-4 py-2 text-white"
+        >
+          Add entry
+        </button>
       </div>
 
       {loading && <div>Loading…</div>}
-      {!loading && items.length === 0 && <div className="text-sm text-muted">No salary entries yet.</div>}
+      {!loading && items.length === 0 && (
+        <div className="text-sm text-muted">No salary entries yet.</div>
+      )}
 
       <div className="mt-4 space-y-3">
         {items.map((it) => (
@@ -107,11 +140,23 @@ export default function SalaryHistoryPage() {
             <div>
               <div className="text-sm font-medium">{it.source || "Salary"}</div>
               <div className="text-lg font-semibold">{it.amount.toLocaleString()}</div>
-              <div className="text-xs text-muted">{format(parseFinancialDate(it.date), "dd LLL yyyy")} {it.note ? `— ${it.note}` : ""}</div>
+              <div className="text-xs text-muted">
+                {format(parseFinancialDate(it.date), "dd LLL yyyy")} {it.note ? `— ${it.note}` : ""}
+              </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => toggleConfirm(it._id, !!it.confirmed)} className={`px-3 py-1 rounded text-sm ${it.confirmed ? 'bg-green-600 text-white' : 'bg-surface-2'}`}>{it.confirmed ? 'Confirmed' : 'Confirm'}</button>
-              <button onClick={() => remove(it._id)} className="px-3 py-1 rounded bg-red-600 text-white text-sm">Delete</button>
+              <button
+                onClick={() => toggleConfirm(it._id, !!it.confirmed)}
+                className={`px-3 py-1 rounded text-sm ${it.confirmed ? "bg-green-600 text-white" : "bg-surface-2"}`}
+              >
+                {it.confirmed ? "Confirmed" : "Confirm"}
+              </button>
+              <button
+                onClick={() => remove(it._id)}
+                className="px-3 py-1 rounded bg-red-600 text-white text-sm"
+              >
+                Delete
+              </button>
             </div>
           </div>
         ))}

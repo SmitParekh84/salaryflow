@@ -12,37 +12,43 @@ import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
-const schema = z.object({
-  amount: z.coerce.number().positive("Enter an amount greater than 0"),
-  category: z.string().min(1),
-  merchant: z.string().optional(),
-  paymentMethod: z.string().min(1),
-  note: z.string().optional(),
-  date: z.string().min(1),
-  recurring: z.boolean().optional(),
-  accountId: z.string().optional(),
-  sharedEnabled: z.boolean().optional(),
-  totalAmount: z.coerce.number().nonnegative().optional(),
-  friendName: z.string().optional(),
-  friendEmail: z.union([z.literal(""), z.string().email("Enter a valid email")]).optional(),
-  friendPaid: z.coerce.number().nonnegative().optional(),
-  inviteRequested: z.boolean().optional(),
-}).superRefine((values, context) => {
-  if (!values.sharedEnabled) return;
-  if (!values.friendName?.trim()) {
-    context.addIssue({ code: "custom", path: ["friendName"], message: "Enter your friend's name" });
-  }
-  if (!values.totalAmount || values.totalAmount <= 0) {
-    context.addIssue({ code: "custom", path: ["totalAmount"], message: "Enter the total bill" });
-  }
-  if (Math.abs((values.amount + (values.friendPaid ?? 0)) - (values.totalAmount ?? 0)) > 0.01) {
-    context.addIssue({
-      code: "custom",
-      path: ["friendPaid"],
-      message: "Your payment and friend's payment must equal the total",
-    });
-  }
-});
+const schema = z
+  .object({
+    amount: z.coerce.number().positive("Enter an amount greater than 0"),
+    category: z.string().min(1),
+    merchant: z.string().optional(),
+    paymentMethod: z.string().min(1),
+    note: z.string().optional(),
+    date: z.string().min(1),
+    recurring: z.boolean().optional(),
+    accountId: z.string().optional(),
+    sharedEnabled: z.boolean().optional(),
+    totalAmount: z.coerce.number().nonnegative().optional(),
+    friendName: z.string().optional(),
+    friendEmail: z.union([z.literal(""), z.string().email("Enter a valid email")]).optional(),
+    friendPaid: z.coerce.number().nonnegative().optional(),
+    inviteRequested: z.boolean().optional(),
+  })
+  .superRefine((values, context) => {
+    if (!values.sharedEnabled) return;
+    if (!values.friendName?.trim()) {
+      context.addIssue({
+        code: "custom",
+        path: ["friendName"],
+        message: "Enter your friend's name",
+      });
+    }
+    if (!values.totalAmount || values.totalAmount <= 0) {
+      context.addIssue({ code: "custom", path: ["totalAmount"], message: "Enter the total bill" });
+    }
+    if (Math.abs(values.amount + (values.friendPaid ?? 0) - (values.totalAmount ?? 0)) > 0.01) {
+      context.addIssue({
+        code: "custom",
+        path: ["friendPaid"],
+        message: "Your payment and friend's payment must equal the total",
+      });
+    }
+  });
 
 type FormValues = z.input<typeof schema>;
 
@@ -50,10 +56,12 @@ export function ExpenseForm({
   open,
   onClose,
   editing,
+  sharedMode = false,
 }: {
   open: boolean;
   onClose: () => void;
   editing?: Expense | null;
+  sharedMode?: boolean;
 }) {
   const addExpense = useFinanceStore((s) => s.addExpense);
   const updateExpense = useFinanceStore((s) => s.updateExpense);
@@ -81,6 +89,7 @@ export function ExpenseForm({
 
   const sharedEnabled = useWatch({ control, name: "sharedEnabled" });
   const friendEmail = useWatch({ control, name: "friendEmail" });
+  const isSharedForm = sharedMode || Boolean(editing?.shared);
 
   useEffect(() => {
     if (open) {
@@ -95,7 +104,7 @@ export function ExpenseForm({
               date: editing.date.slice(0, 10),
               recurring: editing.recurring ?? false,
               accountId: editing.accountId ?? "",
-              sharedEnabled: Boolean(editing.shared),
+              sharedEnabled: isSharedForm,
               totalAmount: editing.shared?.totalAmount,
               friendName: editing.shared?.friendName ?? "",
               friendEmail: editing.shared?.friendEmail ?? "",
@@ -104,28 +113,29 @@ export function ExpenseForm({
             }
           : (() => {
               const defaultAccount = accounts.find(
-                (account) => account.status === "active" && account.defaultFor?.includes("everyday"),
+                (account) =>
+                  account.status === "active" && account.defaultFor?.includes("everyday"),
               );
               return {
-              amount: undefined,
-              category: "Food",
-              merchant: "",
-              paymentMethod: "UPI",
-              note: "",
-              date: localDateInputValue(),
-              recurring: false,
-              accountId: defaultAccount?.id ?? "",
-              sharedEnabled: false,
-              totalAmount: undefined,
-              friendName: "",
-              friendEmail: "",
-              friendPaid: undefined,
-              inviteRequested: false,
-            };
-          })()
+                amount: undefined,
+                category: "Food",
+                merchant: "",
+                paymentMethod: "UPI",
+                note: "",
+                date: localDateInputValue(),
+                recurring: false,
+                accountId: defaultAccount?.id ?? "",
+                sharedEnabled: sharedMode,
+                totalAmount: undefined,
+                friendName: "",
+                friendEmail: "",
+                friendPaid: undefined,
+                inviteRequested: false,
+              };
+            })(),
       );
     }
-  }, [open, editing, reset, accounts]);
+  }, [open, editing, reset, accounts, isSharedForm, sharedMode]);
 
   const onSubmit = async (values: FormValues) => {
     const parsed = schema.parse(values);
@@ -172,7 +182,19 @@ export function ExpenseForm({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={editing ? "Edit expense" : "Add expense"}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={
+        editing
+          ? isSharedForm
+            ? "Edit shared expense"
+            : "Edit expense"
+          : sharedMode
+            ? "Add shared expense"
+            : "Add expense"
+      }
+    >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <Label>{sharedEnabled ? "I paid" : "Amount"}</Label>
@@ -184,9 +206,7 @@ export function ExpenseForm({
             autoFocus
             {...register("amount")}
           />
-          {errors.amount && (
-            <p className="mt-1 text-xs text-danger">{errors.amount.message}</p>
-          )}
+          {errors.amount && <p className="mt-1 text-xs text-danger">{errors.amount.message}</p>}
         </div>
 
         {(accounts.length > 0 || creditCards.length > 0) && (
@@ -194,14 +214,24 @@ export function ExpenseForm({
             <Label>Paid from</Label>
             <Select {...register("accountId")}>
               <option value="">No account selected</option>
-              {accounts.filter((account) => account.status === "active").map((account) => (
-                <option key={account.id} value={account.id}>{account.bankName}</option>
-              ))}
-              {creditCards.filter((card) => card.status === "active").map((card) => (
-                <option key={card.id} value={card.id}>{card.name} · Credit card</option>
-              ))}
+              {accounts
+                .filter((account) => account.status === "active")
+                .map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.bankName}
+                  </option>
+                ))}
+              {creditCards
+                .filter((card) => card.status === "active")
+                .map((card) => (
+                  <option key={card.id} value={card.id}>
+                    {card.name} · Credit card
+                  </option>
+                ))}
             </Select>
-            <p className="mt-1 text-xs text-muted">Records the source only. Your balance will not change automatically.</p>
+            <p className="mt-1 text-xs text-muted">
+              Records the source only. Your balance will not change automatically.
+            </p>
           </div>
         )}
 
@@ -244,49 +274,78 @@ export function ExpenseForm({
           <Textarea placeholder="What was this for?" {...register("note")} />
         </div>
 
-        <div className="rounded-xl border border-border p-4">
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input type="checkbox" className="h-4 w-4 accent-[var(--primary)]" {...register("sharedEnabled")} />
-            This was shared with a friend
-          </label>
-          {sharedEnabled && (
+        {isSharedForm && (
+          <div className="rounded-xl border border-border p-4">
+            <p className="text-sm font-medium">Split details</p>
             <div className="mt-4 space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Total bill</Label>
-                  <Input type="number" min="0" step="1" inputMode="decimal" {...register("totalAmount")} />
-                  {errors.totalAmount && <p className="mt-1 text-xs text-danger">{errors.totalAmount.message}</p>}
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    inputMode="decimal"
+                    {...register("totalAmount")}
+                  />
+                  {errors.totalAmount && (
+                    <p className="mt-1 text-xs text-danger">{errors.totalAmount.message}</p>
+                  )}
                 </div>
                 <div>
                   <Label>Friend paid</Label>
-                  <Input type="number" min="0" step="1" inputMode="decimal" {...register("friendPaid")} />
-                  {errors.friendPaid && <p className="mt-1 text-xs text-danger">{errors.friendPaid.message}</p>}
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    inputMode="decimal"
+                    {...register("friendPaid")}
+                  />
+                  {errors.friendPaid && (
+                    <p className="mt-1 text-xs text-danger">{errors.friendPaid.message}</p>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Friend&apos;s name</Label>
                   <Input placeholder="e.g. Swarali" {...register("friendName")} />
-                  {errors.friendName && <p className="mt-1 text-xs text-danger">{errors.friendName.message}</p>}
+                  {errors.friendName && (
+                    <p className="mt-1 text-xs text-danger">{errors.friendName.message}</p>
+                  )}
                 </div>
                 <div>
                   <Label>Email (optional)</Label>
-                  <Input type="email" placeholder="friend@example.com" {...register("friendEmail")} />
-                  {errors.friendEmail && <p className="mt-1 text-xs text-danger">{errors.friendEmail.message}</p>}
+                  <Input
+                    type="email"
+                    placeholder="friend@example.com"
+                    {...register("friendEmail")}
+                  />
+                  {errors.friendEmail && (
+                    <p className="mt-1 text-xs text-danger">{errors.friendEmail.message}</p>
+                  )}
                 </div>
               </div>
               {friendEmail && (
                 <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" className="h-4 w-4 accent-[var(--primary)]" {...register("inviteRequested")} />
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-[var(--primary)]"
+                    {...register("inviteRequested")}
+                  />
                   Send an invitation to view this shared record
                 </label>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" className="h-4 w-4 accent-[var(--primary)]" {...register("recurring")} />
+          <input
+            type="checkbox"
+            className="h-4 w-4 accent-[var(--primary)]"
+            {...register("recurring")}
+          />
           Mark as recurring
         </label>
 
@@ -295,7 +354,7 @@ export function ExpenseForm({
             Cancel
           </Button>
           <Button type="submit" className="flex-1" disabled={isSubmitting}>
-            {editing ? "Save changes" : "Add expense"}
+            {editing ? "Save changes" : sharedMode ? "Add shared expense" : "Add expense"}
           </Button>
         </div>
       </form>

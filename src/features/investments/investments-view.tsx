@@ -10,7 +10,7 @@ import { INVESTMENT_TYPES } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { InvestmentType } from "@/lib/types";
 import { cn, formatMoney } from "@/lib/utils";
-import { Coins, Plus, TrendingUp, Trash2, Wallet } from "lucide-react";
+import { Coins, Plus, Trash2, TrendingUp, Wallet } from "lucide-react";
 import { useState } from "react";
 
 export function InvestmentsView() {
@@ -121,15 +121,8 @@ export function InvestmentsView() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold">
-                    {formatMoney(inv.currentValue, currency)}
-                  </p>
-                  <p
-                    className={cn(
-                      "text-xs font-medium",
-                      g >= 0 ? "text-success" : "text-danger"
-                    )}
-                  >
+                  <p className="text-sm font-bold">{formatMoney(inv.currentValue, currency)}</p>
+                  <p className={cn("text-xs font-medium", g >= 0 ? "text-success" : "text-danger")}>
                     {g >= 0 ? "+" : ""}
                     {formatMoney(g, currency)} ({Math.round(gp)}%)
                   </p>
@@ -163,9 +156,7 @@ export function InvestmentsView() {
               <Label>Type</Label>
               <Select
                 value={form.type}
-                onChange={(e) =>
-                  setForm({ ...form, type: e.target.value as InvestmentType })
-                }
+                onChange={(e) => setForm({ ...form, type: e.target.value as InvestmentType })}
               >
                 {INVESTMENT_TYPES.map((t) => (
                   <option key={t}>{t}</option>
@@ -187,9 +178,7 @@ export function InvestmentsView() {
               <Input
                 type="number"
                 value={form.currentValue || ""}
-                onChange={(e) =>
-                  setForm({ ...form, currentValue: Number(e.target.value) })
-                }
+                onChange={(e) => setForm({ ...form, currentValue: Number(e.target.value) })}
               />
             </div>
           </div>
@@ -204,11 +193,18 @@ export function InvestmentsView() {
           {accounts.length > 0 && (
             <div>
               <Label>Paid from</Label>
-              <Select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
+              <Select
+                value={form.accountId}
+                onChange={(event) => setForm({ ...form, accountId: event.target.value })}
+              >
                 <option value="">No account selected</option>
-                {accounts.filter((account) => account.status === "active").map((account) => (
-                  <option key={account.id} value={account.id}>{account.bankName}</option>
-                ))}
+                {accounts
+                  .filter((account) => account.status === "active")
+                  .map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.bankName}
+                    </option>
+                  ))}
               </Select>
             </div>
           )}

@@ -30,11 +30,16 @@ export async function POST(request: Request) {
 
   const parsed = inviteSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid invitation" }, { status: 400 });
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message || "Invalid invitation" },
+      { status: 400 },
+    );
   }
 
   const ownerId = user.email || String(user._id);
-  const recipient = await UserModel.findOne({ email: parsed.data.friendEmail }).select("_id").lean();
+  const recipient = await UserModel.findOne({ email: parsed.data.friendEmail })
+    .select("_id")
+    .lean();
   const invite = await SharedExpenseInviteModel.findOneAndUpdate(
     {
       ownerId,

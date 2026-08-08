@@ -31,7 +31,17 @@ async function getUser(req: Request) {
 }
 
 async function getServerState(userId: string) {
-  const [profile, expenses, incomes, bills, goals, investments, accounts, creditCards, budgetRules] = await Promise.all([
+  const [
+    profile,
+    expenses,
+    incomes,
+    bills,
+    goals,
+    investments,
+    accounts,
+    creditCards,
+    budgetRules,
+  ] = await Promise.all([
     SalaryProfileModel.findOne({ userId }).lean(),
     ExpenseModel.find({ userId }).lean(),
     IncomeModel.find({ userId }).lean(),
@@ -43,7 +53,17 @@ async function getServerState(userId: string) {
     BudgetRuleModel.find({ userId }).lean(),
   ]);
 
-  return { profile, expenses, incomes, bills, goals, investments, accounts, creditCards, budgetRules };
+  return {
+    profile,
+    expenses,
+    incomes,
+    bills,
+    goals,
+    investments,
+    accounts,
+    creditCards,
+    budgetRules,
+  };
 }
 
 export async function GET(req: Request) {

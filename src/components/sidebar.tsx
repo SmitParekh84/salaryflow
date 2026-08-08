@@ -4,6 +4,7 @@ import { NAV_ITEMS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import {
   BarChart3,
+  BadgeIndianRupee,
   CalendarClock,
   Landmark,
   LayoutDashboard,
@@ -12,6 +13,7 @@ import {
   Settings,
   Target,
   TrendingUp,
+  Users,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -27,7 +29,9 @@ const ICONS: Record<string, LucideIcon> = {
   Target,
   TrendingUp,
   BarChart3,
+  BadgeIndianRupee,
   Settings,
+  Users,
 };
 
 export function Sidebar() {
@@ -82,7 +86,7 @@ export function Sidebar() {
 export function MobileNav() {
   const pathname = usePathname();
   const items = NAV_ITEMS.filter((item) =>
-    ["/dashboard", "/accounts", "/expenses", "/investments", "/rules"].includes(item.href),
+    ["/dashboard", "/funding-plan", "/accounts", "/expenses", "/shared"].includes(item.href),
   );
   return (
     <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 glass border-t border-border px-2 pb-[env(safe-area-inset-bottom)]">

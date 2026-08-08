@@ -81,8 +81,10 @@ export const COUNTRIES = [
 
 export const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard" },
+  { href: "/funding-plan", label: "Salary plan", icon: "BadgeIndianRupee" },
   { href: "/accounts", label: "Accounts", icon: "Landmark" },
   { href: "/expenses", label: "Expenses", icon: "Receipt" },
+  { href: "/shared", label: "Shared spending", icon: "Users" },
   { href: "/bills", label: "Bills", icon: "CalendarClock" },
   { href: "/goals", label: "Goals", icon: "Target" },
   { href: "/investments", label: "Investments", icon: "TrendingUp" },

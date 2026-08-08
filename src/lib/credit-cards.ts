@@ -8,9 +8,10 @@ function dayInMonth(year: number, month: number, day: number) {
 
 export function creditCardStatementPeriod(card: CreditCard, now = new Date()) {
   const currentStatement = dayInMonth(now.getFullYear(), now.getMonth(), card.statementDay);
-  const statementEnd = now <= currentStatement
-    ? currentStatement
-    : dayInMonth(now.getFullYear(), now.getMonth() + 1, card.statementDay);
+  const statementEnd =
+    now <= currentStatement
+      ? currentStatement
+      : dayInMonth(now.getFullYear(), now.getMonth() + 1, card.statementDay);
   const previousStatement = dayInMonth(
     statementEnd.getFullYear(),
     statementEnd.getMonth() - 1,

@@ -270,7 +270,7 @@ export const useFinanceStore = create<FinanceState>()(
           if (!res.ok) return;
           const j = await res.json();
           set({ salaryHistory: j.data || [] });
-        } catch (e) {
+        } catch {
           // ignore
         }
       },
@@ -285,7 +285,7 @@ export const useFinanceStore = create<FinanceState>()(
           if (!res.ok) return;
           const j = await res.json();
           set((s) => ({ salaryHistory: [j.data, ...s.salaryHistory] }));
-        } catch (e) {}
+        } catch {}
       },
       updateSalaryEntry: async (id, patch) => {
         try {
@@ -298,7 +298,7 @@ export const useFinanceStore = create<FinanceState>()(
           if (!res.ok) return;
           const j = await res.json();
           set((s) => ({ salaryHistory: s.salaryHistory.map((h) => (h._id === id ? j.data : h)) }));
-        } catch (e) {}
+        } catch {}
       },
       deleteSalaryEntry: async (id) => {
         try {
@@ -308,7 +308,7 @@ export const useFinanceStore = create<FinanceState>()(
           });
           if (!res.ok) return;
           set((s) => ({ salaryHistory: s.salaryHistory.filter((h) => h._id !== id) }));
-        } catch (e) {}
+        } catch {}
       },
 
       markNotificationRead: (id) =>
@@ -357,7 +357,7 @@ export const useFinanceStore = create<FinanceState>()(
               budgetRules: normalizeServerItems<BudgetRule>(d.budgetRules, state.budgetRules),
             });
           }
-        } catch (e) {
+        } catch {
           // silent fail — keep local state
           // console.warn('sync failed', e)
         }

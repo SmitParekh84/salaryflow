@@ -6,9 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function uid(prefix = "id"): string {
-  return `${prefix}_${Math.random().toString(36).slice(2, 9)}${Date.now()
-    .toString(36)
-    .slice(-4)}`;
+  return `${prefix}_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
 }
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -27,11 +25,7 @@ export function currencySymbol(code: string): string {
   return CURRENCY_SYMBOLS[code] ?? code + " ";
 }
 
-export function formatMoney(
-  amount: number,
-  currency = "INR",
-  compact = false
-): string {
+export function formatMoney(amount: number, currency = "INR", compact = false): string {
   const sym = currencySymbol(currency);
   if (compact && Math.abs(amount) >= 1000) {
     const formatted = new Intl.NumberFormat("en", {
@@ -71,7 +65,8 @@ export function dateInputToIso(value: string): string {
 
 export function newestFirst<T extends { date: string }>(items: T[]): T[] {
   return [...items].sort(
-    (first, second) => parseFinancialDate(second.date).getTime() - parseFinancialDate(first.date).getTime(),
+    (first, second) =>
+      parseFinancialDate(second.date).getTime() - parseFinancialDate(first.date).getTime(),
   );
 }
 

@@ -68,9 +68,7 @@ export function BillsView() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted">
-          {formatMoney(totalDue, currency)} due this cycle
-        </p>
+        <p className="text-sm text-muted">{formatMoney(totalDue, currency)} due this cycle</p>
         <Button size="sm" onClick={openAdd}>
           <Plus className="h-4 w-4" /> Add bill
         </Button>
@@ -106,7 +104,9 @@ export function BillsView() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{b.name}</p>
                   <div className="mt-0.5 flex items-center gap-2">
-                    <span className="text-xs text-muted">Due {b.dueDay}th{account ? ` · ${account.bankName}` : ""}</span>
+                    <span className="text-xs text-muted">
+                      Due {b.dueDay}th{account ? ` · ${account.bankName}` : ""}
+                    </span>
                     {b.paid ? (
                       <Badge color="var(--success)">Paid</Badge>
                     ) : overdue ? (
@@ -117,9 +117,7 @@ export function BillsView() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold">
-                    {formatMoney(b.amount, currency)}
-                  </p>
+                  <p className="text-sm font-bold">{formatMoney(b.amount, currency)}</p>
                   <div className="mt-1 flex items-center justify-end gap-1">
                     <button
                       onClick={() => toggleBillPaid(b.id)}
@@ -127,7 +125,7 @@ export function BillsView() {
                         "rounded-lg p-1.5 transition-colors",
                         b.paid
                           ? "text-success hover:bg-success/10"
-                          : "text-muted hover:bg-surface-2"
+                          : "text-muted hover:bg-surface-2",
                       )}
                       aria-label="Toggle paid"
                     >
@@ -188,9 +186,7 @@ export function BillsView() {
             <Label>Category</Label>
             <Select
               value={form.category}
-              onChange={(e) =>
-                setForm({ ...form, category: e.target.value as Bill["category"] })
-              }
+              onChange={(e) => setForm({ ...form, category: e.target.value as Bill["category"] })}
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
@@ -202,11 +198,18 @@ export function BillsView() {
           {accounts.length > 0 && (
             <div>
               <Label>Paid from</Label>
-              <Select value={form.accountId} onChange={(event) => setForm({ ...form, accountId: event.target.value })}>
+              <Select
+                value={form.accountId}
+                onChange={(event) => setForm({ ...form, accountId: event.target.value })}
+              >
                 <option value="">No account selected</option>
-                {accounts.filter((account) => account.status === "active").map((account) => (
-                  <option key={account.id} value={account.id}>{account.bankName}</option>
-                ))}
+                {accounts
+                  .filter((account) => account.status === "active")
+                  .map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.bankName}
+                    </option>
+                  ))}
               </Select>
             </div>
           )}

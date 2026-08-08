@@ -8,9 +8,23 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { creditCardUsage } from "@/lib/credit-cards";
 import { useFinanceStore } from "@/lib/store";
-import type { AccountPurpose, BankAccount, BankAccountType, CreditCard as CreditCardType } from "@/lib/types";
+import type {
+  AccountPurpose,
+  BankAccount,
+  BankAccountType,
+  CreditCard as CreditCardType,
+} from "@/lib/types";
 import { formatDate, formatMoney } from "@/lib/utils";
-import { ArrowRight, Building2, CreditCard, Landmark, Pencil, Plus, Trash2, WalletCards } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  CreditCard,
+  Landmark,
+  Pencil,
+  Plus,
+  Trash2,
+  WalletCards,
+} from "lucide-react";
 import { useState } from "react";
 
 const EMPTY_FORM = {
@@ -24,6 +38,7 @@ const ACCOUNT_PURPOSES: { value: AccountPurpose; label: string }[] = [
   { value: "everyday", label: "Everyday spending" },
   { value: "subscriptions", label: "Bills & subscriptions" },
   { value: "investments", label: "SIPs & investments" },
+  { value: "obligations", label: "Salary-day reserves" },
 ];
 
 const EMPTY_CARD_FORM = {
@@ -207,7 +222,12 @@ export function AccountsView() {
                 <p className="mt-0.5 text-xs text-muted">{account.accountType} account</p>
                 {account.defaultFor && account.defaultFor.length > 0 && (
                   <p className="mt-1 text-xs text-primary">
-                    Default: {account.defaultFor.map((purpose) => ACCOUNT_PURPOSES.find((item) => item.value === purpose)?.label).join(", ")}
+                    Default:{" "}
+                    {account.defaultFor
+                      .map(
+                        (purpose) => ACCOUNT_PURPOSES.find((item) => item.value === purpose)?.label,
+                      )
+                      .join(", ")}
                   </p>
                 )}
               </div>
@@ -269,32 +289,53 @@ export function AccountsView() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">{card.name}</p>
-                      <p className="text-xs text-muted">{card.bankName} · Statement on {card.statementDay}th</p>
+                      <p className="text-xs text-muted">
+                        {card.bankName} · Statement on {card.statementDay}th
+                      </p>
                     </div>
-                    <button onClick={() => openEditCard(card)} className="rounded-lg p-1.5 text-muted hover:bg-surface-2" aria-label={`Edit ${card.name}`}>
+                    <button
+                      onClick={() => openEditCard(card)}
+                      className="rounded-lg p-1.5 text-muted hover:bg-surface-2"
+                      aria-label={`Edit ${card.name}`}
+                    >
                       <Pencil className="h-4 w-4" />
                     </button>
-                    <button onClick={() => void removeCard(card.id)} className="rounded-lg p-1.5 text-danger hover:bg-danger/10" aria-label={`Delete ${card.name}`}>
+                    <button
+                      onClick={() => void removeCard(card.id)}
+                      className="rounded-lg p-1.5 text-danger hover:bg-danger/10"
+                      aria-label={`Delete ${card.name}`}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                   <div className="mt-4 flex items-end justify-between gap-3">
                     <div>
                       <p className="text-xs text-muted">Current outstanding</p>
-                      <p className="text-xl font-bold">{formatMoney(usage.outstanding, currency)}</p>
+                      <p className="text-xl font-bold">
+                        {formatMoney(usage.outstanding, currency)}
+                      </p>
                     </div>
                     <p className="text-right text-xs text-muted">
-                      {formatMoney(usage.available, currency)} available<br />of {formatMoney(card.creditLimit, currency)}
+                      {formatMoney(usage.available, currency)} available
+                      <br />
+                      of {formatMoney(card.creditLimit, currency)}
                     </p>
                   </div>
                   <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-2">
-                    <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, usage.utilization)}%` }} />
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${Math.min(100, usage.utilization)}%` }}
+                    />
                   </div>
                   <div className="mt-2 flex justify-between text-[11px] text-muted">
                     <span>{Math.round(usage.utilization)}% used</span>
                     <span>Closes {formatDate(usage.end.toISOString())}</span>
                   </div>
-                  {usage.credits > 0 && <p className="mt-2 text-xs text-success">Includes {formatMoney(usage.credits, currency)} cashback/credits</p>}
+                  {usage.credits > 0 && (
+                    <p className="mt-2 text-xs text-success">
+                      Includes {formatMoney(usage.credits, currency)} cashback/credits
+                    </p>
+                  )}
                 </Card>
               );
             })}
@@ -327,18 +368,22 @@ export function AccountsView() {
                     type="checkbox"
                     className="h-4 w-4 accent-[var(--primary)]"
                     checked={form.defaultFor.includes(purpose.value)}
-                    onChange={(event) => setForm({
-                      ...form,
-                      defaultFor: event.target.checked
-                        ? [...form.defaultFor, purpose.value]
-                        : form.defaultFor.filter((item) => item !== purpose.value),
-                    })}
+                    onChange={(event) =>
+                      setForm({
+                        ...form,
+                        defaultFor: event.target.checked
+                          ? [...form.defaultFor, purpose.value]
+                          : form.defaultFor.filter((item) => item !== purpose.value),
+                      })
+                    }
                   />
                   {purpose.label}
                 </label>
               ))}
             </div>
-            <p className="mt-2 text-xs text-muted">Choosing a default moves that purpose from any other account.</p>
+            <p className="mt-2 text-xs text-muted">
+              Choosing a default moves that purpose from any other account.
+            </p>
           </fieldset>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -378,31 +423,63 @@ export function AccountsView() {
         </div>
       </Modal>
 
-      <Modal open={cardOpen} onClose={() => setCardOpen(false)} title={editingCardId ? "Edit credit card" : "Add credit card"}>
+      <Modal
+        open={cardOpen}
+        onClose={() => setCardOpen(false)}
+        title={editingCardId ? "Edit credit card" : "Add credit card"}
+      >
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Card name</Label>
-              <Input autoFocus placeholder="e.g. Flipkart Axis" value={cardForm.name} onChange={(event) => setCardForm({ ...cardForm, name: event.target.value })} />
+              <Input
+                autoFocus
+                placeholder="e.g. Flipkart Axis"
+                value={cardForm.name}
+                onChange={(event) => setCardForm({ ...cardForm, name: event.target.value })}
+              />
             </div>
             <div>
               <Label>Bank</Label>
-              <Input placeholder="e.g. Axis Bank" value={cardForm.bankName} onChange={(event) => setCardForm({ ...cardForm, bankName: event.target.value })} />
+              <Input
+                placeholder="e.g. Axis Bank"
+                value={cardForm.bankName}
+                onChange={(event) => setCardForm({ ...cardForm, bankName: event.target.value })}
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Credit limit</Label>
-              <Input type="number" min={1} value={cardForm.creditLimit || ""} onChange={(event) => setCardForm({ ...cardForm, creditLimit: Number(event.target.value) })} />
+              <Input
+                type="number"
+                min={1}
+                value={cardForm.creditLimit || ""}
+                onChange={(event) =>
+                  setCardForm({ ...cardForm, creditLimit: Number(event.target.value) })
+                }
+              />
             </div>
             <div>
               <Label>Statement day</Label>
-              <Input type="number" min={1} max={31} value={cardForm.statementDay} onChange={(event) => setCardForm({ ...cardForm, statementDay: Number(event.target.value) })} />
+              <Input
+                type="number"
+                min={1}
+                max={31}
+                value={cardForm.statementDay}
+                onChange={(event) =>
+                  setCardForm({ ...cardForm, statementDay: Number(event.target.value) })
+                }
+              />
             </div>
           </div>
           <div className="flex gap-3 pt-1">
-            <Button variant="secondary" className="flex-1" onClick={() => setCardOpen(false)}>Cancel</Button>
-            <Button className="flex-1" onClick={() => void saveCard()}>Save card</Button>
+            <Button variant="secondary" className="flex-1" onClick={() => setCardOpen(false)}>
+              Cancel
+            </Button>
+            <Button className="flex-1" onClick={() => void saveCard()}>
+              Save card
+            </Button>
           </div>
         </div>
       </Modal>
