@@ -66,6 +66,7 @@ const BillSchema = new Schema(
     name: { type: String, required: true },
     amount: { type: Number, required: true },
     dueDay: { type: Number, default: 1 },
+    dueDate: Date,
     frequency: { type: String, default: "monthly" },
     category: { type: String, default: "Utilities" },
     paid: { type: Boolean, default: false },
@@ -160,6 +161,18 @@ const BudgetRuleSchema = new Schema(
   { timestamps: true },
 );
 
+const RecycleBinSchema = new Schema(
+  {
+    userId: { type: String, required: true, index: true },
+    entityType: { type: String, required: true },
+    entityId: { type: String, required: true },
+    label: { type: String, required: true },
+    deletedAt: { type: Date, required: true, default: Date.now },
+    data: { type: Schema.Types.Mixed, required: true },
+  },
+  { timestamps: true },
+);
+
 const UserSchema = new Schema(
   {
     email: { type: String, required: true, unique: true, index: true },
@@ -180,6 +193,7 @@ export type InvestmentDoc = InferSchemaType<typeof InvestmentSchema>;
 export type BankAccountDoc = InferSchemaType<typeof BankAccountSchema>;
 export type CreditCardDoc = InferSchemaType<typeof CreditCardSchema>;
 export type BudgetRuleDoc = InferSchemaType<typeof BudgetRuleSchema>;
+export type RecycleBinDoc = InferSchemaType<typeof RecycleBinSchema>;
 export type UserDoc = InferSchemaType<typeof UserSchema>;
 
 export const ExpenseModel = models.Expense || model("Expense", ExpenseSchema);
@@ -192,6 +206,7 @@ export const InvestmentModel = models.Investment || model("Investment", Investme
 export const BankAccountModel = models.BankAccount || model("BankAccount", BankAccountSchema);
 export const CreditCardModel = models.CreditCard || model("CreditCard", CreditCardSchema);
 export const BudgetRuleModel = models.BudgetRule || model("BudgetRule", BudgetRuleSchema);
+export const RecycleBinModel = models.RecycleBin || model("RecycleBin", RecycleBinSchema);
 export const UserModel = models.User || model("User", UserSchema);
 
 const SharedExpenseInviteSchema = new Schema(

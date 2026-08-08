@@ -1,5 +1,14 @@
 import { creditCardUsage } from "./credit-cards";
-import type { BankAccount, Bill, CreditCard, Expense, Income, Investment } from "./types";
+import { billCycle } from "./bill-cycle";
+import type {
+  BankAccount,
+  Bill,
+  BudgetRule,
+  CreditCard,
+  Expense,
+  Income,
+  Investment,
+} from "./types";
 
 export type FundingPlanKind =
   | "credit-card"
@@ -7,6 +16,7 @@ export type FundingPlanKind =
   | "subscription"
   | "utility"
   | "investment"
+  | "savings"
   | "bill";
 
 export interface FundingPlanItem {
@@ -36,6 +46,8 @@ export function buildFundingPlan({
   expenses,
   incomes,
   investments,
+  budgetRule,
+  monthlyIncome = 0,
   now = new Date(),
 }: {
   accounts: BankAccount[];
@@ -44,6 +56,8 @@ export function buildFundingPlan({
   expenses: Expense[];
   incomes: Income[];
   investments: Investment[];
+  budgetRule?: BudgetRule;
+  monthlyIncome?: number;
   now?: Date;
 }) {
   const reserveAccount =
@@ -54,9 +68,6 @@ export function buildFundingPlan({
       (account) => account.status === "active" && account.defaultFor?.includes("subscriptions"),
     );
   const items: FundingPlanItem[] = [];
-  const currentBillingMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const previousBillingMonth = `${previousMonth.getFullYear()}-${String(previousMonth.getMonth() + 1).padStart(2, "0")}`;
 
   for (const card of creditCards.filter((card) => card.status === "active")) {
     const usage = creditCardUsage(card, expenses, incomes, now);
@@ -87,6 +98,29 @@ export function buildFundingPlan({
     });
   }
 
+  if (budgetRule && monthlyIncome > 0) {
+    const savingsPercentage =
+      budgetRule.allocations.find((allocation) => allocation.kind === "savings")?.percentage ?? 0;
+    const savingsTarget = (monthlyIncome * savingsPercentage) / 100;
+    const monthlyInvestments = investments.reduce(
+      (sum, investment) => sum + (investment.monthly ?? 0),
+      0,
+    );
+    const cashSavingsReserve = Math.max(0, savingsTarget - monthlyInvestments);
+    if (cashSavingsReserve > 0) {
+      items.push({
+        id: `budget-savings-${budgetRule.id}`,
+        kind: "savings",
+        label: `${budgetRule.name} savings reserve`,
+        amount: cashSavingsReserve,
+        destinationAccountId: reserveAccount?.id,
+        timing: `${savingsPercentage}% target · SIPs already counted`,
+        paidAmount: 0,
+        remainingAmount: cashSavingsReserve,
+      });
+    }
+  }
+
   for (const bill of bills) {
     if (bill.frequency !== "monthly" || bill.category === "Investment") continue;
     const kind: FundingPlanKind =
@@ -97,14 +131,8 @@ export function buildFundingPlan({
           : bill.category === "Utilities"
             ? "utility"
             : "bill";
-    const billingMonth = kind === "utility" ? previousBillingMonth : currentBillingMonth;
-    const paidAmount = expenses
-      .filter((expense) => expense.billId === bill.id && expense.billingMonth === billingMonth)
-      .reduce((sum, expense) => sum + expense.amount, 0);
-    const amount = kind === "utility" && paidAmount > 0 ? paidAmount : bill.amount;
-    const remainingAmount =
-      kind === "utility" && paidAmount > 0 ? 0 : Math.max(0, amount - paidAmount);
-    const utilityMonth = previousMonth.toLocaleDateString("en-US", { month: "long" });
+    const cycle = billCycle(bill, expenses, now);
+    const utilityMonth = cycle.billedMonth.toLocaleDateString("en-US", { month: "long" });
     items.push({
       id: `bill-${bill.id}`,
       kind,
@@ -112,18 +140,21 @@ export function buildFundingPlan({
         kind === "utility"
           ? `${bill.name.replace(/\s+Estimate$/i, "")} · ${utilityMonth} bill`
           : bill.name,
-      amount,
+      amount: cycle.amount,
       destinationAccountId: bill.accountId ?? reserveAccount?.id,
       timing:
         kind === "utility"
-          ? paidAmount > 0
-            ? `Paid the following month`
-            : `Expected the following month · around day ${bill.dueDay}`
-          : `Due around day ${bill.dueDay}`,
+          ? cycle.isPaid
+            ? `Paid the following month · ${cycle.occurrenceDate.toLocaleDateString("en-US", { day: "numeric", month: "short" })}`
+            : `Expected the following month · ${cycle.occurrenceDate.toLocaleDateString("en-US", { day: "numeric", month: "short" })}`
+          : cycle.occurrenceDate.toLocaleDateString("en-US", {
+              day: "numeric",
+              month: "short",
+            }),
       billId: bill.id,
-      billingMonth,
-      paidAmount,
-      remainingAmount,
+      billingMonth: cycle.billingMonth,
+      paidAmount: cycle.paidAmount,
+      remainingAmount: cycle.isPaid ? 0 : cycle.amount,
     });
   }
 

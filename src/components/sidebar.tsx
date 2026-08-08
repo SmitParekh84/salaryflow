@@ -12,6 +12,7 @@ import {
   Receipt,
   Settings,
   Target,
+  Trash2,
   TrendingUp,
   Users,
   Wallet,
@@ -32,6 +33,7 @@ const ICONS: Record<string, LucideIcon> = {
   BadgeIndianRupee,
   Settings,
   Users,
+  Trash2,
 };
 
 export function Sidebar() {

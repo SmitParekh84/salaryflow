@@ -66,7 +66,8 @@ export interface Bill {
   id: string;
   name: string;
   amount: number;
-  dueDay: number; // day of month
+  dueDay: number; // legacy fallback for records created before dueDate
+  dueDate?: string; // selected occurrence; monthly bills reuse its day
   frequency: BillFrequency;
   category: ExpenseCategory;
   paid: boolean;
@@ -178,6 +179,26 @@ export interface BudgetRule {
   templateKey?: string;
   active: boolean;
   allocations: BudgetAllocation[];
+}
+
+export type RecycleEntityType =
+  | "expense"
+  | "income"
+  | "bill"
+  | "goal"
+  | "investment"
+  | "account"
+  | "credit-card"
+  | "budget-rule"
+  | "salary-history";
+
+export interface RecycleBinItem {
+  id: string;
+  entityType: RecycleEntityType;
+  entityId: string;
+  label: string;
+  deletedAt: string;
+  data: Record<string, unknown>;
 }
 
 export interface SalaryHistoryEntry {

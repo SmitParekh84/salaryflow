@@ -6,14 +6,16 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
 import { buildFundingPlan, type FundingPlanItem } from "@/lib/funding-plan";
+import { useSummary } from "@/hooks/use-summary";
 import { useFinanceStore } from "@/lib/store";
 import { formatMoney, localDateInputValue, newestFirst } from "@/lib/utils";
-import { Check, CreditCard, Landmark, Plus, Receipt, TrendingUp } from "lucide-react";
+import { Check, CreditCard, Landmark, PiggyBank, Plus, Receipt, TrendingUp } from "lucide-react";
 import { useState } from "react";
 
 const KIND_ICON = {
   "credit-card": CreditCard,
   investment: TrendingUp,
+  savings: PiggyBank,
   rent: Receipt,
   subscription: Receipt,
   utility: Receipt,
@@ -29,6 +31,10 @@ export function FundingPlanView() {
   const investments = useFinanceStore((state) => state.investments);
   const salaryHistory = useFinanceStore((state) => state.salaryHistory);
   const profile = useFinanceStore((state) => state.profile);
+  const activeBudgetRule = useFinanceStore((state) =>
+    state.budgetRules.find((rule) => rule.active),
+  );
+  const summary = useSummary();
   const currency = profile.currency;
   const addExpense = useFinanceStore((state) => state.addExpense);
   const syncWithServer = useFinanceStore((state) => state.syncWithServer);
@@ -43,8 +49,17 @@ export function FundingPlanView() {
       Boolean(entry.confirmed && entry.date),
     ),
   )[0]?.amount;
-  const salary = confirmedSalary ?? profile.amount;
-  const plan = buildFundingPlan({ accounts, bills, creditCards, expenses, incomes, investments });
+  const salary = summary.income || confirmedSalary || profile.amount;
+  const plan = buildFundingPlan({
+    accounts,
+    bills,
+    creditCards,
+    expenses,
+    incomes,
+    investments,
+    budgetRule: activeBudgetRule,
+    monthlyIncome: salary,
+  });
   const availableAfterPlan = salary - plan.total;
 
   function openPayment(item: FundingPlanItem) {

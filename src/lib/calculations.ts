@@ -1,4 +1,5 @@
 import { evaluateBudgetRule } from "./budget-rules";
+import { billCycle } from "./bill-cycle";
 import type {
   Bill,
   BudgetRule,
@@ -63,6 +64,11 @@ export interface FinanceSummary {
   totalExpenses: number;
   investedThisCycle: number;
   savings: number;
+  savingsTarget: number;
+  plannedSavings: number;
+  spendingBudget: number;
+  needsBudget: number;
+  wantsBudget: number;
   remaining: number;
   daysRemaining: number;
   daysElapsed: number;
@@ -122,7 +128,15 @@ export function computeSummary(
 
   const investedThisCycle = investments.reduce((s, i) => s + (i.monthly ?? 0), 0);
 
-  const plannedSavings = profile.savingsGoal;
+  const allocationPercentage = (kind: "needs" | "wants" | "savings") =>
+    budgetRule?.allocations.find((allocation) => allocation.kind === kind)?.percentage ?? 0;
+  const savingsTarget = budgetRule
+    ? (income * allocationPercentage("savings")) / 100
+    : profile.savingsGoal;
+  const plannedSavings = Math.max(0, savingsTarget - investedThisCycle);
+  const spendingBudget = Math.max(0, income - savingsTarget);
+  const needsBudget = budgetRule ? (income * allocationPercentage("needs")) / 100 : 0;
+  const wantsBudget = budgetRule ? (income * allocationPercentage("wants")) / 100 : spendingBudget;
   const remaining = income - totalExpenses - investedThisCycle - plannedSavings;
 
   const safeToSpendPerDay = Math.max(0, remaining / daysRemaining);
@@ -163,6 +177,11 @@ export function computeSummary(
     totalExpenses,
     investedThisCycle,
     savings,
+    savingsTarget,
+    plannedSavings,
+    spendingBudget,
+    needsBudget,
+    wantsBudget,
     remaining,
     daysRemaining,
     daysElapsed,
@@ -215,14 +234,14 @@ export function projectedGoalDate(goal: Goal): string | null {
   return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
-export function upcomingBills(bills: Bill[], now = new Date()): Bill[] {
-  const day = now.getDate();
+export function upcomingBills(bills: Bill[], expenses: Expense[] = [], now = new Date()): Bill[] {
   return [...bills]
-    .filter((b) => !b.paid)
+    .filter((bill) => !billCycle(bill, expenses, now).isPaid)
     .sort((a, b) => {
-      const da = a.dueDay >= day ? a.dueDay - day : a.dueDay + 31 - day;
-      const db = b.dueDay >= day ? b.dueDay - day : b.dueDay + 31 - day;
-      return da - db;
+      return (
+        billCycle(a, expenses, now).occurrenceDate.getTime() -
+        billCycle(b, expenses, now).occurrenceDate.getTime()
+      );
     });
 }
 

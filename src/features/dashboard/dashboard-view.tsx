@@ -11,6 +11,7 @@ import { ExpenseForm } from "@/features/expenses/expense-form";
 import { SeedPrompt, TransactionList } from "@/features/expenses/transaction-list";
 import { useSummary } from "@/hooks/use-summary";
 import { projectedGoalDate, upcomingBills } from "@/lib/calculations";
+import { billCycle } from "@/lib/bill-cycle";
 import { CATEGORY_META } from "@/lib/constants";
 import { buildFundingPlan } from "@/lib/funding-plan";
 import { useFinanceStore } from "@/lib/store";
@@ -39,12 +40,13 @@ export function DashboardView() {
   const creditCards = useFinanceStore((s) => s.creditCards);
   const incomes = useFinanceStore((s) => s.incomes);
   const investments = useFinanceStore((s) => s.investments);
+  const activeBudgetRule = useFinanceStore((s) => s.budgetRules.find((rule) => rule.active));
   const summary = useSummary();
   const [addOpen, setAddOpen] = useState(false);
 
   const currency = profile.currency;
   const topGoal = goals[0];
-  const nextBills = upcomingBills(bills).slice(0, 3);
+  const nextBills = upcomingBills(bills, expenses).slice(0, 3);
   const emergency = goals.find((g) => g.type === "Emergency Fund");
   const fundingPlan = buildFundingPlan({
     accounts,
@@ -53,6 +55,8 @@ export function DashboardView() {
     expenses,
     incomes,
     investments,
+    budgetRule: activeBudgetRule,
+    monthlyIncome: summary.income,
   });
 
   const insights = buildInsights(summary, nextBills.length);
@@ -96,6 +100,11 @@ export function DashboardView() {
           icon={PiggyBank}
           accent="#22c55e"
           trend={Math.round(summary.savingsRate)}
+          hint={
+            summary.budgetRuleName
+              ? `${formatMoney(summary.savingsTarget, currency, true)} rule target`
+              : undefined
+          }
           delay={0.1}
         />
         <StatCard
@@ -116,7 +125,9 @@ export function DashboardView() {
             </div>
             <div>
               <p className="text-sm font-semibold">Salary-day funding plan</p>
-              <p className="text-xs text-muted">Cards, rent, SIPs, subscriptions and utilities</p>
+              <p className="text-xs text-muted">
+                Cards, bills, SIPs, and your active savings rule
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -246,7 +257,12 @@ export function DashboardView() {
                   </div>
                   <div className="text-right">
                     <p className="font-semibold">{formatMoney(b.amount, currency)}</p>
-                    <p className="text-[10px] text-muted">Due {b.dueDay}th</p>
+                    <p className="text-[10px] text-muted">
+                      {billCycle(b, expenses).occurrenceDate.toLocaleDateString("en-US", {
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </p>
                   </div>
                 </div>
               ))}

@@ -6,62 +6,114 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import { upcomingBills } from "@/lib/calculations";
+import { billCycle, billOccurrenceDate } from "@/lib/bill-cycle";
 import { CATEGORIES, CATEGORY_META } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { Bill } from "@/lib/types";
-import { cn, formatMoney } from "@/lib/utils";
-import { CalendarClock, Check, Plus, Trash2 } from "lucide-react";
+import { dateInputToIso, formatMoney, localDateInputValue, parseFinancialDate } from "@/lib/utils";
+import { CalendarClock, Check, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export function BillsView() {
   const bills = useFinanceStore((s) => s.bills);
+  const expenses = useFinanceStore((s) => s.expenses);
   const currency = useFinanceStore((s) => s.profile.currency);
-  const toggleBillPaid = useFinanceStore((s) => s.toggleBillPaid);
   const deleteBill = useFinanceStore((s) => s.deleteBill);
   const addBill = useFinanceStore((s) => s.addBill);
+  const updateBill = useFinanceStore((s) => s.updateBill);
+  const addExpense = useFinanceStore((s) => s.addExpense);
   const accounts = useFinanceStore((s) => s.accounts);
   const syncWithServer = useFinanceStore((s) => s.syncWithServer);
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: "",
     amount: 0,
-    dueDay: 1,
+    dueDate: localDateInputValue(),
     category: "Utilities" as Bill["category"],
     accountId: "",
   });
 
   const sorted = useMemo(() => {
-    const pending = upcomingBills(bills);
-    const paid = bills.filter((b) => b.paid);
-    return [...pending, ...paid];
-  }, [bills]);
+    return [...bills].sort((first, second) => {
+      const firstCycle = billCycle(first, expenses);
+      const secondCycle = billCycle(second, expenses);
+      if (firstCycle.isPaid !== secondCycle.isPaid) return firstCycle.isPaid ? 1 : -1;
+      return firstCycle.occurrenceDate.getTime() - secondCycle.occurrenceDate.getTime();
+    });
+  }, [bills, expenses]);
 
-  const totalDue = bills.filter((b) => !b.paid).reduce((s, b) => s + b.amount, 0);
-  const day = new Date().getDate();
+  const totalDue = bills.reduce((sum, bill) => {
+    const cycle = billCycle(bill, expenses);
+    return cycle.isPaid ? sum : sum + cycle.amount;
+  }, 0);
 
   const openAdd = () => {
     const defaultAccount = accounts.find(
       (account) => account.status === "active" && account.defaultFor?.includes("subscriptions"),
     );
-    setForm((current) => ({ ...current, accountId: defaultAccount?.id ?? "" }));
+    setEditingId(null);
+    setForm({
+      name: "",
+      amount: 0,
+      dueDate: localDateInputValue(),
+      category: "Utilities",
+      accountId: defaultAccount?.id ?? "",
+    });
+    setOpen(true);
+  };
+
+  const openEdit = (bill: Bill) => {
+    setEditingId(bill.id);
+    setForm({
+      name: bill.name,
+      amount: bill.amount,
+      dueDate: bill.dueDate
+        ? localDateInputValue(parseFinancialDate(bill.dueDate))
+        : localDateInputValue(billOccurrenceDate(bill)),
+      category: bill.category,
+      accountId: bill.accountId ?? "",
+    });
     setOpen(true);
   };
 
   const save = async () => {
     if (!form.name || form.amount <= 0) return;
-    addBill({
-      name: form.name,
+    const selectedDate = parseFinancialDate(form.dueDate);
+    const existing = editingId ? bills.find((bill) => bill.id === editingId) : undefined;
+    const bill = {
+      name: form.name.trim(),
       amount: form.amount,
-      dueDay: form.dueDay,
-      frequency: "monthly",
+      dueDay: selectedDate.getDate(),
+      dueDate: dateInputToIso(form.dueDate),
+      frequency: "monthly" as const,
       category: form.category,
-      paid: false,
+      paid: existing?.paid ?? false,
       accountId: form.accountId || undefined,
-    });
-    setForm({ name: "", amount: 0, dueDay: 1, category: "Utilities", accountId: "" });
+    };
+    if (editingId) updateBill(editingId, bill);
+    else addBill(bill);
     setOpen(false);
+    await syncWithServer();
+  };
+
+  const markPaid = async (bill: Bill) => {
+    const cycle = billCycle(bill, expenses);
+    if (cycle.isPaid) return;
+    const account = accounts.find((candidate) => candidate.id === bill.accountId);
+    addExpense({
+      amount: cycle.amount,
+      category: bill.category,
+      merchant: bill.name,
+      paymentMethod: "UPI",
+      note: `${cycle.billedMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })} bill${account ? ` · Paid from ${account.bankName}` : ""}`,
+      date: new Date().toISOString(),
+      recurring: false,
+      accountId: bill.accountId,
+      billId: bill.id,
+      billingMonth: cycle.billingMonth,
+    });
     await syncWithServer();
   };
 
@@ -89,8 +141,12 @@ export function BillsView() {
         <div className="grid gap-3 sm:grid-cols-2">
           {sorted.map((b) => {
             const meta = CATEGORY_META[b.category];
-            const overdue = !b.paid && b.dueDay < day;
+            const cycle = billCycle(b, expenses);
             const account = accounts.find((item) => item.id === b.accountId);
+            const dateLabel = cycle.occurrenceDate.toLocaleDateString("en-US", {
+              day: "numeric",
+              month: "short",
+            });
             return (
               <Card key={b.id} className="flex items-center gap-3 p-4">
                 <div
@@ -105,11 +161,14 @@ export function BillsView() {
                   <p className="truncate text-sm font-semibold">{b.name}</p>
                   <div className="mt-0.5 flex items-center gap-2">
                     <span className="text-xs text-muted">
-                      Due {b.dueDay}th{account ? ` · ${account.bankName}` : ""}
+                      {b.category === "Utilities"
+                        ? `${cycle.billedMonth.toLocaleDateString("en-US", { month: "long" })} bill · ${dateLabel}`
+                        : dateLabel}
+                      {account ? ` · ${account.bankName}` : ""}
                     </span>
-                    {b.paid ? (
+                    {cycle.isPaid ? (
                       <Badge color="var(--success)">Paid</Badge>
-                    ) : overdue ? (
+                    ) : cycle.overdue ? (
                       <Badge color="var(--danger)">Overdue</Badge>
                     ) : (
                       <Badge color="var(--warning)">Pending</Badge>
@@ -117,24 +176,31 @@ export function BillsView() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold">{formatMoney(b.amount, currency)}</p>
+                  <p className="text-sm font-bold">{formatMoney(cycle.amount, currency)}</p>
                   <div className="mt-1 flex items-center justify-end gap-1">
+                    {!cycle.isPaid && (
+                      <button
+                        onClick={() => void markPaid(b)}
+                        className="rounded-lg p-1.5 text-muted transition-colors hover:bg-success/10 hover:text-success"
+                        aria-label={`Mark ${b.name} paid`}
+                        title="Mark paid"
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                    )}
                     <button
-                      onClick={() => toggleBillPaid(b.id)}
-                      className={cn(
-                        "rounded-lg p-1.5 transition-colors",
-                        b.paid
-                          ? "text-success hover:bg-success/10"
-                          : "text-muted hover:bg-surface-2",
-                      )}
-                      aria-label="Toggle paid"
+                      onClick={() => openEdit(b)}
+                      className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-2 hover:text-foreground"
+                      aria-label={`Edit ${b.name}`}
+                      title="Edit bill"
                     >
-                      <Check className="h-4 w-4" />
+                      <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => deleteBill(b.id)}
                       className="rounded-lg p-1.5 text-danger hover:bg-danger/10"
-                      aria-label="Delete"
+                      aria-label={`Move ${b.name} to recycle bin`}
+                      title="Move to recycle bin"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -146,7 +212,11 @@ export function BillsView() {
         </div>
       )}
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Add bill">
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={editingId ? "Edit bill" : "Add bill"}
+      >
         <div className="space-y-4">
           <div>
             <Label>Bill name</Label>
@@ -167,19 +237,13 @@ export function BillsView() {
               />
             </div>
             <div>
-              <Label>Due day</Label>
+              <Label>Date</Label>
               <Input
-                type="number"
-                min={1}
-                max={31}
-                value={form.dueDay}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    dueDay: Math.max(1, Math.min(31, Number(e.target.value))),
-                  })
-                }
+                type="date"
+                value={form.dueDate}
+                onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
               />
+              <p className="mt-1 text-xs text-muted">Repeats monthly on this date.</p>
             </div>
           </div>
           <div>
@@ -218,7 +282,7 @@ export function BillsView() {
               Cancel
             </Button>
             <Button className="flex-1" onClick={() => void save()}>
-              Add bill
+              {editingId ? "Save changes" : "Add bill"}
             </Button>
           </div>
         </div>

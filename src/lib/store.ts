@@ -20,6 +20,8 @@ import type {
   Goal,
   Income,
   Investment,
+  RecycleBinItem,
+  RecycleEntityType,
   SalaryHistoryEntry,
   SalaryProfile,
   UserProfile,
@@ -37,6 +39,7 @@ interface FinanceState {
   accounts: BankAccount[];
   creditCards: CreditCard[];
   budgetRules: BudgetRule[];
+  recycleBin: RecycleBinItem[];
   salaryHistory: SalaryHistoryEntry[];
   notifications: AppNotification[];
 
@@ -86,6 +89,10 @@ interface FinanceState {
   addBudgetRule: (rule: Omit<BudgetRule, "id">) => void;
   activateBudgetRule: (id: string) => void;
   deleteBudgetRule: (id: string) => void;
+
+  // recycle bin
+  restoreRecycleItem: (id: string) => Promise<void>;
+  permanentlyDeleteRecycleItem: (id: string) => Promise<void>;
 
   // salary history
   loadSalaryHistory: () => Promise<void> | void;
@@ -153,6 +160,22 @@ function normalizeServerItems<T extends { id: string }>(items: unknown, fallback
   });
 }
 
+function recycleItem(
+  entityType: RecycleEntityType,
+  entityId: string,
+  label: string,
+  data: object,
+): RecycleBinItem {
+  return {
+    id: uid("trash"),
+    entityType,
+    entityId,
+    label,
+    deletedAt: new Date().toISOString(),
+    data: { ...data } as Record<string, unknown>,
+  };
+}
+
 export const useFinanceStore = create<FinanceState>()(
   persist(
     (set, get) => ({
@@ -166,6 +189,7 @@ export const useFinanceStore = create<FinanceState>()(
       accounts: [],
       creditCards: [],
       budgetRules: [],
+      recycleBin: [],
       salaryHistory: [],
       notifications: [],
 
@@ -186,21 +210,48 @@ export const useFinanceStore = create<FinanceState>()(
         set((s) => ({
           expenses: s.expenses.map((e) => (e.id === id ? { ...e, ...patch } : e)),
         })),
-      deleteExpense: (id) => set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) })),
+      deleteExpense: (id) => {
+        const item = get().expenses.find((expense) => expense.id === id);
+        if (!item) return;
+        set((state) => ({
+          expenses: state.expenses.filter((expense) => expense.id !== id),
+          recycleBin: [
+            recycleItem("expense", id, item.merchant || item.category, item),
+            ...state.recycleBin,
+          ],
+        }));
+        void get().syncWithServer();
+      },
       toggleFavorite: (id) =>
         set((s) => ({
           expenses: s.expenses.map((e) => (e.id === id ? { ...e, favorite: !e.favorite } : e)),
         })),
 
       addIncome: (i) => set((s) => ({ incomes: [{ ...i, id: uid("inc") }, ...s.incomes] })),
-      deleteIncome: (id) => set((s) => ({ incomes: s.incomes.filter((i) => i.id !== id) })),
+      deleteIncome: (id) => {
+        const item = get().incomes.find((income) => income.id === id);
+        if (!item) return;
+        set((state) => ({
+          incomes: state.incomes.filter((income) => income.id !== id),
+          recycleBin: [recycleItem("income", id, item.source, item), ...state.recycleBin],
+        }));
+        void get().syncWithServer();
+      },
 
       addBill: (b) => set((s) => ({ bills: [...s.bills, { ...b, id: uid("bill") }] })),
       updateBill: (id, patch) =>
         set((s) => ({
           bills: s.bills.map((b) => (b.id === id ? { ...b, ...patch } : b)),
         })),
-      deleteBill: (id) => set((s) => ({ bills: s.bills.filter((b) => b.id !== id) })),
+      deleteBill: (id) => {
+        const item = get().bills.find((bill) => bill.id === id);
+        if (!item) return;
+        set((state) => ({
+          bills: state.bills.filter((bill) => bill.id !== id),
+          recycleBin: [recycleItem("bill", id, item.name, item), ...state.recycleBin],
+        }));
+        void get().syncWithServer();
+      },
       toggleBillPaid: (id) =>
         set((s) => ({
           bills: s.bills.map((b) => (b.id === id ? { ...b, paid: !b.paid } : b)),
@@ -215,7 +266,15 @@ export const useFinanceStore = create<FinanceState>()(
         set((s) => ({
           goals: s.goals.map((g) => (g.id === id ? { ...g, saved: g.saved + amount } : g)),
         })),
-      deleteGoal: (id) => set((s) => ({ goals: s.goals.filter((g) => g.id !== id) })),
+      deleteGoal: (id) => {
+        const item = get().goals.find((goal) => goal.id === id);
+        if (!item) return;
+        set((state) => ({
+          goals: state.goals.filter((goal) => goal.id !== id),
+          recycleBin: [recycleItem("goal", id, item.name, item), ...state.recycleBin],
+        }));
+        void get().syncWithServer();
+      },
 
       addInvestment: (i) =>
         set((s) => ({ investments: [...s.investments, { ...i, id: uid("inv") }] })),
@@ -223,8 +282,15 @@ export const useFinanceStore = create<FinanceState>()(
         set((s) => ({
           investments: s.investments.map((i) => (i.id === id ? { ...i, ...patch } : i)),
         })),
-      deleteInvestment: (id) =>
-        set((s) => ({ investments: s.investments.filter((i) => i.id !== id) })),
+      deleteInvestment: (id) => {
+        const item = get().investments.find((investment) => investment.id === id);
+        if (!item) return;
+        set((state) => ({
+          investments: state.investments.filter((investment) => investment.id !== id),
+          recycleBin: [recycleItem("investment", id, item.name, item), ...state.recycleBin],
+        }));
+        void get().syncWithServer();
+      },
 
       addAccount: (account) =>
         set((s) => ({ accounts: [...s.accounts, { ...account, id: uid("acct") }] })),
@@ -234,8 +300,15 @@ export const useFinanceStore = create<FinanceState>()(
             account.id === id ? { ...account, ...patch } : account,
           ),
         })),
-      deleteAccount: (id) =>
-        set((s) => ({ accounts: s.accounts.filter((account) => account.id !== id) })),
+      deleteAccount: (id) => {
+        const item = get().accounts.find((account) => account.id === id);
+        if (!item) return;
+        set((state) => ({
+          accounts: state.accounts.filter((account) => account.id !== id),
+          recycleBin: [recycleItem("account", id, item.bankName, item), ...state.recycleBin],
+        }));
+        void get().syncWithServer();
+      },
 
       addCreditCard: (card) =>
         set((s) => ({ creditCards: [...s.creditCards, { ...card, id: uid("card") }] })),
@@ -243,8 +316,15 @@ export const useFinanceStore = create<FinanceState>()(
         set((s) => ({
           creditCards: s.creditCards.map((card) => (card.id === id ? { ...card, ...patch } : card)),
         })),
-      deleteCreditCard: (id) =>
-        set((s) => ({ creditCards: s.creditCards.filter((card) => card.id !== id) })),
+      deleteCreditCard: (id) => {
+        const item = get().creditCards.find((card) => card.id === id);
+        if (!item) return;
+        set((state) => ({
+          creditCards: state.creditCards.filter((card) => card.id !== id),
+          recycleBin: [recycleItem("credit-card", id, item.name, item), ...state.recycleBin],
+        }));
+        void get().syncWithServer();
+      },
 
       addBudgetRule: (rule) =>
         set((s) => ({
@@ -260,8 +340,74 @@ export const useFinanceStore = create<FinanceState>()(
         set((s) => ({
           budgetRules: s.budgetRules.map((rule) => ({ ...rule, active: rule.id === id })),
         })),
-      deleteBudgetRule: (id) =>
-        set((s) => ({ budgetRules: s.budgetRules.filter((rule) => rule.id !== id) })),
+      deleteBudgetRule: (id) => {
+        const item = get().budgetRules.find((rule) => rule.id === id);
+        if (!item) return;
+        set((state) => ({
+          budgetRules: state.budgetRules.filter((rule) => rule.id !== id),
+          recycleBin: [recycleItem("budget-rule", id, item.name, item), ...state.recycleBin],
+        }));
+        void get().syncWithServer();
+      },
+
+      restoreRecycleItem: async (id) => {
+        const item = get().recycleBin.find((candidate) => candidate.id === id);
+        if (!item) return;
+
+        if (item.entityType === "salary-history") {
+          const response = await fetch("/api/salary/history", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(item.data),
+          });
+          if (!response.ok) return;
+          set((state) => ({ recycleBin: state.recycleBin.filter((entry) => entry.id !== id) }));
+          await get().loadSalaryHistory();
+          await get().syncWithServer();
+          return;
+        }
+
+        set((state) => {
+          const recycleBin = state.recycleBin.filter((entry) => entry.id !== id);
+          switch (item.entityType) {
+            case "expense":
+              return { expenses: [item.data as unknown as Expense, ...state.expenses], recycleBin };
+            case "income":
+              return { incomes: [item.data as unknown as Income, ...state.incomes], recycleBin };
+            case "bill":
+              return { bills: [item.data as unknown as Bill, ...state.bills], recycleBin };
+            case "goal":
+              return { goals: [item.data as unknown as Goal, ...state.goals], recycleBin };
+            case "investment":
+              return {
+                investments: [item.data as unknown as Investment, ...state.investments],
+                recycleBin,
+              };
+            case "account":
+              return {
+                accounts: [item.data as unknown as BankAccount, ...state.accounts],
+                recycleBin,
+              };
+            case "credit-card":
+              return {
+                creditCards: [item.data as unknown as CreditCard, ...state.creditCards],
+                recycleBin,
+              };
+            case "budget-rule":
+              return {
+                budgetRules: [item.data as unknown as BudgetRule, ...state.budgetRules],
+                recycleBin,
+              };
+          }
+        });
+        await get().syncWithServer();
+      },
+
+      permanentlyDeleteRecycleItem: async (id) => {
+        set((state) => ({ recycleBin: state.recycleBin.filter((item) => item.id !== id) }));
+        await get().syncWithServer();
+      },
 
       // salary history
       loadSalaryHistory: async () => {
@@ -301,13 +447,27 @@ export const useFinanceStore = create<FinanceState>()(
         } catch {}
       },
       deleteSalaryEntry: async (id) => {
+        const item = get().salaryHistory.find((entry) => entry._id === id);
+        if (!item) return;
+        set((state) => ({
+          salaryHistory: state.salaryHistory.filter((entry) => entry._id !== id),
+          recycleBin: [
+            recycleItem(
+              "salary-history",
+              id,
+              item.source || `Salary from ${new Date(item.date).toLocaleDateString()}`,
+              item,
+            ),
+            ...state.recycleBin,
+          ],
+        }));
         try {
           const res = await fetch(`/api/salary/history?id=${id}`, {
             method: "DELETE",
             credentials: "include",
           });
           if (!res.ok) return;
-          set((s) => ({ salaryHistory: s.salaryHistory.filter((h) => h._id !== id) }));
+          await get().syncWithServer();
         } catch {}
       },
 
@@ -338,6 +498,7 @@ export const useFinanceStore = create<FinanceState>()(
               accounts: state.accounts,
               creditCards: state.creditCards,
               budgetRules: state.budgetRules,
+              recycleBin: state.recycleBin,
             }),
             credentials: "include",
           });
@@ -355,6 +516,7 @@ export const useFinanceStore = create<FinanceState>()(
               accounts: normalizeServerItems<BankAccount>(d.accounts, state.accounts),
               creditCards: normalizeServerItems<CreditCard>(d.creditCards, state.creditCards),
               budgetRules: normalizeServerItems<BudgetRule>(d.budgetRules, state.budgetRules),
+              recycleBin: normalizeServerItems<RecycleBinItem>(d.recycleBin, state.recycleBin),
             });
           }
         } catch {
@@ -382,6 +544,7 @@ export const useFinanceStore = create<FinanceState>()(
             accounts: normalizeServerItems<BankAccount>(data.accounts, []),
             creditCards: normalizeServerItems<CreditCard>(data.creditCards, []),
             budgetRules: normalizeServerItems<BudgetRule>(data.budgetRules, []),
+            recycleBin: normalizeServerItems<RecycleBinItem>(data.recycleBin, []),
           });
         } catch {
           // Keep the last locally persisted state while offline.
@@ -400,6 +563,7 @@ export const useFinanceStore = create<FinanceState>()(
           accounts: [],
           creditCards: [],
           budgetRules: [],
+          recycleBin: [],
           salaryHistory: [],
           notifications: seedNotifications(),
         }),
@@ -416,6 +580,7 @@ export const useFinanceStore = create<FinanceState>()(
           accounts: [],
           creditCards: [],
           budgetRules: [],
+          recycleBin: [],
           salaryHistory: [],
           notifications: [],
         }),
@@ -436,6 +601,7 @@ export const useFinanceStore = create<FinanceState>()(
           accounts: normalizeServerItems<BankAccount>(state.accounts, []),
           creditCards: normalizeServerItems<CreditCard>(state.creditCards, []),
           budgetRules: normalizeServerItems<BudgetRule>(state.budgetRules, []),
+          recycleBin: normalizeServerItems<RecycleBinItem>(state.recycleBin, []),
         };
       },
     },

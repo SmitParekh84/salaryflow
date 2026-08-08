@@ -90,5 +90,6 @@ export const NAV_ITEMS = [
   { href: "/investments", label: "Investments", icon: "TrendingUp" },
   { href: "/analytics", label: "Analytics", icon: "BarChart3" },
   { href: "/rules", label: "Budget rules", icon: "ListChecks" },
+  { href: "/recycle-bin", label: "Recycle bin", icon: "Trash2" },
   { href: "/settings", label: "Settings", icon: "Settings" },
 ] as const;

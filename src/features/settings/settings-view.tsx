@@ -23,6 +23,7 @@ export function SettingsView() {
   const router = useRouter();
   const user = useFinanceStore((s) => s.user);
   const profile = useFinanceStore((s) => s.profile);
+  const activeBudgetRule = useFinanceStore((s) => s.budgetRules.find((rule) => rule.active));
   const expenses = useFinanceStore((s) => s.expenses);
   const updateUser = useFinanceStore((s) => s.updateUser);
   const updateProfile = useFinanceStore((s) => s.updateProfile);
@@ -135,8 +136,14 @@ export function SettingsView() {
               <Input
                 type="number"
                 value={profile.savingsGoal || ""}
+                disabled={Boolean(activeBudgetRule)}
                 onChange={(e) => updateProfile({ savingsGoal: Number(e.target.value) })}
               />
+              <p className="mt-1 text-xs text-muted">
+                {activeBudgetRule
+                  ? `${activeBudgetRule.name} currently sets this amount.`
+                  : "Used when no budget rule is active."}
+              </p>
             </div>
             <div>
               <Label>Emergency fund target</Label>

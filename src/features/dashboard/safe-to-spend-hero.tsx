@@ -71,6 +71,11 @@ export function SafeToSpendHero({
                 Using confirmed salary
               </span>
             )}
+            {summary.budgetRuleName && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                {summary.budgetRuleName} · {formatMoney(summary.savingsTarget, currency)} saved first
+              </span>
+            )}
           </div>
         </div>
 

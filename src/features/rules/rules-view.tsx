@@ -10,6 +10,7 @@ import { useSummary } from "@/hooks/use-summary";
 import { BUDGET_RULE_TEMPLATES, createRuleFromTemplate } from "@/lib/budget-rules";
 import { useFinanceStore } from "@/lib/store";
 import type { BudgetBucketKind } from "@/lib/types";
+import { formatMoney } from "@/lib/utils";
 import { Check, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -26,6 +27,7 @@ export function RulesView() {
   const deleteRule = useFinanceStore((state) => state.deleteBudgetRule);
   const syncWithServer = useFinanceStore((state) => state.syncWithServer);
   const summary = useSummary();
+  const currency = useFinanceStore((state) => state.profile.currency);
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("My budget rule");
@@ -74,8 +76,8 @@ export function RulesView() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="max-w-2xl text-sm leading-relaxed text-muted">
-            Choose a proven breakdown or create your own. Your active rule measures spending and
-            contributes to dashboard health.
+            Choose a breakdown or create your own. The active rule sets your savings reserve,
+            spending limits, daily safe-to-spend, and Salary Plan amounts across the app.
           </p>
         </div>
         <Button size="sm" onClick={() => setOpen(true)}>
@@ -91,7 +93,9 @@ export function RulesView() {
                 <ShieldCheck className="h-5 w-5 text-primary" />
                 <h2 className="font-semibold">{activeRule.name}</h2>
               </div>
-              <p className="mt-1 text-xs text-muted">Active rule · included in health score</p>
+              <p className="mt-1 text-xs text-muted">
+                Active across savings, spending, Salary Plan, and health score
+              </p>
             </div>
             {summary.budgetRuleScore !== undefined && (
               <div className="text-right">
@@ -112,6 +116,9 @@ export function RulesView() {
                     </span>
                   </div>
                   <Progress value={(actual / Math.max(1, allocation.percentage)) * 100} />
+                  <p className="mt-1 text-[11px] text-muted">
+                    Plan {formatMoney((summary.income * allocation.percentage) / 100, currency)}
+                  </p>
                 </div>
               );
             })}

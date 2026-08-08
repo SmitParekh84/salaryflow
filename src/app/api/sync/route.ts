@@ -9,6 +9,7 @@ import {
   GoalModel,
   IncomeModel,
   InvestmentModel,
+  RecycleBinModel,
   SalaryProfileModel,
   UserModel,
 } from "@/server/models";
@@ -41,6 +42,7 @@ async function getServerState(userId: string) {
     accounts,
     creditCards,
     budgetRules,
+    recycleBin,
   ] = await Promise.all([
     SalaryProfileModel.findOne({ userId }).lean(),
     ExpenseModel.find({ userId }).lean(),
@@ -51,6 +53,7 @@ async function getServerState(userId: string) {
     BankAccountModel.find({ userId }).lean(),
     CreditCardModel.find({ userId }).lean(),
     BudgetRuleModel.find({ userId }).lean(),
+    RecycleBinModel.find({ userId }).sort({ deletedAt: -1 }).lean(),
   ]);
 
   return {
@@ -63,6 +66,7 @@ async function getServerState(userId: string) {
     accounts,
     creditCards,
     budgetRules,
+    recycleBin,
   };
 }
 
@@ -101,6 +105,7 @@ export async function POST(req: Request) {
     { model: BankAccountModel, items: body.accounts || [] },
     { model: CreditCardModel, items: body.creditCards || [] },
     { model: BudgetRuleModel, items: body.budgetRules || [] },
+    { model: RecycleBinModel, items: body.recycleBin || [] },
   ];
 
   for (const entry of collections) {
