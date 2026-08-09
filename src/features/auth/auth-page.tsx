@@ -39,7 +39,9 @@ function getPasswordStrength(password: string) {
 
 export function AuthPage({ mode }: { mode: AuthMode }) {
   return (
-    <Suspense fallback={<div className="auth-background min-h-dvh" aria-label="Loading account access" />}>
+    <Suspense
+      fallback={<div className="auth-background min-h-dvh" aria-label="Loading account access" />}
+    >
       <AuthContent mode={mode} />
     </Suspense>
   );
@@ -62,9 +64,7 @@ function AuthContent({ mode }: { mode: AuthMode }) {
   const strength = getPasswordStrength(password);
   const requestedPath = searchParams.get("next");
   const nextPath =
-    requestedPath?.startsWith("/") && !requestedPath.startsWith("//")
-      ? requestedPath
-      : undefined;
+    requestedPath?.startsWith("/") && !requestedPath.startsWith("//") ? requestedPath : undefined;
 
   useEffect(() => {
     if (resendTimer <= 0) return;
@@ -189,9 +189,21 @@ function AuthContent({ mode }: { mode: AuthMode }) {
             Your salary cycle, ready where you left it.
           </p>
           <div className="mt-10 space-y-6">
-            <FlowStep number="1" title="Secure your account" detail="Sign in or create a verified account." />
-            <FlowStep number="2" title="Set up your cycle" detail="New accounts complete a short money setup." />
-            <FlowStep number="3" title="Continue with clarity" detail="See what is safe to spend today." />
+            <FlowStep
+              number="1"
+              title="Secure your account"
+              detail="Sign in or create a verified account."
+            />
+            <FlowStep
+              number="2"
+              title="Set up your cycle"
+              detail="New accounts complete a short money setup."
+            />
+            <FlowStep
+              number="3"
+              title="Continue with clarity"
+              detail="See what is safe to spend today."
+            />
           </div>
         </div>
         <p className="text-xs text-background/60">
@@ -205,7 +217,10 @@ function AuthContent({ mode }: { mode: AuthMode }) {
             <Brand />
           </div>
 
-          <nav className="mt-8 grid grid-cols-2 rounded-xl bg-surface-2/90 p-1 lg:mt-0" aria-label="Account access">
+          <nav
+            className="mt-8 grid grid-cols-2 rounded-xl bg-surface-2/90 p-1 lg:mt-0"
+            aria-label="Account access"
+          >
             <Link
               href="/login"
               aria-current={mode === "signin" ? "page" : undefined}
@@ -439,8 +454,6 @@ function PasswordForm({
           label="Create password"
           value={password}
           setValue={setPassword}
-          visible={showPassword}
-          setVisible={setShowPassword}
           autoComplete="new-password"
           autoFocus
         />
@@ -454,6 +467,7 @@ function PasswordForm({
         visible={showPassword}
         setVisible={setShowPassword}
         autoComplete="new-password"
+        revealable
       />
       {confirmPassword && password !== confirmPassword && (
         <p className="-mt-3 text-xs text-danger">Passwords do not match</p>
@@ -541,7 +555,10 @@ function SignupProgress({ step }: { step: SignupStep }) {
         {[1, 2, 3].map((value) => (
           <span
             key={value}
-            className={cn("h-1.5 w-5 rounded-full", value <= stepNumber ? "bg-primary" : "bg-border")}
+            className={cn(
+              "h-1.5 w-5 rounded-full",
+              value <= stepNumber ? "bg-primary" : "bg-border",
+            )}
           />
         ))}
       </div>
@@ -587,15 +604,17 @@ function PasswordField({
   setVisible,
   autoComplete,
   autoFocus,
+  revealable = true,
 }: {
   id: string;
   label: string;
   value: string;
   setValue: (value: string) => void;
-  visible: boolean;
-  setVisible: (value: boolean) => void;
+  visible?: boolean;
+  setVisible?: (value: boolean) => void;
   autoComplete: "current-password" | "new-password";
   autoFocus?: boolean;
+  revealable?: boolean;
 }) {
   return (
     <div>
@@ -606,22 +625,24 @@ function PasswordField({
           id={id}
           value={value}
           onChange={(event) => setValue(event.target.value)}
-          type={visible ? "text" : "password"}
+          type={revealable && visible ? "text" : "password"}
           autoComplete={autoComplete}
           minLength={autoComplete === "new-password" ? 12 : 1}
           maxLength={128}
-          className="px-10"
+          className={cn("pl-10", revealable && "pr-10")}
           autoFocus={autoFocus}
           required
         />
-        <button
-          type="button"
-          aria-label={visible ? "Hide password" : "Show password"}
-          onClick={() => setVisible(!visible)}
-          className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-xl text-muted outline-none focus-visible:ring-2 focus-visible:ring-(--ring)"
-        >
-          {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
+        {revealable && setVisible && (
+          <button
+            type="button"
+            aria-label={visible ? "Hide password" : "Show password"}
+            onClick={() => setVisible(!visible)}
+            className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-xl text-muted outline-none focus-visible:ring-2 focus-visible:ring-(--ring)"
+          >
+            {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        )}
       </div>
     </div>
   );

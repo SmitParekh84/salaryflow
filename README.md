@@ -57,7 +57,7 @@ public/
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in MONGODB_URI + AUTH_SECRET
+cp .env.example .env.local   # fill in database, auth, and SMTP settings
 npm run dev                  # http://localhost:3000 (Turbopack)
 ```
 
@@ -89,10 +89,19 @@ data”** during onboarding, to populate a realistic dataset.
 Environment variables (`.env.local`):
 
 ```
-MONGODB_URI=...      # MongoDB Atlas connection string (db: salaryflow)
-AUTH_SECRET=...      # Auth.js secret
-NEXTAUTH_URL=...     # e.g. http://localhost:3000
+MONGODB_URI=...      # MongoDB connection string (db: salaryflow)
+AUTH_SECRET=...      # At least 32 random characters
+SMTP_HOST=...        # SMTP server used for account emails
+SMTP_PORT=587        # Usually 587, or 465 with SMTP_SECURE=true
+SMTP_SECURE=false
+SMTP_USER=...
+SMTP_PASS=...
+SMTP_FROM="SalaryFlow <no-reply@your-domain.com>"
 ```
+
+Registration and password-reset codes require SMTP. The API returns a clear
+`503` response when mail is not configured or the provider rejects delivery;
+it never reports a successful send when no message was accepted.
 
 ---
 

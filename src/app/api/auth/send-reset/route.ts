@@ -2,9 +2,9 @@ import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
 import { consumeRateLimit, getClientIp } from "@/lib/rate-limit";
 import { generateOtp, hashOtp } from "@/server/auth";
 import { connectDB } from "@/server/db";
+import { sendOtpEmail } from "@/server/mail";
 import { OtpModel } from "@/server/models";
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -57,34 +57,23 @@ export async function POST(req: Request) {
     expiresAt,
   });
 
-  // attempt to send email if SMTP configured
-  const smtpHost = process.env.SMTP_HOST;
-  let sent = false;
-  if (smtpHost) {
-    try {
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === "true",
-        auth: process.env.SMTP_USER
-          ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-          : undefined,
-      });
-      await transporter.sendMail({
-        from: process.env.SMTP_FROM || "no-reply@salaryflow.app",
-        to: parsed.data.email,
-        subject: "Your SalaryFlow password reset code",
-        text: `Your password reset code is ${code}. It expires in 15 minutes.`,
-      });
-      sent = true;
-    } catch {
-      // swallow and fallback to console
-    }
-  }
-
-  if (!sent && process.env.NODE_ENV === "production") {
+  const delivery = await sendOtpEmail({
+    to: parsed.data.email,
+    code,
+    purpose: "reset",
+    expiresInMinutes: 15,
+  });
+  if (!delivery.sent) {
     await OtpModel.deleteMany({ email: parsed.data.email, used: false });
+    return NextResponse.json(
+      {
+        error:
+          delivery.reason === "not-configured" && process.env.NODE_ENV !== "production"
+            ? "Email delivery is not configured. Add the SMTP settings to .env.local and restart the server."
+            : "Password reset email is temporarily unavailable. Try again later.",
+      },
+      { status: 503 },
+    );
   }
-  if (!sent && process.env.NODE_ENV !== "production") console.log(`[DEV RESET OTP] ${code}`);
   return NextResponse.json({ data: { message: "If an account exists, a reset code was sent" } });
 }
