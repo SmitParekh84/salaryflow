@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
-import { Input, Label, Select, Textarea } from "@/components/ui/input";
+import { Checkbox, Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { CATEGORIES, PAYMENT_METHODS } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
@@ -373,11 +373,7 @@ export function ExpenseForm({
               </div>
               {friendEmail && (
                 <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 accent-[var(--primary)]"
-                    {...register("inviteRequested")}
-                  />
+                  <Checkbox {...register("inviteRequested")} />
                   Send an invitation to view this shared record
                 </label>
               )}
@@ -386,11 +382,7 @@ export function ExpenseForm({
         )}
 
         <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            className="h-4 w-4 accent-[var(--primary)]"
-            {...register("recurring")}
-          />
+          <Checkbox {...register("recurring")} />
           Mark as recurring
         </label>
 
@@ -401,11 +393,10 @@ export function ExpenseForm({
               name="planNextPayment"
               render={({ field }) => (
                 <label className="flex items-start gap-3 text-sm">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={Boolean(field.value)}
                     onChange={(event) => field.onChange(event.target.checked)}
-                    className="mt-0.5 h-4 w-4 accent-[var(--primary)]"
+                    className="mt-0.5"
                   />
                   <span>
                     <span className="block font-medium">Plan the next payment</span>

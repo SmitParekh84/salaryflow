@@ -39,7 +39,10 @@ const ICONS: Record<string, LucideIcon> = {
 export function Sidebar() {
   const pathname = usePathname();
   return (
-    <aside className="hidden lg:flex fixed inset-y-0 left-0 z-30 w-64 flex-col border-r border-border bg-surface/60 backdrop-blur-xl px-4 py-6">
+    <aside
+      aria-label="Primary navigation"
+      className="hidden lg:flex fixed inset-y-0 left-0 z-30 w-64 flex-col border-r border-border bg-surface/60 backdrop-blur-xl px-4 py-6"
+    >
       <Link href="/dashboard" className="mb-8 flex items-center gap-2.5 px-2">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
           <Wallet className="h-5 w-5" />
@@ -51,7 +54,7 @@ export function Sidebar() {
       </Link>
 
       <nav className="flex flex-1 flex-col gap-1">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => !("settingsOnly" in item && item.settingsOnly)).map((item) => {
           const Icon = ICONS[item.icon];
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
@@ -68,7 +71,7 @@ export function Sidebar() {
               {active && (
                 <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary" />
               )}
-              <Icon className="h-[18px] w-[18px]" />
+              <Icon className="h-4.5 w-4.5" />
               {item.label}
             </Link>
           );

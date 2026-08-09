@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Input, Label } from "@/components/ui/input";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -20,8 +22,8 @@ export default function ForgotPasswordPage() {
       const res = await fetch("/api/auth/send-reset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
       if (!res.ok) throw new Error("Failed to send reset code");
       setStep("verify");
-    } catch (err: any) {
-      setError(err?.message || "Unable to send code");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Unable to send code");
     } finally { setLoading(false); }
   }
 
@@ -36,8 +38,8 @@ export default function ForgotPasswordPage() {
         throw new Error(j?.error || "Reset failed");
       }
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err?.message || "Reset failed");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Reset failed");
     } finally { setLoading(false); }
   }
 
@@ -48,31 +50,31 @@ export default function ForgotPasswordPage() {
         {step === "send" ? (
           <form onSubmit={send} className="space-y-4">
             <div>
-              <label className="block text-sm mb-1">Email</label>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 border rounded" type="email" />
+              <Label htmlFor="reset-email">Email</Label>
+              <Input id="reset-email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
             </div>
             {error && <div className="text-sm text-red-600">{error}</div>}
             <div>
-              <button className="w-full px-4 py-2 bg-blue-600 text-white rounded" disabled={loading}>{loading ? "Sending…" : "Send reset code"}</button>
+              <Button className="w-full" disabled={loading}>{loading ? "Sending…" : "Send reset code"}</Button>
             </div>
           </form>
         ) : (
           <form onSubmit={reset} className="space-y-4">
             <div>
-              <label className="block text-sm mb-1">Email</label>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 border rounded" type="email" />
+              <Label htmlFor="verify-email">Email</Label>
+              <Input id="verify-email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
             </div>
             <div>
-              <label className="block text-sm mb-1">Verification code</label>
-              <input value={otp} onChange={(e) => setOtp(e.target.value)} className="w-full px-3 py-2 border rounded" />
+              <Label htmlFor="reset-otp">Verification code</Label>
+              <Input id="reset-otp" value={otp} onChange={(e) => setOtp(e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm mb-1">New password</label>
-              <input value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-3 py-2 border rounded" type="password" />
+              <Label htmlFor="reset-password">New password</Label>
+              <Input id="reset-password" value={password} onChange={(e) => setPassword(e.target.value)} type="password" />
             </div>
             {error && <div className="text-sm text-red-600">{error}</div>}
             <div>
-              <button className="w-full px-4 py-2 bg-green-600 text-white rounded" disabled={loading}>{loading ? "Resetting…" : "Reset password"}</button>
+              <Button className="w-full" disabled={loading}>{loading ? "Resetting…" : "Reset password"}</Button>
             </div>
           </form>
         )}

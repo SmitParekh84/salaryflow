@@ -42,7 +42,7 @@ export function Combobox({
           aria-expanded={open}
           className={cn("h-11 w-full justify-between px-3.5 font-normal", className)}
         >
-          <span className={cn("truncate", !selected && "text-muted")}> 
+          <span className={cn("truncate", !selected && "text-muted")}>
             {selected?.label ?? placeholder}
           </span>
           <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted" />

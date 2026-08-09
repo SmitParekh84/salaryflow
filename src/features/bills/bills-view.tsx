@@ -176,7 +176,7 @@ export function BillsView() {
                         ? `${cycle.billedMonth.toLocaleDateString("en-US", { month: "long" })} bill · ${dateLabel}`
                         : b.frequency === "interval"
                           ? `Every ${b.intervalDays ?? 90} days · next ${dateLabel}`
-                        : dateLabel}
+                          : dateLabel}
                       {account ? ` · ${account.bankName}` : ""}
                     </span>
                     {isFutureInterval ? (
@@ -313,9 +313,7 @@ export function BillsView() {
             <Combobox
               options={CATEGORIES.map((category) => ({ label: category, value: category }))}
               value={form.category}
-              onValueChange={(value) =>
-                setForm({ ...form, category: value as Bill["category"] })
-              }
+              onValueChange={(value) => setForm({ ...form, category: value as Bill["category"] })}
               searchPlaceholder="Search categories..."
             />
           </div>

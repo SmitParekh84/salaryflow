@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { billCycle, billOccurrenceDate, monthlyBillReserve } from "./bill-cycle";
+import { budgetAllocationTarget } from "./budget-rules";
 import { computeSummary, cycleInfo, isInCurrentCycle } from "./calculations";
 import { creditCardUsage } from "./credit-cards";
 import { buildFundingPlan } from "./funding-plan";
-import { formatMoney } from "./utils";
 import type {
   AccountTransfer,
   BankAccount,
@@ -15,6 +15,7 @@ import type {
   Investment,
   SalaryProfile,
 } from "./types";
+import { formatMoney } from "./utils";
 
 const profile: SalaryProfile = {
   amount: 30_000,
@@ -38,6 +39,12 @@ const rule: BudgetRule = {
     { kind: "investments", label: "Investments", percentage: 15 },
   ],
 };
+
+describe("budget allocation targets", () => {
+  it("derives the monthly savings target from the active rule", () => {
+    expect(budgetAllocationTarget(rule, "savings", 31_431)).toBeCloseTo(4_714.65);
+  });
+});
 
 const savingsAccounts: BankAccount[] = [
   {
@@ -122,7 +129,7 @@ describe("currency formatting", () => {
 describe("finance summary", () => {
   const now = new Date("2026-03-02T12:00:00.000Z");
 
-  it("uses confirmed salary plus cycle income for every budget target", () => {
+  it("uses confirmed salary for budget targets while retaining other cycle income", () => {
     const incomes: Income[] = [
       {
         id: "bonus",
@@ -146,9 +153,45 @@ describe("finance summary", () => {
     );
 
     expect(summary.income).toBe(33_000);
-    expect(summary.savingsTarget).toBe(4_950);
-    expect(summary.investmentTarget).toBe(4_950);
-    expect(summary.spendingBudget).toBe(23_100);
+    expect(summary.salaryIncome).toBe(32_000);
+    expect(summary.savingsTarget).toBe(4_800);
+    expect(summary.investmentTarget).toBe(4_800);
+    expect(summary.spendingBudget).toBe(23_400);
+  });
+
+  it("does not count reimbursements or cashback as income", () => {
+    const credits: Income[] = [
+      {
+        id: "reimbursement",
+        amount: 1_000,
+        type: "Reimbursement",
+        source: "Shared hotel reimbursement",
+        date: "2026-03-01T08:00:00.000Z",
+      },
+      {
+        id: "cashback",
+        amount: 197,
+        type: "Cashback",
+        source: "Credit card cashback",
+        date: "2026-03-01T09:00:00.000Z",
+      },
+    ];
+    const summary = computeSummary(
+      profile,
+      [],
+      credits,
+      [],
+      [],
+      [{ amount: 32_167, date: "2026-02-28T08:00:00.000Z", confirmed: true }],
+      rule,
+      [],
+      [],
+      now,
+    );
+
+    expect(summary.income).toBe(32_167);
+    expect(summary.salaryIncome).toBe(32_167);
+    expect(summary.savingsTarget).toBeCloseTo(4_825.05);
   });
 
   it("counts external savings transfers but nets savings-to-savings transfers to zero", () => {
@@ -258,7 +301,7 @@ describe("credit cards", () => {
       {
         id: "cashback",
         amount: 200,
-        type: "Other",
+        type: "Cashback",
         source: "Cashback",
         accountId: "card",
         date: "2026-04-20T10:00:00.000Z",

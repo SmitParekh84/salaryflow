@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Checkbox, Input, Label } from "@/components/ui/input";
 import React, { useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import Link from "next/link";
@@ -19,8 +21,8 @@ export default function LoginPage() {
     try {
       // pass remember flag to login
       await login(email, password, remember);
-    } catch (err: any) {
-      setError(err?.message || "Login failed");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setLoading(false);
     }
@@ -32,17 +34,17 @@ export default function LoginPage() {
         <h1 className="text-2xl font-semibold mb-4">Sign in to SalaryFlow</h1>
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <label className="block text-sm mb-1">Email</label>
-            <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 border rounded" type="email" />
+            <Label htmlFor="login-email">Email</Label>
+            <Input id="login-email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
           </div>
           <div>
-            <label className="block text-sm mb-1">Password</label>
-            <input value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-3 py-2 border rounded" type="password" />
+            <Label htmlFor="login-password">Password</Label>
+            <Input id="login-password" value={password} onChange={(e) => setPassword(e.target.value)} type="password" />
           </div>
 
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-4 h-4" />
+              <Checkbox checked={remember} onChange={(e) => setRemember(e.target.checked)} />
               Remember me
             </label>
             <Link href="/forgot-password" className="text-sm text-blue-600">Forgot password?</Link>
@@ -50,9 +52,9 @@ export default function LoginPage() {
 
           {error && <div className="text-sm text-red-600">{error}</div>}
           <div>
-            <button className="w-full px-4 py-2 bg-blue-600 text-white rounded" disabled={loading}>
+            <Button className="w-full" disabled={loading}>
               {loading ? "Signing in…" : "Sign in"}
-            </button>
+            </Button>
           </div>
         </form>
         <div className="mt-4 text-sm text-center">

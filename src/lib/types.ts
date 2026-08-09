@@ -50,7 +50,14 @@ export interface SharedExpenseDetails {
   inviteRequested?: boolean;
 }
 
-export type IncomeType = "Salary" | "Bonus" | "Side Income" | "Freelance" | "Other";
+export type IncomeType =
+  | "Salary"
+  | "Bonus"
+  | "Side Income"
+  | "Freelance"
+  | "Other"
+  | "Reimbursement"
+  | "Cashback";
 
 export interface Income {
   id: string;

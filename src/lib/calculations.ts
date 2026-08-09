@@ -1,5 +1,5 @@
 import { billCycle } from "./bill-cycle";
-import { evaluateBudgetRule } from "./budget-rules";
+import { budgetAllocationTarget, evaluateBudgetRule } from "./budget-rules";
 import type {
   AccountTransfer,
   BankAccount,
@@ -80,6 +80,7 @@ export function isInCurrentCycle(
 
 export interface FinanceSummary {
   income: number;
+  salaryIncome: number;
   fixedExpenses: number;
   variableExpenses: number;
   totalExpenses: number;
@@ -121,6 +122,10 @@ const FIXED: Record<string, boolean> = {
   "Mobile & Internet": true,
 };
 
+export function countsAsEarnedIncome(income: Income) {
+  return income.type !== "Reimbursement" && income.type !== "Cashback";
+}
+
 export function computeSummary(
   profile: SalaryProfile,
   expenses: Expense[],
@@ -140,7 +145,7 @@ export function computeSummary(
     (expense) => expense.category !== "Investment",
   );
   const extraIncome = incomes
-    .filter((i) => isInCurrentCycle(i.date, profile, now))
+    .filter((income) => countsAsEarnedIncome(income) && isInCurrentCycle(income.date, profile, now))
     .reduce((s, i) => s + i.amount, 0);
 
   // use confirmed salary entries in the current cycle if available
@@ -197,19 +202,19 @@ export function computeSummary(
     savingsEvidence === "account" ? savingsAccountCashFlow : goalContributionsThisCycle,
   );
 
-  const allocationPercentage = (kind: BudgetBucketKind) =>
-    budgetRule?.allocations.find((allocation) => allocation.kind === kind)?.percentage ?? 0;
   const savingsTarget = budgetRule
-    ? (income * allocationPercentage("savings")) / 100
+    ? budgetAllocationTarget(budgetRule, "savings", baseIncome)
     : profile.savingsGoal;
   const investmentTarget = budgetRule
-    ? (income * allocationPercentage("investments")) / 100
+    ? budgetAllocationTarget(budgetRule, "investments", baseIncome)
     : investedThisCycle;
   const plannedSavings = Math.max(0, savingsTarget);
   const plannedInvestments = Math.max(0, investmentTarget - investedThisCycle);
   const spendingBudget = Math.max(0, income - savingsTarget - investmentTarget);
-  const needsBudget = budgetRule ? (income * allocationPercentage("needs")) / 100 : 0;
-  const wantsBudget = budgetRule ? (income * allocationPercentage("wants")) / 100 : spendingBudget;
+  const needsBudget = budgetRule ? budgetAllocationTarget(budgetRule, "needs", baseIncome) : 0;
+  const wantsBudget = budgetRule
+    ? budgetAllocationTarget(budgetRule, "wants", baseIncome)
+    : spendingBudget;
   const remaining =
     income - totalExpenses - investedThisCycle - plannedInvestments - plannedSavings;
 
@@ -240,7 +245,7 @@ export function computeSummary(
   const budgetEvaluation = budgetRule
     ? evaluateBudgetRule(
         budgetRule,
-        income,
+        baseIncome,
         fixedExpenses,
         variableExpenses,
         savedThisCycle,
@@ -253,6 +258,7 @@ export function computeSummary(
 
   return {
     income,
+    salaryIncome: baseIncome,
     fixedExpenses,
     variableExpenses,
     totalExpenses,

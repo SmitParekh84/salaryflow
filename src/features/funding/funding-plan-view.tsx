@@ -49,7 +49,7 @@ export function FundingPlanView() {
       Boolean(entry.confirmed && entry.date),
     ),
   )[0]?.amount;
-  const salary = summary.income || confirmedSalary || profile.amount;
+  const salary = summary.salaryIncome || confirmedSalary || profile.amount;
   const plan = buildFundingPlan({
     accounts,
     bills,

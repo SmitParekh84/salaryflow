@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Select } from "@/components/ui/input";
+import { Input, Select } from "@/components/ui/input";
 import { CATEGORIES } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
@@ -69,14 +69,14 @@ export function ExpensesView() {
       <div className="flex flex-wrap gap-3">
         <div className="flex flex-1 items-center gap-2 rounded-xl border border-border bg-surface-2 px-3">
           <Search className="h-4 w-4 text-muted" />
-          <input
+          <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search transactions…"
-            className="h-11 flex-1 bg-transparent text-sm outline-none placeholder:text-muted/70"
+            className="h-11 flex-1 border-0 bg-transparent px-0 focus-visible:ring-0"
           />
         </div>
-        <Select value={cat} onChange={(e) => setCat(e.target.value)} className="max-w-[180px]">
+        <Select value={cat} onChange={(e) => setCat(e.target.value)} className="max-w-45">
           <option value="all">All categories</option>
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>

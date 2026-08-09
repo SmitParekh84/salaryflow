@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input, Label, Select } from "@/components/ui/input";
+import { Checkbox, Input, Label, Select } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { creditCardUsage } from "@/lib/credit-cards";
 import { useFinanceStore } from "@/lib/store";
@@ -507,9 +507,7 @@ export function AccountsView() {
             <div className="space-y-2">
               {ACCOUNT_PURPOSES.map((purpose) => (
                 <label key={purpose.value} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 accent-[var(--primary)]"
+                  <Checkbox
                     checked={form.defaultFor.includes(purpose.value)}
                     onChange={(event) =>
                       setForm({

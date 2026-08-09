@@ -126,7 +126,7 @@ export function RulesView() {
                 <div key={allocation.kind}>
                   <div className="mb-2 flex items-center justify-between text-xs">
                     <span className="font-medium">{allocation.label}</span>
-                    <span className="text-muted">{allocation.percentage}% of income</span>
+                    <span className="text-muted">{allocation.percentage}% of salary</span>
                   </div>
                   <Progress value={(actual / Math.max(1, allocation.percentage)) * 100} />
                   <div className="mt-2 space-y-1 text-[11px]">

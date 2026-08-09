@@ -8,13 +8,29 @@ export const Input = React.forwardRef<
   <input
     ref={ref}
     className={cn(
-      "h-11 w-full rounded-xl border border-border bg-surface-2 px-3.5 text-sm text-foreground placeholder:text-muted/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:border-primary/40",
+      "h-11 w-full rounded-xl border border-border bg-surface-2 px-3.5 text-sm text-foreground placeholder:text-muted/70 transition-colors focus-visible:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ring) disabled:cursor-not-allowed disabled:opacity-60 read-only:cursor-default read-only:bg-surface",
       className
     )}
     {...props}
   />
 ));
 Input.displayName = "Input";
+
+export const Checkbox = React.forwardRef<
+  HTMLInputElement,
+  Omit<React.InputHTMLAttributes<HTMLInputElement>, "type">
+>(({ className, ...props }, ref) => (
+  <input
+    ref={ref}
+    type="checkbox"
+    className={cn(
+      "h-4 w-4 shrink-0 cursor-pointer rounded border border-border accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ring) focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-not-allowed disabled:opacity-60",
+      className,
+    )}
+    {...props}
+  />
+));
+Checkbox.displayName = "Checkbox";
 
 export const Select = React.forwardRef<
   HTMLSelectElement,
@@ -23,7 +39,7 @@ export const Select = React.forwardRef<
   <select
     ref={ref}
     className={cn(
-      "h-11 w-full rounded-xl border border-border bg-surface-2 px-3.5 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+      "h-11 w-full rounded-xl border border-border bg-surface-2 px-3.5 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ring) disabled:cursor-not-allowed disabled:opacity-60",
       className
     )}
     {...props}
@@ -38,7 +54,7 @@ export const Textarea = React.forwardRef<
   <textarea
     ref={ref}
     className={cn(
-      "min-h-[80px] w-full rounded-xl border border-border bg-surface-2 px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+      "min-h-20 w-full rounded-xl border border-border bg-surface-2 px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ring) disabled:cursor-not-allowed disabled:opacity-60",
       className
     )}
     {...props}

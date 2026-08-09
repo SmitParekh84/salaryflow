@@ -1,4 +1,4 @@
-import type { BudgetAllocation, BudgetRule } from "./types";
+import type { BudgetAllocation, BudgetBucketKind, BudgetRule } from "./types";
 
 export interface BudgetRuleTemplate {
   key: string;
@@ -107,6 +107,16 @@ export function createRuleFromTemplate(template: BudgetRuleTemplate): Omit<Budge
     active: true,
     allocations: template.allocations.map((allocation) => ({ ...allocation })),
   };
+}
+
+export function budgetAllocationTarget(
+  rule: BudgetRule,
+  kind: BudgetBucketKind,
+  income: number,
+) {
+  const percentage =
+    rule.allocations.find((allocation) => allocation.kind === kind)?.percentage ?? 0;
+  return Math.max(0, (income * percentage) / 100);
 }
 
 export function evaluateBudgetRule(

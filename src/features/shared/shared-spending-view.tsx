@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
 import { ExpenseForm } from "@/features/expenses/expense-form";
 import { TransactionList } from "@/features/expenses/transaction-list";
 import { useFinanceStore } from "@/lib/store";
@@ -52,11 +53,11 @@ export function SharedSpendingView() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <input
+        <Input
           type="month"
           value={month}
           onChange={(event) => setMonth(event.target.value)}
-          className="h-10 rounded-xl border border-border bg-surface-2 px-3 text-sm"
+          className="h-10 w-auto"
           aria-label="Shared spending month"
         />
         <Button

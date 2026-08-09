@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Input, Label } from "@/components/ui/input";
 import { useFinanceStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -16,7 +18,7 @@ export default function RegisterPage() {
   const [codeSent, setCodeSent] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const setUser = useFinanceStore((s) => s.updateUser);
-  const syncWithServer = useFinanceStore((s: any) => s.syncWithServer);
+  const syncWithServer = useFinanceStore((s) => s.syncWithServer);
   const router = useRouter();
 
   useEffect(() => {
@@ -54,8 +56,8 @@ export default function RegisterPage() {
       }
       setCodeSent(true);
       setResendTimer(60);
-    } catch (err: any) {
-      setError(err?.message || "Unable to send OTP");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Unable to send OTP");
     } finally {
       setLoadingSend(false);
     }
@@ -84,11 +86,11 @@ export default function RegisterPage() {
         setUser({ name: user.name || "", email: user.email, onboarded: true });
         try {
           await syncWithServer?.();
-        } catch (e) {}
+        } catch {}
         router.push("/onboarding");
       }
-    } catch (err: any) {
-      setError(err?.message || "Register failed");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Register failed");
     } finally {
       setLoadingVerify(false);
     }
@@ -100,46 +102,47 @@ export default function RegisterPage() {
         <h1 className="text-2xl font-semibold mb-4">Create an account</h1>
         <form onSubmit={codeSent ? verifyAndRegister : sendOtp} className="space-y-4">
           <div>
-            <label className="block text-sm mb-1">Full name</label>
-            <input
+            <Label htmlFor="register-name">Full name</Label>
+            <Input
+              id="register-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border rounded"
             />
           </div>
           <div>
-            <label className="block text-sm mb-1">Email</label>
-            <input
+            <Label htmlFor="register-email">Email</Label>
+            <Input
+              id="register-email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border rounded"
               type="email"
             />
           </div>
           <div>
-            <label className="block text-sm mb-1">Password</label>
-            <input
+            <Label htmlFor="register-password">Password</Label>
+            <Input
+              id="register-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border rounded"
               type="password"
             />
           </div>
           <div>
-            <label className="block text-sm mb-1">Confirm password</label>
-            <input
+            <Label htmlFor="register-confirm">Confirm password</Label>
+            <Input
+              id="register-confirm"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
-              className="w-full px-3 py-2 border rounded"
               type="password"
             />
           </div>
 
           {codeSent && (
             <div>
-              <label className="block text-sm mb-1">Verification code</label>
+              <Label htmlFor="register-otp">Verification code</Label>
               <div className="flex gap-2">
-                <input
+                <Input
+                  id="register-otp"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   onPaste={(e) => {
@@ -157,16 +160,15 @@ export default function RegisterPage() {
                   pattern="[0-9]*"
                   maxLength={6}
                   autoFocus
-                  className="w-full px-3 py-2 border rounded"
                 />
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
                   onClick={sendOtp}
                   disabled={resendTimer > 0 || loadingSend}
-                  className="px-3 py-2 bg-transparent border rounded text-sm"
                 >
                   {resendTimer > 0 ? `Resend (${resendTimer}s)` : "Resend"}
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -174,9 +176,9 @@ export default function RegisterPage() {
           {error && <div className="text-sm text-red-600">{error}</div>}
 
           <div>
-            <button
+            <Button
               type="submit"
-              className="w-full px-4 py-2 bg-green-600 text-white rounded"
+              className="w-full"
               disabled={loadingSend || loadingVerify}
             >
               {codeSent
@@ -186,7 +188,7 @@ export default function RegisterPage() {
                 : loadingSend
                   ? "Sending…"
                   : "Send verification code"}
-            </button>
+            </Button>
           </div>
         </form>
         <div className="mt-4 text-sm text-center">

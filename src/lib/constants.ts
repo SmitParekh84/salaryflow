@@ -102,7 +102,7 @@ export const NAV_ITEMS = [
   { href: "/goals", label: "Goals", icon: "Target" },
   { href: "/investments", label: "Investments", icon: "TrendingUp" },
   { href: "/analytics", label: "Analytics", icon: "BarChart3" },
-  { href: "/rules", label: "Budget rules", icon: "ListChecks" },
-  { href: "/recycle-bin", label: "Recycle bin", icon: "Trash2" },
   { href: "/settings", label: "Settings", icon: "Settings" },
+  { href: "/rules", label: "Budget rules", icon: "ListChecks", settingsOnly: true },
+  { href: "/recycle-bin", label: "Recycle bin", icon: "Trash2", settingsOnly: true },
 ] as const;

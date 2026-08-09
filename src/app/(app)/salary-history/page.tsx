@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input, Label } from "@/components/ui/input";
+import { Checkbox, Input, Label } from "@/components/ui/input";
 import { useFinanceStore } from "@/lib/store";
 import { formatMoney, localDateInputValue, newestFirst, parseFinancialDate } from "@/lib/utils";
 import { format } from "date-fns";
@@ -89,9 +89,7 @@ export default function SalaryHistoryPage() {
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="h-4 w-4 accent-[var(--primary)]"
+              <Checkbox
                 checked={credited}
                 onChange={(event) => setCredited(event.target.checked)}
               />

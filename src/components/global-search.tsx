@@ -5,6 +5,7 @@ import { useFinanceStore } from "@/lib/store";
 import { formatDate, formatMoney, newestFirst } from "@/lib/utils";
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Input } from "./ui/input";
 import { Modal } from "./ui/modal";
 
 export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -43,12 +44,12 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
     <Modal open={open} onClose={onClose} title="Search">
       <div className="mb-4 flex items-center gap-2 rounded-xl border border-border bg-surface-2 px-3">
         <Search className="h-4 w-4 text-muted" />
-        <input
+        <Input
           autoFocus
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search expenses, merchants, categories…"
-          className="h-11 flex-1 bg-transparent text-sm outline-none placeholder:text-muted/70"
+          className="h-11 flex-1 border-0 bg-transparent px-0 focus-visible:ring-0"
         />
       </div>
       <div className="space-y-1">
