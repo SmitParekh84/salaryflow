@@ -2,7 +2,9 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { applyAllocation, reassignGoalAccounts } from "./allocation-writes";
 import { normalizeBudgetRule } from "./budget-rules";
+import { migrateGoalOpeningBalances } from "./goal-migration";
 import {
   seedBills,
   seedExpenses,
@@ -71,7 +73,13 @@ interface FinanceState {
   // goals
   addGoal: (g: Omit<Goal, "id">) => void;
   updateGoal: (id: string, patch: Partial<Goal>) => void;
-  contributeGoal: (id: string, amount: number) => void;
+  contributeGoal: (id: string, amount: number, accountId?: string) => boolean;
+  allocate: (
+    entries: { goalId: string; amount: number }[],
+    accountId: string,
+    transferId?: string,
+  ) => { ok: boolean; reason?: string };
+  reassignAllocations: (fromAccountId: string, toAccountId: string) => void;
   deleteGoal: (id: string) => void;
 
   // investments
@@ -277,21 +285,44 @@ export const useFinanceStore = create<FinanceState>()(
         set((s) => ({
           goals: s.goals.map((g) => (g.id === id ? { ...g, ...patch } : g)),
         })),
-      contributeGoal: (id, amount) =>
-        set((s) => ({
-          goals: s.goals.map((g) =>
-            g.id === id
-              ? {
-                  ...g,
-                  saved: g.saved + amount,
-                  contributions: [
-                    ...(g.contributions ?? []),
-                    { id: uid("goal-contribution"), amount, date: new Date().toISOString() },
-                  ],
-                }
-              : g,
-          ),
-        })),
+      contributeGoal: (id, amount, accountId) => {
+        if (!accountId) {
+          set((s) => ({
+            goals: s.goals.map((g) =>
+              g.id === id
+                ? {
+                    ...g,
+                    contributions: [
+                      ...(g.contributions ?? []),
+                      { id: uid("goal-contribution"), amount, date: new Date().toISOString() },
+                    ],
+                  }
+                : g,
+            ),
+          }));
+          return true;
+        }
+        return get().allocate([{ goalId: id, amount }], accountId).ok;
+      },
+
+      allocate: (entries, accountId, transferId) => {
+        const state = get();
+        const result = applyAllocation(
+          state.goals,
+          state.accounts,
+          entries,
+          accountId,
+          transferId,
+          new Date(),
+        );
+        if (!result.ok) return { ok: false, reason: result.reason };
+        set({ goals: result.goals });
+        return { ok: true };
+      },
+
+      reassignAllocations: (fromAccountId, toAccountId) =>
+        set((s) => ({ goals: reassignGoalAccounts(s.goals, fromAccountId, toAccountId) })),
+
       deleteGoal: (id) => {
         const item = get().goals.find((goal) => goal.id === id);
         if (!item) return;
@@ -638,7 +669,7 @@ export const useFinanceStore = create<FinanceState>()(
               expenses: normalizeServerItems<Expense>(d.expenses, state.expenses),
               incomes: normalizeServerItems<Income>(d.incomes, state.incomes),
               bills: normalizeServerItems<Bill>(d.bills, state.bills),
-              goals: normalizeServerItems<Goal>(d.goals, state.goals),
+              goals: migrateGoalOpeningBalances(normalizeServerItems<Goal>(d.goals, state.goals)),
               investments: normalizeServerItems<Investment>(d.investments, state.investments),
               accounts: normalizeServerItems<BankAccount>(d.accounts, state.accounts),
               accountTransfers: normalizeServerItems<AccountTransfer>(
@@ -670,7 +701,7 @@ export const useFinanceStore = create<FinanceState>()(
             expenses: normalizeServerItems<Expense>(data.expenses, []),
             incomes: normalizeServerItems<Income>(data.incomes, []),
             bills: normalizeServerItems<Bill>(data.bills, []),
-            goals: normalizeServerItems<Goal>(data.goals, []),
+            goals: migrateGoalOpeningBalances(normalizeServerItems<Goal>(data.goals, [])),
             investments: normalizeServerItems<Investment>(data.investments, []),
             accounts: normalizeServerItems<BankAccount>(data.accounts, []),
             accountTransfers: normalizeServerItems<AccountTransfer>(data.accountTransfers, []),
@@ -690,7 +721,7 @@ export const useFinanceStore = create<FinanceState>()(
           expenses: seedExpenses(),
           incomes: seedIncomes(),
           bills: seedBills(),
-          goals: seedGoals(),
+          goals: migrateGoalOpeningBalances(seedGoals()),
           investments: seedInvestments(),
           accounts: [],
           accountTransfers: [],
@@ -730,7 +761,7 @@ export const useFinanceStore = create<FinanceState>()(
           expenses: normalizeServerItems<Expense>(state.expenses, []),
           incomes: normalizeServerItems<Income>(state.incomes, []),
           bills: normalizeServerItems<Bill>(state.bills, []),
-          goals: normalizeServerItems<Goal>(state.goals, []),
+          goals: migrateGoalOpeningBalances(normalizeServerItems<Goal>(state.goals, [])),
           investments: normalizeServerItems<Investment>(state.investments, []),
           accounts: normalizeServerItems<BankAccount>(state.accounts, []),
           accountTransfers: normalizeServerItems<AccountTransfer>(state.accountTransfers, []),

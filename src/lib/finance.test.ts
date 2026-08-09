@@ -32,6 +32,7 @@ import {
   unassignedSaved,
 } from "./allocations";
 import { migrateGoalOpeningBalances } from "./goal-migration";
+import { applyAllocation, reassignGoalAccounts } from "./allocation-writes";
 
 const profile: SalaryProfile = {
   amount: 30_000,
@@ -608,5 +609,85 @@ describe("goal opening-balance migration", () => {
     const [migrated] = migrateGoalOpeningBalances([richer]);
     expect(goalSaved(migrated)).toBe(4000);
     expect(migrated.contributions).toHaveLength(1);
+  });
+});
+
+describe("allocation writes", () => {
+  const union: BankAccount = {
+    id: "union",
+    bankName: "Union Bank",
+    accountType: "Savings",
+    balance: 10569,
+    status: "active",
+  };
+  const bike: Goal = {
+    id: "bike", name: "Bike", type: "Bike", target: 85000,
+    saved: 0, monthlyContribution: 8000, contributions: [],
+  };
+  const mobile: Goal = {
+    id: "mobile", name: "Mobile", type: "Phone", target: 25000,
+    saved: 0, monthlyContribution: 2000, contributions: [],
+  };
+  const when = new Date("2026-08-09T10:00:00.000Z");
+
+  it("splits a transfer across goals atomically", () => {
+    const result = applyAllocation(
+      [bike, mobile], [union],
+      [{ goalId: "bike", amount: 10000 }, { goalId: "mobile", amount: 489 }],
+      "union", "transfer-1", when,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(goalSaved(result.goals[0])).toBe(10000);
+    expect(goalSaved(result.goals[1])).toBe(489);
+    expect(accountFree(result.goals, union)).toBe(80);
+    expect(result.goals[0].contributions?.[0].transferId).toBe("transfer-1");
+  });
+
+  it("rejects a split that exceeds the free balance", () => {
+    const result = applyAllocation(
+      [bike, mobile], [union],
+      [{ goalId: "bike", amount: 11000 }],
+      "union", undefined, when,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("writes nothing at all when one entry breaks the invariant", () => {
+    const result = applyAllocation(
+      [bike, mobile], [union],
+      [{ goalId: "bike", amount: 10000 }, { goalId: "mobile", amount: 5000 }],
+      "union", undefined, when,
+    );
+    expect(result.ok).toBe(false);
+    expect(goalSaved(bike)).toBe(0);
+    expect(goalSaved(mobile)).toBe(0);
+  });
+
+  it("counts money already allocated when checking the invariant", () => {
+    const funded = [
+      { ...bike, contributions: [{ id: "c1", amount: 10000, date: "2026-08-01", accountId: "union" }] },
+      mobile,
+    ];
+    const result = applyAllocation(
+      funded, [union], [{ goalId: "mobile", amount: 600 }], "union", undefined, when,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("rejects an unknown account", () => {
+    const result = applyAllocation(
+      [bike], [union], [{ goalId: "bike", amount: 100 }], "missing", undefined, when,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("moves allocations to the destination when an account closes", () => {
+    const funded = [
+      { ...bike, contributions: [{ id: "c1", amount: 10000, date: "2026-08-01", accountId: "hdfc" }] },
+    ];
+    const moved = reassignGoalAccounts(funded, "hdfc", "union");
+    expect(accountAllocated(moved, "union")).toBe(10000);
+    expect(accountAllocated(moved, "hdfc")).toBe(0);
   });
 });
