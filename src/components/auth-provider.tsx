@@ -21,8 +21,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
         const user = result?.data || null;
         if (user) {
-          setUser({ name: user.name || "", email: user.email, onboarded: true });
-          await Promise.all([loadFromServer(), loadSalaryHistory()]);
+          const onboarded = user.onboardingCompleted !== false;
+          setUser({ name: user.name || "", email: user.email, onboarded });
+          if (onboarded) await Promise.all([loadFromServer(), loadSalaryHistory()]);
         }
       } finally {
         if (mounted) setReady(true);

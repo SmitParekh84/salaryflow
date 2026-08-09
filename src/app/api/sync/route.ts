@@ -12,6 +12,7 @@ import {
   InvestmentModel,
   RecycleBinModel,
   SalaryProfileModel,
+  UserModel,
 } from "@/server/models";
 import { NextResponse } from "next/server";
 
@@ -72,11 +73,17 @@ export async function POST(req: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!isJsonRequest(req)) return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
+  if (!isJsonRequest(req))
+    return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
   const body = await req.json().catch(() => null);
-  if (!body || typeof body !== "object") return NextResponse.json({ error: "Invalid sync payload" }, { status: 422 });
+  if (!body || typeof body !== "object")
+    return NextResponse.json({ error: "Invalid sync payload" }, { status: 422 });
 
   const userId = user.email || String(user._id);
+
+  if (body.onboardingCompleted === true) {
+    await UserModel.updateOne({ _id: user._id }, { onboardingCompleted: true });
+  }
 
   // upsert profile
   if (body.profile) {

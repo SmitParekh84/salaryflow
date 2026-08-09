@@ -3,14 +3,14 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { SalaryCycle, SalaryProfile } from "@/lib/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import LoginStep from "./login-step";
+import { useEffect, useState } from "react";
 
 const CYCLES: { value: SalaryCycle; label: string }[] = [
   { value: "monthly", label: "Monthly" },
@@ -21,8 +21,9 @@ const CYCLES: { value: SalaryCycle; label: string }[] = [
 
 export function OnboardingView() {
   const router = useRouter();
+  const hydrated = useHydrated();
+  const onboarded = useFinanceStore((s) => s.user.onboarded);
   const completeOnboarding = useFinanceStore((s) => s.completeOnboarding);
-  const loadSeed = useFinanceStore((s) => s.loadSeed);
   const addBill = useFinanceStore((s) => s.addBill);
   const syncWithServer = useFinanceStore((s) => s.syncWithServer);
 
@@ -46,6 +47,10 @@ export function OnboardingView() {
     [],
   );
 
+  useEffect(() => {
+    if (hydrated && onboarded) router.replace("/dashboard");
+  }, [hydrated, onboarded, router]);
+
   const patch = (p: Partial<SalaryProfile>) => setProfile((prev) => ({ ...prev, ...p }));
 
   function addCustom() {
@@ -61,22 +66,6 @@ export function OnboardingView() {
   function removeCustom(id: string) {
     setCustomItems((s) => s.filter((c) => c.id !== id));
   }
-
-  const finishAuthenticatedOnboarding = async (account: { email: string; name?: string }) => {
-    completeOnboarding({ name: account.name || name, email: account.email }, profile);
-    for (const c of customItems) {
-      addBill({
-        name: c.title,
-        amount: c.amount,
-        dueDay: profile.salaryDay,
-        frequency: "monthly",
-        category: "Other",
-        paid: false,
-      });
-    }
-    await syncWithServer?.();
-    router.replace("/dashboard");
-  };
 
   const steps = [
     {
@@ -248,12 +237,6 @@ export function OnboardingView() {
         </div>
       ),
     },
-    {
-      title: "Save your progress",
-      subtitle: "Use your email to sign in or create an account here.",
-      valid: true,
-      content: <LoginStep name={name} onAuthenticated={finishAuthenticatedOnboarding} />,
-    },
   ];
 
   const current = steps[step];
@@ -272,11 +255,6 @@ export function OnboardingView() {
     try {
       await syncWithServer?.();
     } catch {}
-    router.replace("/dashboard");
-  };
-
-  const startDemo = () => {
-    loadSeed();
     router.replace("/dashboard");
   };
 
@@ -329,8 +307,8 @@ export function OnboardingView() {
             )}
 
             {step === steps.length - 1 ? (
-              <Button className="flex-1" variant="secondary" onClick={persistAndFinish}>
-                Finish on this device
+              <Button className="flex-1" onClick={persistAndFinish}>
+                Finish setup <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
               <Button
@@ -344,14 +322,6 @@ export function OnboardingView() {
           </div>
         </Card>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={startDemo}
-          className="mx-auto mt-5 flex text-xs text-muted hover:text-foreground"
-        >
-          Skip and explore with demo data →
-        </Button>
       </div>
     </div>
   );

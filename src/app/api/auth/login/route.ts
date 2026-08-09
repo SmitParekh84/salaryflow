@@ -1,9 +1,9 @@
 import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
 import { clearRateLimit, consumeRateLimit, getClientIp } from "@/lib/rate-limit";
 import { setSessionCookie } from "@/lib/session-cookie";
+import { signJwt, verifyPassword } from "@/server/auth";
 import { connectDB } from "@/server/db";
 import { UserModel } from "@/server/models";
-import { verifyPassword, signJwt } from "@/server/auth";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -12,7 +12,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const schema = z.object({
-  email: z.string().trim().email().max(254).transform((email) => email.toLowerCase()),
+  email: z
+    .string()
+    .trim()
+    .email()
+    .max(254)
+    .transform((email) => email.toLowerCase()),
   password: z.string().min(1).max(128),
   remember: z.boolean().optional(),
 });
@@ -50,7 +55,9 @@ export async function POST(req: Request) {
   }
 
   await connectDB();
-  const user = await UserModel.findOne({ email: parsed.data.email }).select("+sessionVersion").lean();
+  const user = await UserModel.findOne({ email: parsed.data.email })
+    .select("+sessionVersion")
+    .lean();
   const ok = await verifyPassword(parsed.data.password, user?.passwordHash || DUMMY_PASSWORD_HASH);
   if (!user || !user.passwordHash || !ok) {
     return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
@@ -62,7 +69,11 @@ export async function POST(req: Request) {
     remember ? "7d" : "12h",
   );
 
-  const res = NextResponse.json({ data: { id: user._id, email: user.email, name: user.name } });
+  const onboardingCompleted =
+    typeof user.onboardingCompleted === "boolean" ? user.onboardingCompleted : true;
+  const res = NextResponse.json({
+    data: { id: user._id, email: user.email, name: user.name, onboardingCompleted },
+  });
   setSessionCookie(res, token, remember);
   await clearRateLimit("login-account", parsed.data.email);
   return res;

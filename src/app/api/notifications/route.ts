@@ -66,8 +66,10 @@ export async function GET() {
 export async function PATCH(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isSameOriginRequest(request)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!isJsonRequest(request)) return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
+  if (!isSameOriginRequest(request))
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!isJsonRequest(request))
+    return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
 
   const parsed = readSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {

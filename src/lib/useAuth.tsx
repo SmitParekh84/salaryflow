@@ -12,7 +12,7 @@ export function useAuth() {
   const loadFromServer = useFinanceStore((s) => s.loadFromServer);
 
   const login = useCallback(
-    async (email: string, password: string, remember: boolean = false) => {
+    async (email: string, password: string, remember: boolean = false, nextPath?: string) => {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -26,9 +26,13 @@ export function useAuth() {
       const j = await res.json();
       const user = j?.data;
       if (user) {
-        setUser({ name: user.name || "", email: user.email, onboarded: true });
-        await loadFromServer();
-        router.push("/dashboard");
+        const onboarded = user.onboardingCompleted !== false;
+        setUser({ name: user.name || "", email: user.email, onboarded });
+        if (onboarded) await loadFromServer();
+        const safeNextPath = nextPath?.startsWith("/") && !nextPath.startsWith("//")
+          ? nextPath
+          : "/dashboard";
+        router.replace(onboarded ? safeNextPath : "/onboarding");
       }
     },
     [setUser, router, loadFromServer],
@@ -50,8 +54,8 @@ export function useAuth() {
       const j = await res.json();
       const user = j?.data;
       if (user) {
-        setUser({ name: user.name || "", email: user.email, onboarded: true });
-        router.push("/onboarding");
+        setUser({ name: user.name || "", email: user.email, onboarded: false });
+        router.replace("/onboarding");
       }
     },
     [setUser, router],
@@ -59,10 +63,9 @@ export function useAuth() {
 
   const logout = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" }).catch(() => null);
-    setUser({ name: "", email: "", onboarded: false });
     resetAll();
-    router.push("/");
-  }, [setUser, resetAll, router]);
+    router.replace("/login");
+  }, [resetAll, router]);
 
   return { login, register, logout };
 }

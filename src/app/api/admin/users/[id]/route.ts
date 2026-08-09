@@ -1,6 +1,5 @@
 import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
 import { getCurrentUser } from "@/lib/server-auth";
-import { NextResponse } from "next/server";
 import { connectDB } from "@/server/db";
 import {
   AccountTransferModel,
@@ -22,6 +21,7 @@ import {
   UserModel,
 } from "@/server/models";
 import mongoose, { Types } from "mongoose";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -34,10 +34,12 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (!requester) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!requester.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!isJsonRequest(req)) return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
+  if (!isJsonRequest(req))
+    return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
 
   const { id } = await params;
-  if (!Types.ObjectId.isValid(id)) return NextResponse.json({ error: "Invalid user id" }, { status: 400 });
+  if (!Types.ObjectId.isValid(id))
+    return NextResponse.json({ error: "Invalid user id" }, { status: 400 });
   await connectDB();
 
   const body = await req.json().catch(() => null);
@@ -54,17 +56,26 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (target.isAdmin && !parsed.data.isAdmin) {
     const adminCount = await UserModel.countDocuments({ isAdmin: true });
     if (adminCount <= 1) {
-      return NextResponse.json({ error: "At least one administrator is required" }, { status: 409 });
+      return NextResponse.json(
+        { error: "At least one administrator is required" },
+        { status: 409 },
+      );
     }
   }
 
-  const updated = await UserModel.findByIdAndUpdate(id, { isAdmin: parsed.data.isAdmin }, { new: true }).lean();
+  const updated = await UserModel.findByIdAndUpdate(
+    id,
+    { isAdmin: parsed.data.isAdmin },
+    { new: true },
+  ).lean();
   await AdminAuditModel.create({
     adminId: String(requester._id),
     targetUserId: id,
     action: parsed.data.isAdmin ? "promote" : "demote",
   });
-  return NextResponse.json({ data: { id: String(updated._id), isAdmin: Boolean(updated.isAdmin) } });
+  return NextResponse.json({
+    data: { id: String(updated._id), isAdmin: Boolean(updated.isAdmin) },
+  });
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -74,7 +85,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
-  if (!Types.ObjectId.isValid(id)) return NextResponse.json({ error: "Invalid user id" }, { status: 400 });
+  if (!Types.ObjectId.isValid(id))
+    return NextResponse.json({ error: "Invalid user id" }, { status: 400 });
   await connectDB();
 
   if (id === String(requester._id)) {
@@ -87,7 +99,10 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   if (target.isAdmin) {
     const adminCount = await UserModel.countDocuments({ isAdmin: true });
     if (adminCount <= 1) {
-      return NextResponse.json({ error: "At least one administrator is required" }, { status: 409 });
+      return NextResponse.json(
+        { error: "At least one administrator is required" },
+        { status: 409 },
+      );
     }
   }
 

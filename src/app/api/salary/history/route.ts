@@ -39,7 +39,8 @@ export async function POST(req: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!isJsonRequest(req)) return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
+  if (!isJsonRequest(req))
+    return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
 
   const body = await req.json().catch(() => null);
   const parsed = createSchema.safeParse(body);
@@ -75,11 +76,13 @@ export async function PUT(req: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!isJsonRequest(req)) return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
+  if (!isJsonRequest(req))
+    return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
 
   const url = new URL(req.url);
   const id = url.searchParams.get("id");
-  if (!id || !Types.ObjectId.isValid(id)) return NextResponse.json({ error: "Valid id required" }, { status: 400 });
+  if (!id || !Types.ObjectId.isValid(id))
+    return NextResponse.json({ error: "Valid id required" }, { status: 400 });
   const body = await req.json().catch(() => null);
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid" }, { status: 422 });
@@ -102,7 +105,8 @@ export async function DELETE(req: Request) {
 
   const url = new URL(req.url);
   const id = url.searchParams.get("id");
-  if (!id || !Types.ObjectId.isValid(id)) return NextResponse.json({ error: "Valid id required" }, { status: 400 });
+  if (!id || !Types.ObjectId.isValid(id))
+    return NextResponse.json({ error: "Valid id required" }, { status: 400 });
   await connectDB();
   const existing = await SalaryHistoryModel.findById(id).lean();
   if (!existing || existing.userId !== (user.email || String(user._id)))

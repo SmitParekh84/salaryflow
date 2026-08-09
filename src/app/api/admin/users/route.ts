@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/lib/server-auth";
-import { NextResponse } from "next/server";
 import { connectDB } from "@/server/db";
 import { UserModel } from "@/server/models";
+import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

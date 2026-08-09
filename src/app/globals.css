@@ -79,6 +79,13 @@ body {
   box-shadow: var(--shadow);
 }
 
+.auth-background {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(circle at 82% 8%, color-mix(in srgb, var(--primary) 16%, transparent) 0, transparent 38%),
+    linear-gradient(145deg, color-mix(in srgb, var(--surface) 92%, var(--primary)) 0%, var(--background) 55%, color-mix(in srgb, var(--success) 7%, var(--background)) 100%);
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

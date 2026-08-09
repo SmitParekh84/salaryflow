@@ -1,7 +1,7 @@
 import { getAuthenticatedContext, isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
-import { NextResponse } from "next/server";
 import { connectDB } from "@/server/db";
 import { SalaryProfileModel } from "@/server/models";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -34,7 +34,8 @@ export async function POST(req: Request) {
   const auth = await getAuthenticatedContext();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!isJsonRequest(req)) return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
+  if (!isJsonRequest(req))
+    return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid" }, { status: 422 });

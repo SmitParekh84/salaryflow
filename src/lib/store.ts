@@ -614,6 +614,7 @@ export const useFinanceStore = create<FinanceState>()(
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               userId: state.user.email || undefined,
+              onboardingCompleted: state.user.onboarded,
               profile: state.profile,
               expenses: state.expenses,
               incomes: state.incomes,

@@ -29,7 +29,8 @@ export async function POST(req: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!isJsonRequest(req)) return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
+  if (!isJsonRequest(req))
+    return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
 
   const body = await req.json().catch(() => null);
   const parsed = accountSchema.safeParse(body);
@@ -46,10 +47,12 @@ export async function PUT(req: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!isJsonRequest(req)) return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
+  if (!isJsonRequest(req))
+    return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
 
   const id = new URL(req.url).searchParams.get("id");
-  if (!id || !Types.ObjectId.isValid(id)) return NextResponse.json({ error: "Valid account id is required" }, { status: 400 });
+  if (!id || !Types.ObjectId.isValid(id))
+    return NextResponse.json({ error: "Valid account id is required" }, { status: 400 });
 
   const body = await req.json().catch(() => null);
   const parsed = accountSchema.partial().safeParse(body);
@@ -72,7 +75,8 @@ export async function DELETE(req: Request) {
   if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const id = new URL(req.url).searchParams.get("id");
-  if (!id || !Types.ObjectId.isValid(id)) return NextResponse.json({ error: "Valid account id is required" }, { status: 400 });
+  if (!id || !Types.ObjectId.isValid(id))
+    return NextResponse.json({ error: "Valid account id is required" }, { status: 400 });
 
   const userId = user.email || String(user._id);
   const removed = await BankAccountModel.findOneAndDelete({ _id: id, userId }).lean();

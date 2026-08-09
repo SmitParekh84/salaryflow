@@ -1,5 +1,5 @@
-import jwt, { type JwtPayload, type SignOptions } from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import jwt, { type JwtPayload, type SignOptions } from "jsonwebtoken";
 import { createHmac, randomInt } from "node:crypto";
 
 const SECRET = process.env.AUTH_SECRET;

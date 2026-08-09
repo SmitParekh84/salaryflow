@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
+import { hashPassword } from "@/server/auth";
 import { connectDB } from "@/server/db";
 import { UserModel } from "@/server/models";
-import { hashPassword } from "@/server/auth";
-import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
+import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,5 +45,8 @@ export async function POST(req: Request) {
 
   const passwordHash = await hashPassword(pass);
   const created = await UserModel.create({ email, passwordHash, name: "Admin", isAdmin: true });
-  return NextResponse.json({ data: { message: "Admin created", email: created.email } }, { status: 201 });
+  return NextResponse.json(
+    { data: { message: "Admin created", email: created.email } },
+    { status: 201 },
+  );
 }

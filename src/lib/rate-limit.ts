@@ -1,6 +1,6 @@
-import { createHash } from "node:crypto";
 import { connectDB } from "@/server/db";
 import { RateLimitModel } from "@/server/models";
+import { createHash } from "node:crypto";
 
 type RateLimitOptions = {
   scope: string;
@@ -17,9 +17,7 @@ export type RateLimitResult = {
 };
 
 function rateLimitKey(scope: string, identifier: string) {
-  return createHash("sha256")
-    .update(`${scope}:${identifier.trim().toLowerCase()}`)
-    .digest("hex");
+  return createHash("sha256").update(`${scope}:${identifier.trim().toLowerCase()}`).digest("hex");
 }
 
 export function getClientIp(request: Request) {
@@ -45,11 +43,7 @@ export async function consumeRateLimit({
         $set: {
           key,
           count: {
-            $cond: [
-              { $gt: ["$resetAt", now] },
-              { $add: [{ $ifNull: ["$count", 0] }, 1] },
-              1,
-            ],
+            $cond: [{ $gt: ["$resetAt", now] }, { $add: [{ $ifNull: ["$count", 0] }, 1] }, 1],
           },
           resetAt: { $cond: [{ $gt: ["$resetAt", now] }, "$resetAt", nextReset] },
           updatedAt: now,

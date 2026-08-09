@@ -250,6 +250,7 @@ const UserSchema = new Schema(
     name: { type: String },
     passwordHash: { type: String },
     emailVerified: { type: Boolean, default: false },
+    onboardingCompleted: { type: Boolean, default: false },
     isAdmin: { type: Boolean, default: false },
     sessionVersion: { type: Number, default: 0, select: false },
   },
