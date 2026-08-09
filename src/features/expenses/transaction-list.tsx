@@ -68,9 +68,11 @@ export function TransactionList({
 
               {!compact && (
                 <div className="hidden items-center gap-1 sm:flex sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => toggleFavorite(e.id)}
-                    className="rounded-lg p-1.5 hover:bg-surface-2"
+                    className="h-8 w-8"
                     aria-label="Favorite"
                   >
                     <Heart
@@ -79,23 +81,27 @@ export function TransactionList({
                         e.favorite ? "fill-danger text-danger" : "text-muted",
                       )}
                     />
-                  </button>
+                  </Button>
                   {onEdit && (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => onEdit(e)}
-                      className="rounded-lg p-1.5 hover:bg-surface-2"
+                      className="h-8 w-8"
                       aria-label="Edit"
                     >
                       <Pencil className="h-4 w-4 text-muted" />
-                    </button>
+                    </Button>
                   )}
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => deleteExpense(e.id)}
-                    className="rounded-lg p-1.5 hover:bg-surface-2"
+                    className="h-8 w-8 text-danger hover:bg-danger/10"
                     aria-label="Delete"
                   >
-                    <Trash2 className="h-4 w-4 text-danger" />
-                  </button>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               )}
 

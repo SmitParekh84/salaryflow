@@ -136,13 +136,15 @@ export default function LoginStep({ name, onAuthenticated }: LoginStepProps) {
             {isRegistration ? "New account" : "Existing account"}
           </p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={changeEmail}
-          className="text-xs font-medium text-primary hover:underline"
+          className="h-auto p-0 text-xs text-primary hover:bg-transparent hover:underline"
         >
           Change
-        </button>
+        </Button>
       </div>
 
       <div>
@@ -161,14 +163,16 @@ export default function LoginStep({ name, onAuthenticated }: LoginStepProps) {
             minLength={isRegistration ? 6 : 1}
             required
           />
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => setShowPassword((visible) => !visible)}
-            className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-foreground"
+            className="absolute right-1 top-1/2 -translate-y-1/2 text-muted hover:bg-surface hover:text-foreground"
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -202,13 +206,15 @@ export default function LoginStep({ name, onAuthenticated }: LoginStepProps) {
             : "Sign in & finish"}
       </Button>
 
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
         onClick={changeEmail}
-        className="mx-auto flex items-center gap-1.5 text-xs text-muted hover:text-foreground"
+        className="mx-auto text-xs text-muted hover:text-foreground"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to email
-      </button>
+      </Button>
     </form>
   );
 }

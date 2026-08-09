@@ -9,7 +9,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-2xl border card-shadow",
+        "min-w-0 rounded-2xl border card-shadow",
         glass ? "glass" : "bg-surface border-border",
         className
       )}
@@ -42,4 +42,18 @@ export function CardTitle({
       {...props}
     />
   );
+}
+
+export function CardDescription({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLParagraphElement>) {
+  return <p className={cn("mt-1 text-xs leading-relaxed text-muted", className)} {...props} />;
+}
+
+export function CardFooter({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("flex items-center gap-3 p-5 pt-0", className)} {...props} />;
 }

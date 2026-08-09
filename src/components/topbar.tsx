@@ -45,16 +45,17 @@ export function TopBar({ title }: { title: string }) {
         <h1 className="truncate text-lg font-semibold tracking-tight">{title}</h1>
       </div>
 
-      <button
+      <Button
+        variant="secondary"
         onClick={() => setOpenSearch(true)}
-        className="hidden sm:flex items-center gap-2 rounded-xl border border-border bg-surface-2 px-3 py-2 text-sm text-muted transition-colors hover:text-foreground"
+        className="hidden text-muted sm:flex"
       >
         <Search className="h-4 w-4" />
         <span className="hidden md:inline">Search…</span>
         <kbd className="hidden md:inline rounded bg-surface px-1.5 py-0.5 text-[10px]">
           ⌘K
         </kbd>
-      </button>
+      </Button>
 
       <Button
         variant="secondary"
@@ -96,12 +97,14 @@ export function TopBar({ title }: { title: string }) {
               >
                 <div className="flex items-center justify-between border-b border-border px-4 py-3">
                   <p className="text-sm font-semibold">Notifications</p>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={markAllRead}
-                    className="text-xs text-primary hover:underline"
+                    className="h-auto p-0 text-primary hover:bg-transparent hover:underline"
                   >
                     Mark all read
-                  </button>
+                  </Button>
                 </div>
                 <div className="max-h-80 overflow-y-auto no-scrollbar">
                   {notifications.length === 0 && (
@@ -110,11 +113,12 @@ export function TopBar({ title }: { title: string }) {
                     </p>
                   )}
                   {notifications.map((n) => (
-                    <button
+                    <Button
                       key={n.id}
+                      variant="ghost"
                       onClick={() => markRead(n.id)}
                       className={cn(
-                        "flex w-full items-start gap-3 border-b border-border px-4 py-3 text-left transition-colors hover:bg-surface-2",
+                        "h-auto w-full items-start justify-start rounded-none border-b border-border px-4 py-3 text-left",
                         !n.read && "bg-primary/5"
                       )}
                     >
@@ -131,7 +135,7 @@ export function TopBar({ title }: { title: string }) {
                         </span>
                       </span>
                       {n.read && <Check className="ml-auto h-3.5 w-3.5 text-muted" />}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </motion.div>
@@ -143,13 +147,15 @@ export function TopBar({ title }: { title: string }) {
       <ThemeToggle />
 
       <div className="relative">
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => setOpenMenu((v) => !v)}
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/60 text-sm font-bold text-white"
+          className="bg-gradient-to-br from-primary to-primary/60 text-sm font-bold text-white hover:opacity-90"
           aria-label="Account menu"
         >
           {initials}
-        </button>
+        </Button>
 
         <AnimatePresence>
           {openMenu && (
@@ -170,7 +176,14 @@ export function TopBar({ title }: { title: string }) {
                 {user.email && user.isAdmin && (
                   <a href="/admin" className="block px-3 py-2 text-sm hover:bg-surface-2 rounded">Admin</a>
                 )}
-                <button onClick={() => { setOpenMenu(false); logout(); }} className="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 rounded">Sign out</button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setOpenMenu(false); logout(); }}
+                  className="w-full justify-start"
+                >
+                  Sign out
+                </Button>
               </div>
             </motion.div>
           )}

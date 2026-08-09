@@ -234,13 +234,15 @@ export function RulesView() {
                       Activate
                     </Button>
                   )}
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => void remove(rule.id)}
-                    className="rounded-lg p-2 text-danger hover:bg-danger/10"
+                    className="h-8 w-8 text-danger hover:bg-danger/10"
                     aria-label={`Delete ${rule.name}`}
                   >
                     <Trash2 className="h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               ))}
           </div>

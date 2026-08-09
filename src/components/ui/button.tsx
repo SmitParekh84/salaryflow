@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import * as React from "react";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger" | "outline";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "success" | "warning" | "outline";
 type Size = "sm" | "md" | "lg" | "icon";
 
 const variants: Record<Variant, string> = {
@@ -12,6 +12,8 @@ const variants: Record<Variant, string> = {
   secondary: "bg-surface-2 text-foreground hover:bg-surface-2/70 border border-border",
   ghost: "hover:bg-surface-2 text-foreground",
   danger: "bg-danger text-white hover:opacity-90",
+  success: "bg-success text-white hover:opacity-90",
+  warning: "bg-warning text-white hover:opacity-90",
   outline: "border border-border bg-transparent hover:bg-surface-2 text-foreground",
 };
 
@@ -33,13 +35,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     <button
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] disabled:opacity-50 disabled:pointer-events-none",
+        "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ring) disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         sizes[size],
-        className
+        className,
       )}
       {...props}
     />
-  )
+  ),
 );
 Button.displayName = "Button";

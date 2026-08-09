@@ -1,12 +1,14 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import React, { useEffect, useState } from "react";
 
 type User = { _id: string; email: string; name?: string; isAdmin?: boolean };
 
 export default function AdminPage() {
   const [users, setUsers] = useState<User[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const fetchUsers = () => {
@@ -19,7 +21,23 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    fetchUsers();
+    let cancelled = false;
+
+    fetch("/api/admin/users", { credentials: "include" })
+      .then((response) => response.json())
+      .then((json) => {
+        if (!cancelled) setUsers(json.data || []);
+      })
+      .catch(() => {
+        if (!cancelled) setUsers([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function toggleAdmin(id: string, makeAdmin: boolean) {
@@ -33,7 +51,7 @@ export default function AdminPage() {
       });
       if (!res.ok) throw new Error("Failed");
       await fetchUsers();
-    } catch (e) {
+    } catch {
       // ignore for demo
     } finally {
       setActionLoading(null);
@@ -50,7 +68,7 @@ export default function AdminPage() {
       });
       if (!res.ok) throw new Error("Failed");
       await fetchUsers();
-    } catch (e) {
+    } catch {
       // ignore
     } finally {
       setActionLoading(null);
@@ -62,8 +80,8 @@ export default function AdminPage() {
       <h1 className="text-2xl font-semibold mb-4">Admin — Users</h1>
       {loading && <div>Loading…</div>}
       {!loading && users && (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white dark:bg-gray-900">
+        <Card className="overflow-x-auto shadow-none">
+          <table className="min-w-full bg-surface">
             <thead>
               <tr>
                 <th className="px-4 py-2 text-left">Email</th>
@@ -80,18 +98,18 @@ export default function AdminPage() {
                   <td className="px-4 py-2">{u.isAdmin ? "Yes" : "No"}</td>
                   <td className="px-4 py-2">
                     {!u.isAdmin && (
-                      <button disabled={actionLoading === u._id} onClick={() => toggleAdmin(u._id, true)} className="mr-2 rounded bg-green-600 px-3 py-1 text-sm text-white">Promote</button>
+                      <Button size="sm" variant="success" disabled={actionLoading === u._id} onClick={() => toggleAdmin(u._id, true)} className="mr-2">Promote</Button>
                     )}
                     {u.isAdmin && (
-                      <button disabled={actionLoading === u._id} onClick={() => toggleAdmin(u._id, false)} className="mr-2 rounded bg-yellow-600 px-3 py-1 text-sm text-white">Demote</button>
+                      <Button size="sm" variant="warning" disabled={actionLoading === u._id} onClick={() => toggleAdmin(u._id, false)} className="mr-2">Demote</Button>
                     )}
-                    <button disabled={actionLoading === u._id} onClick={() => deleteUser(u._id)} className="rounded bg-red-600 px-3 py-1 text-sm text-white">Delete</button>
+                    <Button size="sm" variant="danger" disabled={actionLoading === u._id} onClick={() => deleteUser(u._id)}>Delete</Button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
       {!loading && users && users.length === 0 && <div>No users found.</div>}
     </div>

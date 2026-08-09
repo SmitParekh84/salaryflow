@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
 import { useFinanceStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
@@ -98,7 +99,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-gray-900">
-      <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
+      <Card className="w-full max-w-md p-6">
         <h1 className="text-2xl font-semibold mb-4">Create an account</h1>
         <form onSubmit={codeSent ? verifyAndRegister : sendOtp} className="space-y-4">
           <div>
@@ -189,7 +190,7 @@ export default function RegisterPage() {
             Sign in
           </a>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

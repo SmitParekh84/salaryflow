@@ -2,6 +2,7 @@
 
 import { NAV_ITEMS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { Card } from "./ui/card";
 import {
   BadgeIndianRupee,
   BarChart3,
@@ -78,12 +79,12 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="rounded-2xl border border-border bg-surface-2/50 p-4">
+      <Card className="bg-surface-2/50 p-4 shadow-none">
         <p className="text-xs font-semibold">Pro tip 💡</p>
         <p className="mt-1 text-[11px] leading-relaxed text-muted">
           Log expenses daily to keep your Safe-to-Spend accurate.
         </p>
-      </div>
+      </Card>
     </aside>
   );
 }

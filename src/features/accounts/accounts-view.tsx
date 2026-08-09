@@ -303,9 +303,11 @@ export function AccountsView() {
                 <p className="min-w-20 text-right text-sm font-bold tabular-nums">
                   {account.maskBalance ? "••••••" : formatMoney(account.balance, currency)}
                 </p>
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => void toggleBalanceMask(account)}
-                  className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-foreground"
+                  className="h-8 w-8 text-muted"
                   aria-label={
                     account.maskBalance
                       ? `Show ${account.bankName} balance`
@@ -317,22 +319,26 @@ export function AccountsView() {
                   ) : (
                     <EyeOff className="h-4 w-4" />
                   )}
-                </button>
+                </Button>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => openEdit(account)}
-                className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-foreground"
+                className="h-8 w-8 text-muted"
                 aria-label={`Edit ${account.bankName}`}
               >
                 <Pencil className="h-4 w-4" />
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => void remove(account.id)}
-                className="rounded-lg p-2 text-danger hover:bg-danger/10"
+                className="h-8 w-8 text-danger hover:bg-danger/10"
                 aria-label={`Delete ${account.bankName}`}
               >
                 <Trash2 className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
           ))}
         </div>
@@ -436,20 +442,24 @@ export function AccountsView() {
                         {card.bankName} · Statement on {card.statementDay}th
                       </p>
                     </div>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => openEditCard(card)}
-                      className="rounded-lg p-1.5 text-muted hover:bg-surface-2"
+                      className="h-8 w-8 text-muted"
                       aria-label={`Edit ${card.name}`}
                     >
                       <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => void removeCard(card.id)}
-                      className="rounded-lg p-1.5 text-danger hover:bg-danger/10"
+                      className="h-8 w-8 text-danger hover:bg-danger/10"
                       aria-label={`Delete ${card.name}`}
                     >
                       <Trash2 className="h-4 w-4" />
-                    </button>
+                    </Button>
                   </div>
                   <div className="mt-4 flex items-end justify-between gap-3">
                     <div>

@@ -12,7 +12,7 @@ import { ExpenseForm } from "@/features/expenses/expense-form";
 import { SeedPrompt, TransactionList } from "@/features/expenses/transaction-list";
 import { useSummary } from "@/hooks/use-summary";
 import { billCycle } from "@/lib/bill-cycle";
-import { isInCurrentCycle, projectedGoalDate, upcomingBills } from "@/lib/calculations";
+import { projectedGoalDate, upcomingBills } from "@/lib/calculations";
 import { buildFundingPlan } from "@/lib/funding-plan";
 import { useFinanceStore } from "@/lib/store";
 import { formatMoney, newestFirst } from "@/lib/utils";
@@ -67,16 +67,6 @@ export function DashboardView() {
     monthlyIncome: summary.salaryIncome,
     savedThisCycle: summary.savedThisCycle,
   });
-  const confirmedSalaryIn = salaryHistory
-    .filter((entry) => entry.confirmed && isInCurrentCycle(entry.date, profile))
-    .reduce((total, entry) => total + entry.amount, 0);
-  const otherCreditsIn = incomes
-    .filter((income) => isInCurrentCycle(income.date, profile))
-    .reduce((total, income) => total + income.amount, 0);
-  const moneyOut = expenses
-    .filter((expense) => isInCurrentCycle(expense.date, profile))
-    .reduce((total, expense) => total + expense.amount, 0);
-
   const insights = buildInsights(summary, nextBills.length);
 
   return (
@@ -220,22 +210,11 @@ export function DashboardView() {
       )}
 
       <Card>
-        <CardHeader className="flex flex-wrap items-start justify-between gap-3">
+        <CardHeader>
           <div>
-            <CardTitle>Cash flow · current salary cycle</CardTitle>
+            <CardTitle>Cash flow · 6 months</CardTitle>
             <p className="mt-1 text-xs text-muted">
-              Confirmed salary and credits in, recorded spending out
-            </p>
-          </div>
-          <div className="text-right text-xs text-muted">
-            <p>
-              Salary in <span className="font-semibold text-success">{formatMoney(confirmedSalaryIn, currency)}</span>
-            </p>
-            <p>
-              Other credits <span className="font-semibold text-foreground">{formatMoney(otherCreditsIn, currency)}</span>
-            </p>
-            <p>
-              Money out <span className="font-semibold text-foreground">{formatMoney(moneyOut, currency)}</span>
+              Monthly confirmed salary and credits in, recorded spending out
             </p>
           </div>
         </CardHeader>
@@ -244,7 +223,6 @@ export function DashboardView() {
             expenses={expenses}
             incomes={incomes}
             salaryHistory={salaryHistory}
-            profile={profile}
             currency={currency}
           />
         </CardContent>

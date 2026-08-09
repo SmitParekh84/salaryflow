@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { useSummary } from "@/hooks/use-summary";
 import { COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
@@ -156,16 +157,17 @@ export function SettingsView() {
             const Icon = item.icon;
             const selected = section === item.id;
             return (
-              <button
+              <Button
                 key={item.id}
                 type="button"
+                variant="ghost"
                 onClick={() => setSection(item.id)}
                 aria-current={selected ? "page" : undefined}
                 className={cn(
-                  "flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ring) lg:w-full",
+                  "h-auto shrink-0 justify-start gap-3 px-3 py-2.5 text-left lg:w-full",
                   selected
                     ? "bg-primary/10 text-primary"
-                    : "text-muted hover:bg-surface-2 hover:text-foreground",
+                    : "text-muted hover:text-foreground",
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
@@ -173,13 +175,13 @@ export function SettingsView() {
                   <span className="block text-sm font-medium">{item.label}</span>
                   <span className="hidden text-[11px] text-muted lg:block">{item.description}</span>
                 </span>
-              </button>
+              </Button>
             );
           })}
         </nav>
       </aside>
 
-      <section className="min-w-0 rounded-xl border border-border bg-surface">
+      <Card className="min-w-0 shadow-none">
         {section === "profile" && (
           <SettingsPane
             title="User profile"
@@ -470,7 +472,7 @@ export function SettingsView() {
             </div>
           </SettingsPane>
         )}
-      </section>
+      </Card>
     </div>
   );
 }

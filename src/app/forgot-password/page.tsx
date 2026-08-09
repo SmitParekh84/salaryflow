@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
@@ -58,7 +59,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-gray-900">
-      <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
+      <Card className="w-full max-w-md p-6">
         <h1 className="text-2xl font-semibold mb-4">Reset password</h1>
         {step === "send" ? (
           <form onSubmit={send} className="space-y-4">
@@ -110,7 +111,7 @@ export default function ForgotPasswordPage() {
             </div>
           </form>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

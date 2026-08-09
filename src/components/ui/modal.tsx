@@ -53,11 +53,13 @@ export function Modal({
             transition={{ type: "spring", stiffness: 320, damping: 30 }}
             className={cn(
               "relative z-10 w-full max-w-lg rounded-t-2xl sm:rounded-2xl border border-border bg-surface card-shadow max-h-[92vh] overflow-y-auto no-scrollbar",
-              className
+              className,
             )}
           >
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface/90 px-5 py-4 backdrop-blur">
-              <h2 id={titleId} className="text-base font-semibold">{title}</h2>
+              <h2 id={titleId} className="text-base font-semibold">
+                {title}
+              </h2>
               <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
                 <X className="h-4 w-4" />
               </Button>

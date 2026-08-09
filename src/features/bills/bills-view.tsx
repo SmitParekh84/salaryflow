@@ -204,31 +204,37 @@ export function BillsView() {
                   )}
                   <div className="mt-1 flex items-center justify-end gap-1">
                     {!cycle.isPaid && !isFutureInterval && (
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => void markPaid(b)}
-                        className="rounded-lg p-1.5 text-muted transition-colors hover:bg-success/10 hover:text-success"
+                        className="h-8 w-8 text-muted hover:bg-success/10 hover:text-success"
                         aria-label={`Mark ${b.name} paid`}
                         title="Mark paid"
                       >
                         <Check className="h-4 w-4" />
-                      </button>
+                      </Button>
                     )}
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => openEdit(b)}
-                      className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-2 hover:text-foreground"
+                      className="h-8 w-8 text-muted"
                       aria-label={`Edit ${b.name}`}
                       title="Edit bill"
                     >
                       <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => deleteBill(b.id)}
-                      className="rounded-lg p-1.5 text-danger hover:bg-danger/10"
+                      className="h-8 w-8 text-danger hover:bg-danger/10"
                       aria-label={`Move ${b.name} to recycle bin`}
                       title="Move to recycle bin"
                     >
                       <Trash2 className="h-4 w-4" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </Card>

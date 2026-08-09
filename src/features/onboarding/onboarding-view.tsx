@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
@@ -300,7 +301,7 @@ export function OnboardingView() {
           ))}
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface p-6 card-shadow">
+        <Card className="p-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -341,14 +342,16 @@ export function OnboardingView() {
               </Button>
             )}
           </div>
-        </div>
+        </Card>
 
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={startDemo}
-          className="mx-auto mt-5 block text-xs text-muted hover:text-foreground"
+          className="mx-auto mt-5 flex text-xs text-muted hover:text-foreground"
         >
           Skip and explore with demo data →
-        </button>
+        </Button>
       </div>
     </div>
   );

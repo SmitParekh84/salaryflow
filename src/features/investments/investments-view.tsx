@@ -140,13 +140,15 @@ export function InvestmentsView() {
                     {formatMoney(g, currency)} ({Math.round(gp)}%)
                   </p>
                 </div>
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => deleteInvestment(inv.id)}
-                  className="rounded-lg p-1.5 text-danger opacity-0 transition-opacity hover:bg-danger/10 group-hover:opacity-100"
+                  className="h-8 w-8 text-danger opacity-0 hover:bg-danger/10 group-hover:opacity-100"
                   aria-label="Delete"
                 >
                   <Trash2 className="h-4 w-4" />
-                </button>
+                </Button>
               </div>
             );
           })}

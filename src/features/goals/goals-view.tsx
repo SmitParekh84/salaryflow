@@ -229,20 +229,24 @@ function GoalCard({
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={onEdit}
-              className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-foreground"
+              className="h-8 w-8 text-muted"
               aria-label={`Edit ${goal.name}`}
             >
               <Pencil className="h-4 w-4" />
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={onDelete}
-              className="rounded-lg p-1.5 text-danger hover:bg-danger/10"
+              className="h-8 w-8 text-danger hover:bg-danger/10"
               aria-label={`Delete ${goal.name}`}
             >
               <Trash2 className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         </div>
 

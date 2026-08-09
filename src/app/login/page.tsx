@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Checkbox, Input, Label } from "@/components/ui/input";
 import { useAuth } from "@/lib/useAuth";
 import Link from "next/link";
@@ -30,7 +31,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-gray-900">
-      <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
+      <Card className="w-full max-w-md p-6">
         <h1 className="text-2xl font-semibold mb-4">Sign in to SalaryFlow</h1>
         <form onSubmit={submit} className="space-y-4">
           <div>
@@ -75,7 +76,7 @@ export default function LoginPage() {
             Create one
           </Link>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

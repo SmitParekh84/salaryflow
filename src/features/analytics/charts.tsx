@@ -1,8 +1,7 @@
 "use client";
 
 import { CATEGORY_META } from "@/lib/constants";
-import { cycleInfo } from "@/lib/calculations";
-import type { Expense, Income, SalaryHistoryEntry, SalaryProfile } from "@/lib/types";
+import type { Expense, Income, SalaryHistoryEntry } from "@/lib/types";
 import { formatMoney, parseFinancialDate } from "@/lib/utils";
 import { useMemo } from "react";
 import {
@@ -91,50 +90,48 @@ export function CashFlowChart({
   expenses,
   incomes,
   salaryHistory,
-  profile,
   currency,
 }: {
   expenses: Expense[];
   incomes: Income[];
   salaryHistory: SalaryHistoryEntry[];
-  profile: SalaryProfile;
   currency: string;
 }) {
   const data = useMemo(() => {
     const today = new Date();
-    const { cycleStart } = cycleInfo(profile, today);
     const points = new Map<string, { date: Date; inflow: number; outflow: number }>();
 
-    for (const date = new Date(cycleStart); date <= today; date.setDate(date.getDate() + 1)) {
-      const key = date.toDateString();
-      points.set(key, { date: new Date(date), inflow: 0, outflow: 0 });
+    for (let monthsAgo = 5; monthsAgo >= 0; monthsAgo--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - monthsAgo, 1);
+      const key = `${date.getFullYear()}-${date.getMonth()}`;
+      points.set(key, { date, inflow: 0, outflow: 0 });
     }
 
     for (const salary of salaryHistory) {
       if (!salary.confirmed) continue;
       const date = parseFinancialDate(salary.date);
-      const point = points.get(date.toDateString());
+      const point = points.get(`${date.getFullYear()}-${date.getMonth()}`);
       if (point) point.inflow += salary.amount;
     }
 
     for (const income of incomes) {
       const date = parseFinancialDate(income.date);
-      const point = points.get(date.toDateString());
+      const point = points.get(`${date.getFullYear()}-${date.getMonth()}`);
       if (point) point.inflow += income.amount;
     }
 
     for (const expense of expenses) {
       const date = parseFinancialDate(expense.date);
-      const point = points.get(date.toDateString());
+      const point = points.get(`${date.getFullYear()}-${date.getMonth()}`);
       if (point) point.outflow += expense.amount;
     }
 
     return Array.from(points.values()).map((point) => ({
-      label: point.date.toLocaleDateString("en-US", { day: "numeric", month: "short" }),
+      label: point.date.toLocaleDateString("en-US", { month: "short" }),
       inflow: Math.round(point.inflow),
       outflow: Math.round(point.outflow),
     }));
-  }, [expenses, incomes, profile, salaryHistory]);
+  }, [expenses, incomes, salaryHistory]);
 
   return (
     <ResponsiveContainer width="100%" height={240}>
@@ -171,13 +168,7 @@ export function CashFlowChart({
   );
 }
 
-export function CategoryDonut({
-  expenses,
-  currency,
-}: {
-  expenses: Expense[];
-  currency: string;
-}) {
+export function CategoryDonut({ expenses, currency }: { expenses: Expense[]; currency: string }) {
   const data = useMemo(() => {
     const map = new Map<string, number>();
     for (const e of expenses) {
@@ -233,14 +224,9 @@ export function CategoryDonut({
       <div className="grid w-full grid-cols-1 gap-1.5">
         {data.slice(0, 6).map((d) => (
           <div key={d.name} className="flex items-center gap-2 text-xs">
-            <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ background: d.color }}
-            />
+            <span className="h-2.5 w-2.5 rounded-full" style={{ background: d.color }} />
             <span className="flex-1 truncate">{d.name}</span>
-            <span className="font-medium text-muted">
-              {Math.round((d.value / total) * 100)}%
-            </span>
+            <span className="font-medium text-muted">{Math.round((d.value / total) * 100)}%</span>
           </div>
         ))}
       </div>
@@ -326,4 +312,3 @@ export function MonthlyBars({
     </ResponsiveContainer>
   );
 }
-
