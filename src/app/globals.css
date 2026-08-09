@@ -80,10 +80,64 @@ body {
 }
 
 .auth-background {
+  --primary: #079875;
+  --ring: rgba(7, 152, 117, 0.28);
   background-color: var(--background);
   background-image:
-    radial-gradient(circle at 82% 8%, color-mix(in srgb, var(--primary) 16%, transparent) 0, transparent 38%),
-    linear-gradient(145deg, color-mix(in srgb, var(--surface) 92%, var(--primary)) 0%, var(--background) 55%, color-mix(in srgb, var(--success) 7%, var(--background)) 100%);
+    radial-gradient(circle at 82% 7%, color-mix(in srgb, #21d9aa 16%, transparent) 0, transparent 36%),
+    linear-gradient(145deg, color-mix(in srgb, var(--surface) 94%, #d8fff5) 0%, var(--background) 58%, color-mix(in srgb, #0b896c 7%, var(--background)) 100%);
+}
+
+.auth-showcase {
+  background:
+    radial-gradient(circle at 82% 18%, rgba(40, 223, 177, 0.2) 0, transparent 30%),
+    linear-gradient(145deg, #102746 0%, #07182f 52%, #041327 100%);
+}
+
+.auth-showcase::after {
+  content: "";
+  position: absolute;
+  inset: auto -12rem -15rem auto;
+  width: 32rem;
+  height: 32rem;
+  border-radius: 50%;
+  background: rgba(10, 181, 137, 0.12);
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+.auth-form-surface {
+  font-optical-sizing: auto;
+}
+
+.auth-segment {
+  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+}
+
+@media (min-width: 64rem) {
+  .auth-form-surface {
+    border: 1px solid color-mix(in srgb, white 50%, var(--border));
+    border-radius: 1.75rem;
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    box-shadow:
+      0 1px 1px rgba(255, 255, 255, 0.5) inset,
+      0 24px 70px rgba(10, 30, 48, 0.1),
+      0 3px 12px rgba(10, 30, 48, 0.05);
+    backdrop-filter: blur(28px) saturate(165%);
+    -webkit-backdrop-filter: blur(28px) saturate(165%);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .auth-form-surface,
+  .auth-segment {
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 .no-scrollbar::-webkit-scrollbar {

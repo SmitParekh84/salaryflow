@@ -11,8 +11,8 @@ import {
   EyeOff,
   LockKeyhole,
   MailCheck,
-  WalletCards,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -181,12 +181,15 @@ function AuthContent({ mode }: { mode: AuthMode }) {
           : `Enter the six-digit code sent to ${email.trim().toLowerCase()}.`;
 
   return (
-    <main className="auth-background min-h-dvh lg:grid lg:grid-cols-[minmax(22rem,0.85fr)_minmax(30rem,1.15fr)]">
-      <section className="hidden bg-foreground/95 px-12 py-14 text-background lg:flex lg:flex-col lg:justify-between">
+    <main className="auth-background min-h-dvh lg:grid lg:grid-cols-[minmax(24rem,0.92fr)_minmax(30rem,1.08fr)]">
+      <section className="auth-showcase relative hidden overflow-hidden px-12 py-14 text-white lg:flex lg:flex-col lg:justify-between xl:px-16">
         <Brand />
-        <div className="max-w-md">
-          <p className="text-3xl font-semibold leading-tight">
+        <div className="relative max-w-md">
+          <p className="text-[2.5rem] font-semibold leading-[1.08] tracking-[-0.025em]">
             Your salary cycle, ready where you left it.
+          </p>
+          <p className="mt-4 max-w-sm text-[0.95rem] leading-relaxed text-white/62">
+            A private, focused view of what you can safely spend between paydays.
           </p>
           <div className="mt-10 space-y-6">
             <FlowStep
@@ -206,26 +209,26 @@ function AuthContent({ mode }: { mode: AuthMode }) {
             />
           </div>
         </div>
-        <p className="text-xs text-background/60">
+        <p className="relative text-xs text-white/45">
           Private financial records stay tied to your verified account.
         </p>
       </section>
 
       <section className="flex min-h-dvh flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-8 lg:items-center lg:justify-center lg:px-12">
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col lg:flex-none">
+        <div className="auth-form-surface mx-auto flex w-full max-w-md flex-1 flex-col lg:flex-none lg:p-7 xl:p-8">
           <div className="lg:hidden">
             <Brand />
           </div>
 
           <nav
-            className="mt-8 grid grid-cols-2 rounded-xl bg-surface-2/90 p-1 lg:mt-0"
+            className="auth-segment mt-8 grid grid-cols-2 rounded-xl p-1 lg:mt-0"
             aria-label="Account access"
           >
             <Link
               href="/login"
               aria-current={mode === "signin" ? "page" : undefined}
               className={cn(
-                "flex h-10 items-center justify-center rounded-lg text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-(--ring)",
+                "flex h-10 items-center justify-center rounded-[0.65rem] text-sm font-medium outline-none transition-[color,background-color,box-shadow,transform] duration-150 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-(--ring)",
                 mode === "signin" ? "bg-surface text-foreground card-shadow" : "text-muted",
               )}
             >
@@ -235,7 +238,7 @@ function AuthContent({ mode }: { mode: AuthMode }) {
               href="/register"
               aria-current={mode === "signup" ? "page" : undefined}
               className={cn(
-                "flex h-10 items-center justify-center rounded-lg text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-(--ring)",
+                "flex h-10 items-center justify-center rounded-[0.65rem] text-sm font-medium outline-none transition-[color,background-color,box-shadow,transform] duration-150 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-(--ring)",
                 mode === "signup" ? "bg-surface text-foreground card-shadow" : "text-muted",
               )}
             >
@@ -250,7 +253,7 @@ function AuthContent({ mode }: { mode: AuthMode }) {
               </p>
               {mode === "signup" && <SignupProgress step={signupStep} />}
             </div>
-            <h1 className="mt-2 text-3xl font-semibold">{heading}</h1>
+            <h1 className="mt-2 text-[2rem] font-semibold leading-tight tracking-[-0.02em]">{heading}</h1>
             <p className="mt-2 text-sm leading-relaxed text-muted">{description}</p>
           </div>
 
@@ -568,11 +571,16 @@ function SignupProgress({ step }: { step: SignupStep }) {
 
 function Brand() {
   return (
-    <div className="flex items-center gap-2.5 text-sm font-semibold">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white">
-        <WalletCards className="h-4 w-4" />
-      </span>
-      SalaryFlow
+    <div className="relative flex items-center gap-3 text-sm font-semibold">
+      <Image
+        src="/icons/icon-192.png"
+        width={40}
+        height={40}
+        priority
+        alt=""
+        className="h-10 w-10"
+      />
+      <span className="tracking-[-0.01em]">SalaryFlow</span>
     </div>
   );
 }
@@ -696,7 +704,7 @@ function FlowStep({ number, title, detail }: { number: string; title: string; de
       </span>
       <div>
         <p className="text-sm font-semibold">{title}</p>
-        <p className="mt-1 text-sm text-background/60">{detail}</p>
+        <p className="mt-1 text-sm text-white/55">{detail}</p>
       </div>
     </div>
   );
