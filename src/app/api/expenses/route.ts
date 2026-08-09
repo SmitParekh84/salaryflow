@@ -129,12 +129,35 @@ export async function PUT(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid body" }, { status: 422 });
   try {
     await connectDB();
+    const existing = await ExpenseModel.findOne({ _id: id, userId: auth.userId }).lean();
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const merged = createSchema.safeParse({
+      amount: existing.amount,
+      category: existing.category,
+      merchant: existing.merchant,
+      paymentMethod: existing.paymentMethod,
+      note: existing.note,
+      date: existing.date?.toISOString(),
+      recurring: existing.recurring,
+      favorite: existing.favorite,
+      tags: existing.tags,
+      accountId: existing.accountId,
+      billId: existing.billId,
+      billingMonth: existing.billingMonth,
+      shared: existing.shared,
+      ...parsed.data,
+    });
+    if (!merged.success) {
+      return NextResponse.json(
+        { error: "Validation failed", issues: merged.error.flatten() },
+        { status: 422 },
+      );
+    }
     const updated = await ExpenseModel.findOneAndUpdate(
       { _id: id, userId: auth.userId },
-      parsed.data,
+      merged.data,
       { new: true },
     ).lean();
-    if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ data: updated });
   } catch {
     return NextResponse.json({ error: "Unable to update expense" }, { status: 500 });

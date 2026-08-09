@@ -80,3 +80,10 @@ export function reassignGoalAccounts(
     ),
   }));
 }
+
+export function shouldReassignClosingAllocations(
+  source: BankAccount,
+  transferAmount: number,
+): boolean {
+  return source.status === "closing" && transferAmount >= source.balance;
+}

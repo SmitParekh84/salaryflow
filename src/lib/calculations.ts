@@ -118,7 +118,7 @@ const FIXED: Record<string, boolean> = {
 };
 
 export function countsAsEarnedIncome(income: Income) {
-  return income.type !== "Reimbursement" && income.type !== "Cashback";
+  return !["Salary", "Reimbursement", "Cashback"].includes(income.type);
 }
 
 export function computeSummary(

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { applyAllocation, reassignGoalAccounts } from "./allocation-writes";
+import { accountDeletionBlocker } from "./account-references";
+import {
+  applyAllocation,
+  reassignGoalAccounts,
+  shouldReassignClosingAllocations,
+} from "./allocation-writes";
 import {
   accountAllocated,
   accountFree,
@@ -179,6 +184,74 @@ describe("currency formatting", () => {
   });
 });
 
+describe("closing account transfers", () => {
+  const closingAccount: BankAccount = {
+    id: "closing",
+    bankName: "Closing Bank",
+    accountType: "Savings",
+    balance: 10_000,
+    status: "closing",
+  };
+
+  it("keeps goal allocations on the source after a partial transfer", () => {
+    expect(shouldReassignClosingAllocations(closingAccount, 4_000)).toBe(false);
+  });
+
+  it("moves goal allocations when the closing account is emptied", () => {
+    expect(shouldReassignClosingAllocations(closingAccount, 10_000)).toBe(true);
+  });
+});
+
+describe("account deletion references", () => {
+  const emptyRecords = {
+    expenses: [],
+    incomes: [],
+    bills: [],
+    goals: [],
+    investments: [],
+    transfers: [],
+  };
+
+  it("allows an account with no finance references to be deleted", () => {
+    expect(accountDeletionBlocker("unused", emptyRecords)).toBeUndefined();
+  });
+
+  it("blocks deletion when goal money is allocated to the account", () => {
+    const reason = accountDeletionBlocker("save-a", {
+      ...emptyRecords,
+      goals: [
+        {
+          id: "goal",
+          name: "Emergency fund",
+          type: "Emergency Fund",
+          target: 50_000,
+          saved: 0,
+          monthlyContribution: 5_000,
+          contributions: [
+            {
+              id: "allocation",
+              amount: 5_000,
+              date: "2026-08-10T12:00:00.000Z",
+              accountId: "save-a",
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(reason).toContain("goal allocations");
+  });
+
+  it("blocks deletion when transfers preserve the account's cash-flow history", () => {
+    const reason = accountDeletionBlocker("save-a", {
+      ...emptyRecords,
+      transfers: [transfer({ destinationAccountId: "save-a" })],
+    });
+
+    expect(reason).toContain("transfers");
+  });
+});
+
 describe("finance summary", () => {
   const now = new Date("2026-03-02T12:00:00.000Z");
 
@@ -265,6 +338,32 @@ describe("finance summary", () => {
     expect(summary.income).toBe(32_167);
     expect(summary.salaryIncome).toBe(32_167);
     expect(summary.savingsTarget).toBeCloseTo(4_825.05);
+  });
+
+  it("does not add a salary income record on top of the salary source of truth", () => {
+    const summary = computeSummary(
+      profile,
+      [],
+      [
+        {
+          id: "duplicate-salary",
+          amount: 30_000,
+          type: "Salary",
+          source: "Salary deposit",
+          date: "2026-03-01T08:00:00.000Z",
+        },
+      ],
+      [],
+      [],
+      [],
+      rule,
+      [],
+      [],
+      now,
+    );
+
+    expect(summary.income).toBe(30_000);
+    expect(summary.salaryIncome).toBe(30_000);
   });
 
   it("counts external savings transfers but nets savings-to-savings transfers to zero", () => {

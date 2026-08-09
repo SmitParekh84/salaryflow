@@ -36,13 +36,17 @@ export function AnalyticsView() {
     () => expenses.filter((expense) => isInFinancialYear(expense.date, financialYearStart)),
     [expenses, financialYearStart],
   );
+  const visibleSpending = useMemo(
+    () => visibleExpenses.filter((expense) => expense.category !== "Investment"),
+    [visibleExpenses],
+  );
 
   const monthly = useMemo(() => {
     const map = new Map<string, { income: number; expense: number; confirmedSalary: boolean }>();
     for (const month of financialYearMonths(financialYearStart)) {
       map.set(month.key, { income: 0, expense: 0, confirmedSalary: false });
     }
-    for (const expense of visibleExpenses.filter((item) => item.category !== "Investment")) {
+    for (const expense of visibleSpending) {
       const date = parseFinancialDate(expense.date);
       const key = `${date.getFullYear()}-${date.getMonth()}`;
       const month = map.get(key);
@@ -78,7 +82,7 @@ export function AnalyticsView() {
       ),
       expense: Math.round(map.get(month.key)?.expense ?? 0),
     }));
-  }, [financialYearStart, incomes, salary, salaryHistory, visibleExpenses]);
+  }, [financialYearStart, incomes, salary, salaryHistory, visibleSpending]);
 
   const avgDaily = summary.totalExpenses / Math.max(1, summary.daysElapsed + 1);
 
@@ -141,7 +145,7 @@ export function AnalyticsView() {
             <CardTitle>Daily spending · 14 days</CardTitle>
           </CardHeader>
           <CardContent className="pt-2">
-            <SpendTrendChart expenses={visibleExpenses} currency={currency} />
+            <SpendTrendChart expenses={visibleSpending} currency={currency} />
           </CardContent>
         </Card>
         <Card>
@@ -149,7 +153,7 @@ export function AnalyticsView() {
             <CardTitle>Category breakdown</CardTitle>
           </CardHeader>
           <CardContent>
-            <CategoryDonut expenses={visibleExpenses} currency={currency} />
+            <CategoryDonut expenses={visibleSpending} currency={currency} />
           </CardContent>
         </Card>
       </div>

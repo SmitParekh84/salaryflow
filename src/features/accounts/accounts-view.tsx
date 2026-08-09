@@ -94,6 +94,7 @@ export function AccountsView() {
   const [transferOpen, setTransferOpen] = useState(false);
   const [transferForm, setTransferForm] = useState(EMPTY_TRANSFER_FORM);
   const [transferError, setTransferError] = useState("");
+  const [accountError, setAccountError] = useState("");
 
   const visibleAccounts = accounts.filter((account) => !account.hiddenFromAccounts);
   const includedBalanceAccounts = visibleAccounts.filter((account) => !account.maskBalance);
@@ -148,7 +149,12 @@ export function AccountsView() {
   }
 
   async function remove(id: string) {
-    deleteAccount(id);
+    const result = deleteAccount(id);
+    if (!result.ok) {
+      setAccountError(result.reason ?? "Could not delete this account.");
+      return;
+    }
+    setAccountError("");
     await syncWithServer();
   }
 
@@ -253,6 +259,12 @@ export function AccountsView() {
           </Button>
         </div>
       </div>
+
+      {accountError && (
+        <p role="alert" className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+          {accountError}
+        </p>
+      )}
 
       {closingAccounts.map((account) => {
         const target = accounts.find((item) => item.bankName === account.plannedTransferTo);

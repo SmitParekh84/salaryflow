@@ -2,7 +2,12 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { applyAllocation, reassignGoalAccounts } from "./allocation-writes";
+import { accountDeletionBlocker } from "./account-references";
+import {
+  applyAllocation,
+  reassignGoalAccounts,
+  shouldReassignClosingAllocations,
+} from "./allocation-writes";
 import { normalizeBudgetRule } from "./budget-rules";
 import { migrateGoalOpeningBalances } from "./goal-migration";
 import {
@@ -90,7 +95,7 @@ interface FinanceState {
   // accounts
   addAccount: (account: Omit<BankAccount, "id">) => void;
   updateAccount: (id: string, patch: Partial<BankAccount>) => void;
-  deleteAccount: (id: string) => void;
+  deleteAccount: (id: string) => { ok: boolean; reason?: string };
   addAccountTransfer: (
     transfer: Omit<AccountTransfer, "id" | "status" | "completedAt">,
     mode?: AccountTransferMode,
@@ -411,12 +416,23 @@ export const useFinanceStore = create<FinanceState>()(
         })),
       deleteAccount: (id) => {
         const item = get().accounts.find((account) => account.id === id);
-        if (!item) return;
+        if (!item) return { ok: false, reason: "That account no longer exists." };
+        const state = get();
+        const reason = accountDeletionBlocker(id, {
+          expenses: state.expenses,
+          incomes: state.incomes,
+          bills: state.bills,
+          goals: state.goals,
+          investments: state.investments,
+          transfers: state.accountTransfers,
+        });
+        if (reason) return { ok: false, reason };
         set((state) => ({
           accounts: state.accounts.filter((account) => account.id !== id),
           recycleBin: [recycleItem("account", id, item.bankName, item), ...state.recycleBin],
         }));
         void get().syncWithServer();
+        return { ok: true };
       },
       addAccountTransfer: (transfer, mode = "scheduled") => {
         if (transfer.sourceAccountId === transfer.destinationAccountId || transfer.amount <= 0) {
@@ -449,6 +465,9 @@ export const useFinanceStore = create<FinanceState>()(
               )
             : state.accounts,
         }));
+        if (adjustsBalances && shouldReassignClosingAllocations(source, transfer.amount)) {
+          get().reassignAllocations(transfer.sourceAccountId, transfer.destinationAccountId);
+        }
         void get().syncWithServer();
         return true;
       },
@@ -482,7 +501,7 @@ export const useFinanceStore = create<FinanceState>()(
         // Goal money follows the real money: when a closing account is emptied,
         // its allocations repoint to the destination instead of pointing at a
         // dead account. The balances above already moved by the same amount.
-        if (source.status === "closing") {
+        if (shouldReassignClosingAllocations(source, transfer.amount)) {
           get().reassignAllocations(transfer.sourceAccountId, transfer.destinationAccountId);
         }
         void get().syncWithServer();
