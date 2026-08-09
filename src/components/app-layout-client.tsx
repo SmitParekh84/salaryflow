@@ -17,7 +17,9 @@ const ROUTE_TITLES: Record<string, string> = {
 function readRouteStack() {
   try {
     const value = JSON.parse(sessionStorage.getItem(ROUTE_STACK_KEY) ?? "[]");
-    return Array.isArray(value) ? value.filter((path): path is string => typeof path === "string") : [];
+    return Array.isArray(value)
+      ? value.filter((path): path is string => typeof path === "string")
+      : [];
   } catch {
     return [];
   }

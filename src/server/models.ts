@@ -268,8 +268,7 @@ export const AccountTransferModel =
 export const CreditCardModel = models.CreditCard || model("CreditCard", CreditCardSchema);
 export const BudgetRuleModel = models.BudgetRule || model("BudgetRule", BudgetRuleSchema);
 export const RecycleBinModel = models.RecycleBin || model("RecycleBin", RecycleBinSchema);
-export const NotificationModel =
-  models.Notification || model("Notification", NotificationSchema);
+export const NotificationModel = models.Notification || model("Notification", NotificationSchema);
 export const UserModel = models.User || model("User", UserSchema);
 
 const SharedExpenseInviteSchema = new Schema(

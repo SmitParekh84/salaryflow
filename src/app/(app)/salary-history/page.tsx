@@ -146,7 +146,8 @@ export default function SalaryHistoryPage() {
                     </p>
                     {difference > 0 && (
                       <p className="flex items-center gap-1 text-xs text-success sm:justify-end">
-                        <Plus className="h-3 w-3" /> {formatMoney(difference, profile.currency)} extra
+                        <Plus className="h-3 w-3" /> {formatMoney(difference, profile.currency)}{" "}
+                        extra
                       </p>
                     )}
                     {difference < 0 && (

@@ -28,11 +28,9 @@ function serializeNotification(value: unknown): AppNotification | null {
   const rawId = record._id ?? record.id;
   if (!rawId || typeof record.title !== "string" || typeof record.body !== "string") return null;
 
-  const createdAt = record.createdAt instanceof Date ? record.createdAt : new Date(String(record.createdAt));
-  const type =
-    typeof record.type === "string"
-      ? (record.type as AppNotification["type"])
-      : "info";
+  const createdAt =
+    record.createdAt instanceof Date ? record.createdAt : new Date(String(record.createdAt));
+  const type = typeof record.type === "string" ? (record.type as AppNotification["type"]) : "info";
 
   return {
     id: String(rawId),
@@ -55,7 +53,11 @@ export async function GET() {
     .lean();
 
   return NextResponse.json(
-    { data: notifications.flatMap((notification: unknown) => serializeNotification(notification) ?? []) },
+    {
+      data: notifications.flatMap(
+        (notification: unknown) => serializeNotification(notification) ?? [],
+      ),
+    },
     { headers: { "Cache-Control": "no-store" } },
   );
 }
@@ -76,10 +78,7 @@ export async function PATCH(request: Request) {
   if (parsed.data.all) {
     await NotificationModel.updateMany({ userId, read: false }, { $set: { read: true } });
   } else if (parsed.data.id && Types.ObjectId.isValid(parsed.data.id)) {
-    await NotificationModel.updateOne(
-      { _id: parsed.data.id, userId },
-      { $set: { read: true } },
-    );
+    await NotificationModel.updateOne({ _id: parsed.data.id, userId }, { $set: { read: true } });
   }
 
   return NextResponse.json({ data: { success: true } });

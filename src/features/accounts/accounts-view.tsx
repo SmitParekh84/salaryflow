@@ -231,7 +231,12 @@ export function AccountsView() {
         </div>
         <div className="flex w-full gap-2 sm:w-auto">
           {accounts.length >= 2 && (
-            <Button className="flex-1 sm:flex-none" size="sm" variant="secondary" onClick={openTransfer}>
+            <Button
+              className="flex-1 sm:flex-none"
+              size="sm"
+              variant="secondary"
+              onClick={openTransfer}
+            >
               <ArrowRightLeft className="h-4 w-4" /> Transfer
             </Button>
           )}
