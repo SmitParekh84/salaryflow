@@ -4,14 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox, Input, Label } from "@/components/ui/input";
 import { useAuth } from "@/lib/useAuth";
 import { cn } from "@/lib/utils";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Eye,
-  EyeOff,
-  LockKeyhole,
-  MailCheck,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, LockKeyhole, MailCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -253,7 +246,9 @@ function AuthContent({ mode }: { mode: AuthMode }) {
               </p>
               {mode === "signup" && <SignupProgress step={signupStep} />}
             </div>
-            <h1 className="mt-2 text-[2rem] font-semibold leading-tight tracking-[-0.02em]">{heading}</h1>
+            <h1 className="mt-2 text-[2rem] font-semibold leading-tight tracking-[-0.02em]">
+              {heading}
+            </h1>
             <p className="mt-2 text-sm leading-relaxed text-muted">{description}</p>
           </div>
 

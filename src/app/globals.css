@@ -132,6 +132,7 @@ body {
 }
 
 @media (prefers-reduced-transparency: reduce) {
+
   .auth-form-surface,
   .auth-segment {
     background: var(--surface);
