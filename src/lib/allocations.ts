@@ -21,18 +21,17 @@ export function accountAllocated(
   accountId: string,
   accounts: BankAccount[] = [],
 ): number {
-  return goals
-    .reduce((sum, goal) => {
-      if (goal.balanceAccountId === accountId) {
-        return sum + (accounts.find((account) => account.id === accountId)?.balance ?? 0);
-      }
-      return (
-        sum +
-        (goal.contributions ?? [])
-          .filter((entry) => entry.accountId === accountId)
-          .reduce((goalSum, entry) => goalSum + entry.amount, 0)
-      );
-    }, 0);
+  return goals.reduce((sum, goal) => {
+    if (goal.balanceAccountId === accountId) {
+      return sum + (accounts.find((account) => account.id === accountId)?.balance ?? 0);
+    }
+    return (
+      sum +
+      (goal.contributions ?? [])
+        .filter((entry) => entry.accountId === accountId)
+        .reduce((goalSum, entry) => goalSum + entry.amount, 0)
+    );
+  }, 0);
 }
 
 /** Balance not claimed by any goal. Negative means over-allocated. */

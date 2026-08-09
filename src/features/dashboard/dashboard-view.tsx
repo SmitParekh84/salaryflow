@@ -405,7 +405,9 @@ export function DashboardView() {
                 </span>
               </div>
               <Progress
-                value={topGoal.target > 0 ? (goalSaved(topGoal, accounts) / topGoal.target) * 100 : 0}
+                value={
+                  topGoal.target > 0 ? (goalSaved(topGoal, accounts) / topGoal.target) * 100 : 0
+                }
                 color="var(--primary)"
                 label={`${topGoal.name} funding progress`}
                 valueText={`${formatMoney(goalSaved(topGoal, accounts), currency)} of ${formatMoney(topGoal.target, currency)}`}
@@ -432,7 +434,11 @@ export function DashboardView() {
                 </span>
               </div>
               <Progress
-                value={emergency.target > 0 ? (goalSaved(emergency, accounts) / emergency.target) * 100 : 0}
+                value={
+                  emergency.target > 0
+                    ? (goalSaved(emergency, accounts) / emergency.target) * 100
+                    : 0
+                }
                 color="var(--success)"
                 label="Emergency fund progress"
                 valueText={`${formatMoney(goalSaved(emergency, accounts), currency)} of ${formatMoney(emergency.target, currency)}`}

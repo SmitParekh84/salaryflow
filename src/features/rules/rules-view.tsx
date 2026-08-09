@@ -123,8 +123,7 @@ export function RulesView() {
               const remaining = progress?.remaining ?? 0;
               const usagePercentage =
                 ((progress?.used ?? 0) / Math.max(1, progress?.target ?? 0)) * 100;
-              const isSpendingLimit =
-                allocation.kind === "needs" || allocation.kind === "wants";
+              const isSpendingLimit = allocation.kind === "needs" || allocation.kind === "wants";
               const isOffTrack = isSpendingLimit ? remaining < 0 : remaining > 0;
               return (
                 <div key={allocation.kind}>

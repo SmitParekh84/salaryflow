@@ -274,7 +274,10 @@ function GoalCard({
         {goal.balanceAccountId && (
           <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
             <Landmark className="h-3.5 w-3.5 shrink-0" />
-            Tracks {accounts.find((account) => account.id === goal.balanceAccountId)?.bankName ?? "linked account"} balance
+            Tracks{" "}
+            {accounts.find((account) => account.id === goal.balanceAccountId)?.bankName ??
+              "linked account"}{" "}
+            balance
           </p>
         )}
 

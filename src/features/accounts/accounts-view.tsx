@@ -283,8 +283,8 @@ export function AccountsView() {
                 </p>
                 {accountAllocated(goals, account.id, accounts) > 0 && (
                   <p className="mt-1 text-xs leading-relaxed text-muted">
-                    {formatMoney(accountAllocated(goals, account.id, accounts), currency)} of goal money is
-                    still here. Complete the transfer to{" "}
+                    {formatMoney(accountAllocated(goals, account.id, accounts), currency)} of goal
+                    money is still here. Complete the transfer to{" "}
                     {account.plannedTransferTo || "another account"} to move it.
                   </p>
                 )}
@@ -344,7 +344,8 @@ export function AccountsView() {
                     </div>
                     <div className="mt-1.5 flex items-center justify-between gap-2 text-xs">
                       <span className="text-muted">
-                        {formatMoney(accountAllocated(goals, account.id, accounts), currency)} locked to goals
+                        {formatMoney(accountAllocated(goals, account.id, accounts), currency)}{" "}
+                        locked to goals
                       </span>
                       <span
                         className={

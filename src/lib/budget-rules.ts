@@ -129,17 +129,14 @@ export function evaluateBudgetRule(
     savings: income > 0 ? (savings / income) * 100 : 0,
     investments: income > 0 ? (investments / income) * 100 : 0,
   };
-  const totalDeviation = rule.allocations.reduce(
-    (sum, allocation) => {
-      const difference = actual[allocation.kind] - allocation.percentage;
-      const deviation =
-        allocation.kind === "needs" || allocation.kind === "wants"
-          ? Math.max(0, difference)
-          : Math.max(0, -difference);
-      return sum + deviation;
-    },
-    0,
-  );
+  const totalDeviation = rule.allocations.reduce((sum, allocation) => {
+    const difference = actual[allocation.kind] - allocation.percentage;
+    const deviation =
+      allocation.kind === "needs" || allocation.kind === "wants"
+        ? Math.max(0, difference)
+        : Math.max(0, -difference);
+    return sum + deviation;
+  }, 0);
 
   return {
     actual,

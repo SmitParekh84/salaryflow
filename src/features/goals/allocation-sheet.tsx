@@ -154,7 +154,8 @@ export function AllocationSheet({
               placeholder="0"
             />
             <p className="mt-1 text-xs text-muted">
-              {formatMoney(goalSaved(goal, accounts), currency)} of {formatMoney(goal.target, currency)} ·{" "}
+              {formatMoney(goalSaved(goal, accounts), currency)} of{" "}
+              {formatMoney(goal.target, currency)} ·{" "}
               {formatMoney(goal.target - goalSaved(goal, accounts), currency)} remaining
             </p>
           </div>
