@@ -31,7 +31,11 @@ export function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDi
 
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
-    <h3 data-slot="card-title" className={cn("text-sm font-semibold text-foreground", className)} {...props} />
+    <h3
+      data-slot="card-title"
+      className={cn("text-sm font-semibold text-foreground", className)}
+      {...props}
+    />
   );
 }
 

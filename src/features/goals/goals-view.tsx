@@ -255,7 +255,12 @@ function GoalCard({
           <span className="text-xs text-muted">of {formatMoney(goal.target, currency, true)}</span>
         </div>
 
-        <Progress value={pct} color={done ? "var(--success)" : "var(--primary)"} />
+        <Progress
+          value={pct}
+          color={done ? "var(--success)" : "var(--primary)"}
+          label={`${goal.name} funding progress`}
+          valueText={`${formatMoney(goal.saved, currency)} of ${formatMoney(goal.target, currency)}`}
+        />
 
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted">

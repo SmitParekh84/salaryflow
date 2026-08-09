@@ -119,17 +119,29 @@ export function RulesView() {
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {activeRule.allocations.map((allocation) => {
-              const actual = summary.budgetActual?.[allocation.kind] ?? 0;
               const progress = summary.budgetProgress?.[allocation.kind];
               const remaining = progress?.remaining ?? 0;
+              const usagePercentage =
+                ((progress?.used ?? 0) / Math.max(1, progress?.target ?? 0)) * 100;
               return (
                 <div key={allocation.kind}>
                   <div className="mb-2 flex items-center justify-between text-xs">
                     <span className="font-medium">{allocation.label}</span>
                     <span className="text-muted">{allocation.percentage}% of salary</span>
                   </div>
-                  <Progress value={(actual / Math.max(1, allocation.percentage)) * 100} />
+                  <Progress
+                    value={usagePercentage}
+                    color={usagePercentage > 100 ? "var(--danger)" : "var(--primary)"}
+                    label={`${allocation.label} target usage`}
+                    valueText={`${formatMoney(progress?.used ?? 0, currency)} of ${formatMoney(progress?.target ?? 0, currency)}`}
+                  />
                   <div className="mt-2 space-y-1 text-[11px]">
+                    <p className="flex justify-between gap-2 font-medium">
+                      <span>Progress</span>
+                      <span className={usagePercentage > 100 ? "text-danger" : "text-foreground"}>
+                        {Math.round(usagePercentage)}%
+                      </span>
+                    </p>
                     <p className="flex justify-between gap-2 text-muted">
                       <span>Target</span>
                       <span>{formatMoney(progress?.target ?? 0, currency)}</span>

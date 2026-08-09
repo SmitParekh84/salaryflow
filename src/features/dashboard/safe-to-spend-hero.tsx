@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import type { FinanceSummary } from "@/lib/calculations";
 import { statusColor } from "@/lib/calculations";
 import { formatMoney } from "@/lib/utils";
@@ -98,15 +99,13 @@ export function SafeToSpendHero({
           <span>Spent today {formatMoney(summary.spentToday, currency)}</span>
           <span>Daily budget {formatMoney(summary.safeToSpendPerDay, currency)}</span>
         </div>
-        <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-2">
-          <motion.div
-            className="h-full rounded-full"
-            style={{ background: color }}
-            initial={{ width: 0 }}
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-          />
-        </div>
+        <Progress
+          value={pct}
+          color={color}
+          className="h-2.5"
+          label="Daily spending budget used"
+          valueText={`${formatMoney(summary.spentToday, currency)} spent of ${formatMoney(summary.safeToSpendPerDay, currency)}`}
+        />
       </div>
     </Card>
   );

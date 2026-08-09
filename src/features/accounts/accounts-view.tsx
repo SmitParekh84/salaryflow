@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Checkbox, Input, Label, Select } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { Progress } from "@/components/ui/progress";
 import { creditCardUsage } from "@/lib/credit-cards";
 import { useFinanceStore } from "@/lib/store";
 import type {
@@ -486,12 +487,13 @@ export function AccountsView() {
                       of {formatMoney(card.creditLimit, currency)}
                     </p>
                   </div>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-2">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: `${Math.min(100, usage.utilization)}%` }}
-                    />
-                  </div>
+                  <Progress
+                    value={usage.utilization}
+                    className="mt-3"
+                    color={usage.utilization > 80 ? "var(--danger)" : "var(--primary)"}
+                    label={`${card.name} credit limit used`}
+                    valueText={`${formatMoney(usage.outstanding, currency)} outstanding of ${formatMoney(card.creditLimit, currency)}`}
+                  />
                   <div className="mt-2 flex justify-between text-[11px] text-muted">
                     <span>{Math.round(usage.utilization)}% used</span>
                     <span>Closes {formatDate(usage.end.toISOString())}</span>

@@ -115,7 +115,9 @@ export function TopBar({
             </div>
             <div className="max-h-80 overflow-y-auto no-scrollbar">
               {notifications.length === 0 && (
-                <p className="px-4 py-8 text-center text-xs text-muted">You&apos;re all caught up</p>
+                <p className="px-4 py-8 text-center text-xs text-muted">
+                  You&apos;re all caught up
+                </p>
               )}
               {notifications.map((notification) => (
                 <Button
@@ -202,20 +204,31 @@ export function TopBar({
             </div>
             {user.email && (
               <DropdownMenuPrimitive.Item asChild>
-                <Link href="/settings" className="flex cursor-pointer rounded-sm px-3 py-2 text-sm outline-none focus:bg-surface-2">
+                <Link
+                  href="/settings"
+                  className="flex cursor-pointer rounded-sm px-3 py-2 text-sm outline-none focus:bg-surface-2"
+                >
                   Settings
                 </Link>
               </DropdownMenuPrimitive.Item>
             )}
             {user.email && user.isAdmin && (
               <DropdownMenuPrimitive.Item asChild>
-                <Link href="/admin" className="flex cursor-pointer rounded-sm px-3 py-2 text-sm outline-none focus:bg-surface-2">
+                <Link
+                  href="/admin"
+                  className="flex cursor-pointer rounded-sm px-3 py-2 text-sm outline-none focus:bg-surface-2"
+                >
                   Admin
                 </Link>
               </DropdownMenuPrimitive.Item>
             )}
             <DropdownMenuPrimitive.Item asChild>
-              <Button variant="ghost" size="sm" onClick={logout} className="w-full justify-start outline-none">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={logout}
+                className="w-full justify-start outline-none"
+              >
                 Sign out
               </Button>
             </DropdownMenuPrimitive.Item>

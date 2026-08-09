@@ -7,10 +7,14 @@ export function Progress({
   value,
   className,
   color = "var(--primary)",
+  label = "Progress",
+  valueText,
 }: {
   value: number;
   className?: string;
   color?: string;
+  label?: string;
+  valueText?: string;
 }) {
   const normalizedValue = Math.max(0, Math.min(100, value));
 
@@ -18,10 +22,9 @@ export function Progress({
     <ProgressPrimitive.Root
       data-slot="progress"
       value={normalizedValue}
-      className={cn(
-        "relative h-2 w-full overflow-hidden rounded-full bg-surface-2",
-        className,
-      )}
+      aria-label={label}
+      aria-valuetext={valueText ?? `${Math.round(normalizedValue)}%`}
+      className={cn("relative h-2 w-full overflow-hidden rounded-full bg-surface-2", className)}
     >
       <ProgressPrimitive.Indicator
         data-slot="progress-indicator"

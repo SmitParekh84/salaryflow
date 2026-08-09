@@ -55,7 +55,10 @@ export function Modal({
                   </DialogPrimitive.Title>
                   {title && (
                     <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3 sm:px-5 sm:py-4">
-                      <div aria-hidden="true" className="min-w-0 truncate text-base font-semibold sm:text-lg">
+                      <div
+                        aria-hidden="true"
+                        className="min-w-0 truncate text-base font-semibold sm:text-lg"
+                      >
                         {title}
                       </div>
                       <DialogPrimitive.Close asChild>

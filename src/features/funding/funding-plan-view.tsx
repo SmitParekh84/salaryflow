@@ -161,7 +161,17 @@ export function FundingPlanView() {
             </p>
           </div>
           {transfer.amount > 0 && (
-            <Progress value={salary > 0 ? (transfer.amount / salary) * 100 : 0} />
+            <div>
+              <Progress
+                value={plan.total > 0 ? (transfer.amount / plan.total) * 100 : 0}
+                label={`${transfer.accountName} share of amount still to set aside`}
+                valueText={`${formatMoney(transfer.amount, currency)} of ${formatMoney(plan.total, currency)}`}
+              />
+              <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted">
+                <span>Share of remaining plan</span>
+                <span>{Math.round((transfer.amount / Math.max(1, plan.total)) * 100)}%</span>
+              </div>
+            </div>
           )}
           <Card className="divide-y divide-border p-4 shadow-none">
             {transfer.items.map((item) => {

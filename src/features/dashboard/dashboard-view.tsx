@@ -166,7 +166,12 @@ export function DashboardView() {
               </Link>
             </div>
           </div>
-          <Progress value={summary.budgetRuleScore} className="mt-4" />
+          <Progress
+            value={summary.budgetRuleScore}
+            className="mt-4"
+            label={`${summary.budgetRuleName} adherence`}
+            valueText={`${summary.budgetRuleScore} out of 100`}
+          />
           {summary.budgetProgress && (
             <div className="mt-5 grid gap-4 border-t border-border pt-4 sm:grid-cols-2 xl:grid-cols-4">
               {(
@@ -353,7 +358,12 @@ export function DashboardView() {
                   of {formatMoney(topGoal.target, currency, true)}
                 </span>
               </div>
-              <Progress value={(topGoal.saved / topGoal.target) * 100} color="var(--primary)" />
+              <Progress
+                value={topGoal.target > 0 ? (topGoal.saved / topGoal.target) * 100 : 0}
+                color="var(--primary)"
+                label={`${topGoal.name} funding progress`}
+                valueText={`${formatMoney(topGoal.saved, currency)} of ${formatMoney(topGoal.target, currency)}`}
+              />
             </CardContent>
           </Card>
         )}
@@ -375,7 +385,12 @@ export function DashboardView() {
                   target {formatMoney(emergency.target, currency, true)}
                 </span>
               </div>
-              <Progress value={(emergency.saved / emergency.target) * 100} color="var(--success)" />
+              <Progress
+                value={emergency.target > 0 ? (emergency.saved / emergency.target) * 100 : 0}
+                color="var(--success)"
+                label="Emergency fund progress"
+                valueText={`${formatMoney(emergency.saved, currency)} of ${formatMoney(emergency.target, currency)}`}
+              />
             </CardContent>
           </Card>
         )}
