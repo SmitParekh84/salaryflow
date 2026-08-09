@@ -1,15 +1,19 @@
 import { goalSaved } from "./allocations";
-import type { Goal } from "./types";
+import type { BankAccount, Goal } from "./types";
 
 /**
  * Whole months until a goal is funded at a flat monthly rate.
  * Deliberately simple: no interest, no inflation, no variable rates — it matches
  * how the money is actually saved. Returns null when there is no rate to project.
  */
-export function monthsToGoal(goal: Goal, monthlyOverride?: number): number | null {
+export function monthsToGoal(
+  goal: Goal,
+  monthlyOverride?: number,
+  accounts: BankAccount[] = [],
+): number | null {
   const monthly = monthlyOverride ?? goal.monthlyContribution;
   if (monthly <= 0) return null;
-  const remaining = goal.target - goalSaved(goal);
+  const remaining = goal.target - goalSaved(goal, accounts);
   if (remaining <= 0) return 0;
   return Math.ceil(remaining / monthly);
 }
@@ -24,8 +28,9 @@ export function projectGoal(
   goal: Goal,
   monthlyOverride?: number,
   now = new Date(),
+  accounts: BankAccount[] = [],
 ): { months: number; label: string } | null {
-  const months = monthsToGoal(goal, monthlyOverride);
+  const months = monthsToGoal(goal, monthlyOverride, accounts);
   if (months === null) return null;
   return { months, label: months === 0 ? "Achieved" : monthLabel(months, now) };
 }
@@ -35,10 +40,11 @@ export function whatIfDelta(
   goal: Goal,
   monthly: number,
   now = new Date(),
+  accounts: BankAccount[] = [],
 ): { months: number; label: string; monthsSooner: number } | null {
-  const proposed = projectGoal(goal, monthly, now);
+  const proposed = projectGoal(goal, monthly, now, accounts);
   if (!proposed) return null;
-  const current = monthsToGoal(goal);
+  const current = monthsToGoal(goal, undefined, accounts);
   return {
     ...proposed,
     monthsSooner: current === null ? 0 : Math.max(0, current - proposed.months),

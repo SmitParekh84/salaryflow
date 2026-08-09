@@ -281,9 +281,9 @@ export function AccountsView() {
                     ? ` Projected ${target.bankName} balance: ${formatMoney(target.balance + account.balance, currency)}.`
                     : ""}
                 </p>
-                {accountAllocated(goals, account.id) > 0 && (
+                {accountAllocated(goals, account.id, accounts) > 0 && (
                   <p className="mt-1 text-xs leading-relaxed text-muted">
-                    {formatMoney(accountAllocated(goals, account.id), currency)} of goal money is
+                    {formatMoney(accountAllocated(goals, account.id, accounts), currency)} of goal money is
                     still here. Complete the transfer to{" "}
                     {account.plannedTransferTo || "another account"} to move it.
                   </p>
@@ -332,19 +332,19 @@ export function AccountsView() {
                     balance.
                   </p>
                 )}
-                {accountAllocated(goals, account.id) > 0 && (
+                {accountAllocated(goals, account.id, accounts) > 0 && (
                   <div className="mt-2 max-w-xs">
                     <div className="flex h-2 overflow-hidden rounded-full bg-surface-2">
                       <span
                         className="bg-primary"
                         style={{
-                          width: `${Math.min(100, (accountAllocated(goals, account.id) / Math.max(account.balance, 1)) * 100)}%`,
+                          width: `${Math.min(100, (accountAllocated(goals, account.id, accounts) / Math.max(account.balance, 1)) * 100)}%`,
                         }}
                       />
                     </div>
                     <div className="mt-1.5 flex items-center justify-between gap-2 text-xs">
                       <span className="text-muted">
-                        {formatMoney(accountAllocated(goals, account.id), currency)} locked to goals
+                        {formatMoney(accountAllocated(goals, account.id, accounts), currency)} locked to goals
                       </span>
                       <span
                         className={

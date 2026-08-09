@@ -166,14 +166,26 @@ plannedSavings = savingsTarget
 spendingBudget = max(0, totalIncome - savingsTarget - investmentTarget)
 ```
 
-Actual rule progress:
+Actual rule progress uses necessity, not payment frequency. This is separate from fixed-versus-variable reporting:
 
-- Needs used: fixed expenses.
-- Wants used: variable expenses.
+- Needs used: rent, EMI, insurance, utilities, mobile/internet, groceries, fuel, medical, and education.
+- Wants used: all other non-Investment spending, including subscriptions, food, shopping, entertainment, travel, personal care, and custom categories.
 - Savings used: cash saved this cycle.
 - Investments used: investment payments this cycle.
 
 A target is not displayed as an actual. Goal allocations do not override any target.
+
+An account-backed goal can designate one bank account as its source of truth. Its progress equals
+that account's current balance, the full balance is locked to the goal, and manual allocations to
+that goal are disabled. Deposits increase progress and withdrawals reduce it automatically. This
+still does not count the balance as newly saved in the current cycle; only evidenced account cash
+flow affects `savedThisCycle`.
+
+Rule adherence is directional:
+
+- Needs and Wants percentages are maximum spending limits. Spending below them is healthy and is not penalized.
+- Savings and Investments percentages are minimum targets. Saving or investing above them is healthy and is not shown as overspending.
+- Only spending above a limit or saving/investing below a target reduces adherence.
 
 ## Remaining and Safe to Spend
 

@@ -14,6 +14,7 @@ import type { Goal } from "./types";
  */
 export function migrateGoalOpeningBalances(goals: Goal[], now = new Date()): Goal[] {
   return goals.map((goal) => {
+    if (goal.balanceAccountId) return goal;
     const derived = goalSaved(goal);
     const shortfall = (goal.saved ?? 0) - derived;
     if (shortfall <= 0) return goal;

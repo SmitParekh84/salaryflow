@@ -146,6 +146,8 @@ export interface Goal {
   deadline?: string;
   monthlyContribution: number;
   contributions?: GoalContribution[];
+  /** When set, goal progress tracks this account's full live balance. */
+  balanceAccountId?: string;
 }
 
 export interface GoalContribution {

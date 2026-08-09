@@ -33,22 +33,29 @@ export function applyAllocation(
   }));
   if (positive.length === 0) return { ok: false, reason: "Enter an amount to allocate." };
 
+  const unknown = positive.find((entry) => !goals.some((goal) => goal.id === entry.goalId));
+  if (unknown) return { ok: false, reason: "That goal no longer exists." };
+
+  const accountBacked = positive.find((entry) =>
+    goals.some((goal) => goal.id === entry.goalId && goal.balanceAccountId),
+  );
+  if (accountBacked) {
+    return { ok: false, reason: "That goal already tracks its linked account automatically." };
+  }
+
   const requested = positive.reduce((sum, entry) => sum + entry.amount, 0);
-  const free = account.balance - accountAllocated(goals, accountId);
+  const free = account.balance - accountAllocated(goals, accountId, accounts);
   if (requested > free) {
     return { ok: false, reason: `Only ${free} is free in ${account.bankName}.` };
   }
 
-  const unknown = positive.find((entry) => !goals.some((goal) => goal.id === entry.goalId));
-  if (unknown) return { ok: false, reason: "That goal no longer exists." };
-
   const overfunded = positive.find((entry) => {
     const goal = goals.find((candidate) => candidate.id === entry.goalId)!;
-    return entry.amount > Math.max(0, goal.target - goalSaved(goal));
+    return entry.amount > Math.max(0, goal.target - goalSaved(goal, accounts));
   });
   if (overfunded) {
     const goal = goals.find((candidate) => candidate.id === overfunded.goalId)!;
-    const remaining = Math.max(0, goal.target - goalSaved(goal));
+    const remaining = Math.max(0, goal.target - goalSaved(goal, accounts));
     return { ok: false, reason: `${goal.name} only needs ${remaining} more.` };
   }
 
@@ -83,6 +90,7 @@ export function reassignGoalAccounts(
 ): Goal[] {
   return goals.map((goal) => ({
     ...goal,
+    balanceAccountId: goal.balanceAccountId === fromAccountId ? toAccountId : goal.balanceAccountId,
     contributions: (goal.contributions ?? []).map((entry) =>
       entry.accountId === fromAccountId ? { ...entry, accountId: toAccountId } : entry,
     ),

@@ -117,6 +117,18 @@ const FIXED: Record<string, boolean> = {
   "Mobile & Internet": true,
 };
 
+const NEEDS: Record<string, boolean> = {
+  Rent: true,
+  EMI: true,
+  Insurance: true,
+  Utilities: true,
+  "Mobile & Internet": true,
+  Groceries: true,
+  Fuel: true,
+  Medical: true,
+  Education: true,
+};
+
 export function countsAsEarnedIncome(income: Income) {
   return !["Salary", "Reimbursement", "Cashback"].includes(income.type);
 }
@@ -158,6 +170,10 @@ export function computeSummary(
     .filter((e) => !FIXED[e.category])
     .reduce((s, e) => s + e.amount, 0);
   const totalExpenses = fixedExpenses + variableExpenses;
+  const needsExpenses = spendingCycleExpenses
+    .filter((expense) => NEEDS[expense.category])
+    .reduce((sum, expense) => sum + expense.amount, 0);
+  const wantsExpenses = totalExpenses - needsExpenses;
 
   const investedThisCycle = cycleExpenses
     .filter((expense) => expense.category === "Investment")
@@ -235,8 +251,8 @@ export function computeSummary(
     ? evaluateBudgetRule(
         budgetRule,
         baseIncome,
-        fixedExpenses,
-        variableExpenses,
+        needsExpenses,
+        wantsExpenses,
         savedThisCycle,
         investedThisCycle,
       )
@@ -280,13 +296,13 @@ export function computeSummary(
       ? {
           needs: {
             target: needsBudget,
-            used: fixedExpenses,
-            remaining: needsBudget - fixedExpenses,
+            used: needsExpenses,
+            remaining: needsBudget - needsExpenses,
           },
           wants: {
             target: wantsBudget,
-            used: variableExpenses,
-            remaining: wantsBudget - variableExpenses,
+            used: wantsExpenses,
+            remaining: wantsBudget - wantsExpenses,
           },
           savings: {
             target: savingsTarget,
@@ -327,9 +343,9 @@ function financialHealthScore(p: {
   return Math.round(Math.max(0, Math.min(100, score)));
 }
 
-export function projectedGoalDate(goal: Goal): string | null {
+export function projectedGoalDate(goal: Goal, accounts: BankAccount[] = []): string | null {
   if (goal.monthlyContribution <= 0) return null;
-  const remaining = goal.target - goalSaved(goal);
+  const remaining = goal.target - goalSaved(goal, accounts);
   if (remaining <= 0) return "Achieved";
   const months = Math.ceil(remaining / goal.monthlyContribution);
   const d = new Date();

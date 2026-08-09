@@ -123,6 +123,9 @@ export function RulesView() {
               const remaining = progress?.remaining ?? 0;
               const usagePercentage =
                 ((progress?.used ?? 0) / Math.max(1, progress?.target ?? 0)) * 100;
+              const isSpendingLimit =
+                allocation.kind === "needs" || allocation.kind === "wants";
+              const isOffTrack = isSpendingLimit ? remaining < 0 : remaining > 0;
               return (
                 <div key={allocation.kind}>
                   <div className="mb-2 flex items-center justify-between text-xs">
@@ -131,14 +134,14 @@ export function RulesView() {
                   </div>
                   <Progress
                     value={usagePercentage}
-                    color={usagePercentage > 100 ? "var(--danger)" : "var(--primary)"}
+                    color={isOffTrack ? "var(--danger)" : "var(--primary)"}
                     label={`${allocation.label} target usage`}
                     valueText={`${formatMoney(progress?.used ?? 0, currency)} of ${formatMoney(progress?.target ?? 0, currency)}`}
                   />
                   <div className="mt-2 space-y-1 text-[11px]">
                     <p className="flex justify-between gap-2 font-medium">
                       <span>Progress</span>
-                      <span className={usagePercentage > 100 ? "text-danger" : "text-foreground"}>
+                      <span className={isOffTrack ? "text-danger" : "text-foreground"}>
                         {Math.round(usagePercentage)}%
                       </span>
                     </p>
@@ -155,9 +158,17 @@ export function RulesView() {
                       <span>{formatMoney(progress?.used ?? 0, currency)}</span>
                     </p>
                     <p
-                      className={`flex justify-between gap-2 font-medium ${remaining < 0 ? "text-danger" : "text-success"}`}
+                      className={`flex justify-between gap-2 font-medium ${isOffTrack ? "text-danger" : "text-success"}`}
                     >
-                      <span>{remaining < 0 ? "Over by" : "Remaining"}</span>
+                      <span>
+                        {isSpendingLimit
+                          ? remaining < 0
+                            ? "Over limit"
+                            : "Limit left"
+                          : remaining > 0
+                            ? "Still needed"
+                            : "Above target"}
+                      </span>
                       <span>{formatMoney(Math.abs(remaining), currency)}</span>
                     </p>
                   </div>

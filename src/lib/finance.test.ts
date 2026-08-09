@@ -14,7 +14,7 @@ import {
   unassignedSaved,
 } from "./allocations";
 import { billCycle, billOccurrenceDate, monthlyBillReserve } from "./bill-cycle";
-import { budgetAllocationTarget } from "./budget-rules";
+import { budgetAllocationTarget, evaluateBudgetRule } from "./budget-rules";
 import { computeSummary, cycleInfo, isInCurrentCycle } from "./calculations";
 import { creditCardUsage } from "./credit-cards";
 import {
@@ -94,6 +94,18 @@ const rule: BudgetRule = {
 describe("budget allocation targets", () => {
   it("derives the monthly savings target from the active rule", () => {
     expect(budgetAllocationTarget(rule, "savings", 31_431)).toBeCloseTo(4_714.65);
+  });
+
+  it("does not penalize spending below limits or saving above targets", () => {
+    const evaluation = evaluateBudgetRule(rule, 10_000, 4_000, 1_000, 2_000, 1_500);
+
+    expect(evaluation.score).toBe(100);
+  });
+
+  it("penalizes only spending above limits and saving below targets", () => {
+    const evaluation = evaluateBudgetRule(rule, 10_000, 6_000, 2_000, 500, 500);
+
+    expect(evaluation.score).toBe(85);
   });
 });
 
@@ -524,6 +536,30 @@ describe("finance summary", () => {
     expect(withToday.safeToSpendToday).toBeCloseTo(withoutToday.safeToSpendToday - 500);
   });
 
+  it("counts groceries as Needs while retaining variable-expense reporting", () => {
+    const summary = computeSummary(
+      profile,
+      [
+        expense({ id: "groceries", amount: 1_414, category: "Groceries" }),
+        expense({ id: "shopping", amount: 500, category: "Shopping" }),
+        expense({ id: "subscription", amount: 200, category: "Subscriptions" }),
+      ],
+      [],
+      [],
+      [],
+      [],
+      rule,
+      [],
+      [],
+      now,
+    );
+
+    expect(summary.fixedExpenses).toBe(200);
+    expect(summary.variableExpenses).toBe(1_914);
+    expect(summary.budgetProgress?.needs.used).toBe(1_414);
+    expect(summary.budgetProgress?.wants.used).toBe(700);
+  });
+
   it("does not count reimbursements or cashback as income", () => {
     const credits: Income[] = [
       {
@@ -898,6 +934,18 @@ describe("allocations", () => {
     expect(goalSaved(goal("empty", []))).toBe(0);
   });
 
+  it("tracks an account-backed goal from the account's live balance", () => {
+    const emergency = { ...goal("emergency", []), balanceAccountId: "union" };
+
+    expect(goalSaved(emergency, [account])).toBe(10_569);
+    expect(goalSaved(emergency, [{ ...account, balance: 7_000 }])).toBe(7_000);
+    expect(accountAllocated([emergency], "union", [account])).toBe(10_569);
+    expect(accountFree([emergency], account)).toBe(0);
+    expect(goalAccountBreakdown(emergency, [account])).toEqual([
+      { accountId: "union", amount: 10_569 },
+    ]);
+  });
+
   it("sums allocations across goals for one account", () => {
     const goals = [
       goal("bike", [{ id: "c1", amount: 10000, date: "2026-08-01", accountId: "union" }]),
@@ -1104,6 +1152,23 @@ describe("allocation writes", () => {
     expect(result.ok).toBe(false);
   });
 
+  it("rejects manual allocations into a goal that tracks an account balance", () => {
+    const emergency = { ...bike, balanceAccountId: "union" };
+    const result = applyAllocation(
+      [emergency],
+      [union],
+      [{ goalId: "bike", amount: 100 }],
+      "union",
+      undefined,
+      when,
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      reason: "That goal already tracks its linked account automatically.",
+    });
+  });
+
   it("moves allocations to the destination when an account closes", () => {
     const funded = [
       {
@@ -1114,6 +1179,14 @@ describe("allocation writes", () => {
     const moved = reassignGoalAccounts(funded, "hdfc", "union");
     expect(accountAllocated(moved, "union")).toBe(10000);
     expect(accountAllocated(moved, "hdfc")).toBe(0);
+  });
+
+  it("moves an account-backed goal when its account closes", () => {
+    const emergency = { ...bike, balanceAccountId: "hdfc" };
+
+    const [moved] = reassignGoalAccounts([emergency], "hdfc", "union");
+
+    expect(moved.balanceAccountId).toBe("union");
   });
 });
 

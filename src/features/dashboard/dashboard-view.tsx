@@ -227,7 +227,7 @@ export function DashboardView() {
                 [
                   ["needs", "Needs", "Spent"],
                   ["wants", "Wants", "Spent"],
-                  ["savings", "Cash savings", "Saved this cycle"],
+                  ["savings", "Cash savings", "Saved"],
                   ["investments", "Investments", "Invested"],
                 ] as const
               ).map(([kind, label, usedLabel]) => {
@@ -393,22 +393,22 @@ export function DashboardView() {
           <Card>
             <CardHeader className="flex items-center justify-between">
               <CardTitle>Top goal · {topGoal.name}</CardTitle>
-              <span className="text-xs text-muted">{projectedGoalDate(topGoal)}</span>
+              <span className="text-xs text-muted">{projectedGoalDate(topGoal, accounts)}</span>
             </CardHeader>
             <CardContent className="pt-3">
               <div className="mb-2 flex items-end justify-between">
                 <span className="text-2xl font-bold">
-                  {formatMoney(goalSaved(topGoal), currency, true)}
+                  {formatMoney(goalSaved(topGoal, accounts), currency, true)}
                 </span>
                 <span className="text-xs text-muted">
                   of {formatMoney(topGoal.target, currency, true)}
                 </span>
               </div>
               <Progress
-                value={topGoal.target > 0 ? (goalSaved(topGoal) / topGoal.target) * 100 : 0}
+                value={topGoal.target > 0 ? (goalSaved(topGoal, accounts) / topGoal.target) * 100 : 0}
                 color="var(--primary)"
                 label={`${topGoal.name} funding progress`}
-                valueText={`${formatMoney(goalSaved(topGoal), currency)} of ${formatMoney(topGoal.target, currency)}`}
+                valueText={`${formatMoney(goalSaved(topGoal, accounts), currency)} of ${formatMoney(topGoal.target, currency)}`}
               />
             </CardContent>
           </Card>
@@ -419,23 +419,23 @@ export function DashboardView() {
             <CardHeader className="flex items-center justify-between">
               <CardTitle>Emergency fund</CardTitle>
               <span className="text-xs font-medium text-success">
-                {Math.round((goalSaved(emergency) / emergency.target) * 100)}% funded
+                {Math.round((goalSaved(emergency, accounts) / emergency.target) * 100)}% funded
               </span>
             </CardHeader>
             <CardContent className="pt-3">
               <div className="mb-2 flex items-end justify-between">
                 <span className="text-2xl font-bold">
-                  {formatMoney(goalSaved(emergency), currency, true)}
+                  {formatMoney(goalSaved(emergency, accounts), currency, true)}
                 </span>
                 <span className="text-xs text-muted">
                   target {formatMoney(emergency.target, currency, true)}
                 </span>
               </div>
               <Progress
-                value={emergency.target > 0 ? (goalSaved(emergency) / emergency.target) * 100 : 0}
+                value={emergency.target > 0 ? (goalSaved(emergency, accounts) / emergency.target) * 100 : 0}
                 color="var(--success)"
                 label="Emergency fund progress"
-                valueText={`${formatMoney(goalSaved(emergency), currency)} of ${formatMoney(emergency.target, currency)}`}
+                valueText={`${formatMoney(goalSaved(emergency, accounts), currency)} of ${formatMoney(emergency.target, currency)}`}
               />
             </CardContent>
           </Card>

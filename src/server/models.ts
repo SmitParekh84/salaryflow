@@ -102,6 +102,7 @@ const GoalSchema = new Schema(
     saved: { type: Number, default: 0 },
     deadline: Date,
     monthlyContribution: { type: Number, default: 0 },
+    balanceAccountId: String,
     contributions: [
       new Schema(
         {

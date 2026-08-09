@@ -52,7 +52,9 @@ export function AllocationSheet({
   // lets the user choose where the money comes from.
   const lockAccount = amount !== undefined;
   const selectableAccounts = accounts.filter((candidate) => candidate.status === "active");
-  const fundableGoals = goals.filter((goal) => goalSaved(goal) < goal.target);
+  const fundableGoals = goals.filter(
+    (goal) => !goal.balanceAccountId && goalSaved(goal, accounts) < goal.target,
+  );
   const account = accounts.find((candidate) => candidate.id === selectedId);
   const freeNow = account ? accountFree(goals, account) : 0;
   const available = amount ?? freeNow;
@@ -67,7 +69,7 @@ export function AllocationSheet({
 
   function setAmount(goalId: string, next: number) {
     const goal = goals.find((candidate) => candidate.id === goalId);
-    const goalRemaining = goal ? Math.max(0, goal.target - goalSaved(goal)) : 0;
+    const goalRemaining = goal ? Math.max(0, goal.target - goalSaved(goal, accounts)) : 0;
     const others = Object.entries(draft)
       .filter(([id]) => id !== goalId)
       .reduce((sum, [, value]) => sum + (value || 0), 0);
@@ -146,14 +148,14 @@ export function AllocationSheet({
               type="number"
               inputMode="numeric"
               min={0}
-              max={Math.max(0, goal.target - goalSaved(goal))}
+              max={Math.max(0, goal.target - goalSaved(goal, accounts))}
               value={draft[goal.id] || ""}
               onChange={(event) => setAmount(goal.id, Number(event.target.value))}
               placeholder="0"
             />
             <p className="mt-1 text-xs text-muted">
-              {formatMoney(goalSaved(goal), currency)} of {formatMoney(goal.target, currency)} ·{" "}
-              {formatMoney(goal.target - goalSaved(goal), currency)} remaining
+              {formatMoney(goalSaved(goal, accounts), currency)} of {formatMoney(goal.target, currency)} ·{" "}
+              {formatMoney(goal.target - goalSaved(goal, accounts), currency)} remaining
             </p>
           </div>
         ))}

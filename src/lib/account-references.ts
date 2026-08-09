@@ -24,7 +24,11 @@ export function accountDeletionBlocker(
 ): string | undefined {
   const linked: string[] = [];
   if (
-    records.goals.some((goal) => goal.contributions?.some((item) => item.accountId === accountId))
+    records.goals.some(
+      (goal) =>
+        goal.balanceAccountId === accountId ||
+        goal.contributions?.some((item) => item.accountId === accountId),
+    )
   ) {
     linked.push("goal allocations");
   }
@@ -55,7 +59,10 @@ function recycledItemReferencesAccount(item: RecycleBinItem, accountId: string):
   }
   if (item.entityType !== "goal") return false;
   const goal = item.data as unknown as Goal;
-  return Boolean(goal.contributions?.some((contribution) => contribution.accountId === accountId));
+  return Boolean(
+    goal.balanceAccountId === accountId ||
+      goal.contributions?.some((contribution) => contribution.accountId === accountId),
+  );
 }
 
 export function goalRestoreBlocker(
@@ -64,6 +71,14 @@ export function goalRestoreBlocker(
   liveGoals: Goal[],
 ): string | undefined {
   const restoringByAccount = new Map<string, number>();
+  if (goal.balanceAccountId) {
+    const account = accounts.find((candidate) => candidate.id === goal.balanceAccountId);
+    if (!account) return "This goal references an account that no longer exists.";
+    if (accountAllocated(liveGoals, account.id, accounts) > 0) {
+      return `${account.bankName} is already allocated to another goal.`;
+    }
+    return undefined;
+  }
   for (const contribution of goal.contributions ?? []) {
     if (!contribution.accountId) continue;
     restoringByAccount.set(
@@ -77,7 +92,7 @@ export function goalRestoreBlocker(
     if (!account) {
       return "This goal references an account that no longer exists.";
     }
-    const freeBalance = account.balance - accountAllocated(liveGoals, accountId);
+    const freeBalance = account.balance - accountAllocated(liveGoals, accountId, accounts);
     if (restoringAmount > freeBalance) {
       return `Only ${Math.max(0, freeBalance)} remains free in ${account.bankName}.`;
     }

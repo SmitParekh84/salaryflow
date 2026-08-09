@@ -218,11 +218,11 @@ function GoalCard({
   onUpdateMonthly: (monthly: number) => void;
 }) {
   const [whatIf, setWhatIf] = useState<number | null>(null);
-  const saved = goalSaved(goal);
+  const saved = goalSaved(goal, accounts);
   const pct = goal.target > 0 ? Math.min(100, (saved / goal.target) * 100) : 0;
   const done = saved >= goal.target;
-  const projection = projectGoal(goal);
-  const proposal = whatIf === null ? null : whatIfDelta(goal, whatIf);
+  const projection = projectGoal(goal, undefined, new Date(), accounts);
+  const proposal = whatIf === null ? null : whatIfDelta(goal, whatIf, new Date(), accounts);
   const GoalIcon = goal.type === "Bike" ? Bike : goal.type === "Phone" ? Smartphone : Target;
   return (
     <Card>
@@ -271,7 +271,14 @@ function GoalCard({
           valueText={`${formatMoney(saved, currency)} of ${formatMoney(goal.target, currency)}`}
         />
 
-        {goalAccountBreakdown(goal).map((slice) => {
+        {goal.balanceAccountId && (
+          <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
+            <Landmark className="h-3.5 w-3.5 shrink-0" />
+            Tracks {accounts.find((account) => account.id === goal.balanceAccountId)?.bankName ?? "linked account"} balance
+          </p>
+        )}
+
+        {goalAccountBreakdown(goal, accounts).map((slice) => {
           const account = accounts.find((candidate) => candidate.id === slice.accountId);
           return (
             <p
