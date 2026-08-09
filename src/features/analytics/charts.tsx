@@ -1,6 +1,7 @@
 "use client";
 
-import { CATEGORY_META } from "@/lib/constants";
+import { getCategoryColor } from "@/components/category-icon";
+import { useFinanceStore } from "@/lib/store";
 import type { Expense, Income, SalaryHistoryEntry } from "@/lib/types";
 import { formatMoney, parseFinancialDate } from "@/lib/utils";
 import { useMemo } from "react";
@@ -169,7 +170,9 @@ export function CashFlowChart({
 }
 
 export function CategoryDonut({ expenses, currency }: { expenses: Expense[]; currency: string }) {
+  const storedCustomCategories = useFinanceStore((state) => state.profile.customCategories);
   const data = useMemo(() => {
+    const customCategories = storedCustomCategories ?? [];
     const map = new Map<string, number>();
     for (const e of expenses) {
       map.set(e.category, (map.get(e.category) ?? 0) + e.amount);
@@ -178,10 +181,10 @@ export function CategoryDonut({ expenses, currency }: { expenses: Expense[]; cur
       .map(([name, value]) => ({
         name,
         value: Math.round(value),
-        color: CATEGORY_META[name as keyof typeof CATEGORY_META]?.color ?? "#94a3b8",
+        color: getCategoryColor(name, customCategories),
       }))
       .sort((a, b) => b.value - a.value);
-  }, [expenses]);
+  }, [storedCustomCategories, expenses]);
 
   const total = data.reduce((s, d) => s + d.value, 0);
 

@@ -1,12 +1,10 @@
-import {
-  SettingsView,
-  type SettingsSection,
-} from "@/features/settings/settings-view";
+import { SettingsView, type SettingsSection } from "@/features/settings/settings-view";
 
 const SETTINGS_SECTIONS = new Set<SettingsSection>([
   "profile",
   "money",
   "accounts",
+  "categories",
   "planning",
   "system",
 ]);

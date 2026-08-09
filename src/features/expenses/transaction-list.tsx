@@ -1,8 +1,7 @@
 "use client";
 
-import { CategoryIcon } from "@/components/category-icon";
+import { CategoryIcon, getCategoryColor } from "@/components/category-icon";
 import { Button } from "@/components/ui/button";
-import { CATEGORY_META } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
 import { cn, formatMoney } from "@/lib/utils";
@@ -24,12 +23,14 @@ export function TransactionList({
   const toggleFavorite = useFinanceStore((s) => s.toggleFavorite);
   const accounts = useFinanceStore((s) => s.accounts);
   const creditCards = useFinanceStore((s) => s.creditCards);
+  const storedCustomCategories = useFinanceStore((s) => s.profile.customCategories);
+  const customCategories = storedCustomCategories ?? [];
 
   return (
     <div className="divide-y divide-border">
       <AnimatePresence initial={false}>
         {expenses.map((e) => {
-          const meta = CATEGORY_META[e.category];
+          const categoryColor = getCategoryColor(e.category, customCategories);
           const account = accounts.find((item) => item.id === e.accountId);
           const creditCard = creditCards.find((item) => item.id === e.accountId);
           return (
@@ -44,7 +45,7 @@ export function TransactionList({
               <div
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
                 style={{
-                  backgroundColor: `color-mix(in srgb, ${meta.color} 15%, transparent)`,
+                  backgroundColor: `color-mix(in srgb, ${categoryColor} 15%, transparent)`,
                 }}
               >
                 <CategoryIcon category={e.category} className="h-5 w-5" />

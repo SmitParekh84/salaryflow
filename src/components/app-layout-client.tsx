@@ -18,6 +18,7 @@ const SETTINGS_SECTION_TITLES: Record<string, string> = {
   profile: "Profile",
   money: "Money setup",
   accounts: "Financial accounts",
+  categories: "Categories",
   planning: "Goals & rules",
   system: "System",
 };
@@ -78,7 +79,8 @@ export default function AppLayoutClient({ children }: { children: React.ReactNod
       ? SETTINGS_SECTION_TITLES[searchParams.get("section") ?? ""]
       : undefined;
   const title =
-    settingsSectionTitle ?? ROUTE_TITLES[pathname] ??
+    settingsSectionTitle ??
+    ROUTE_TITLES[pathname] ??
     NAV_ITEMS.find((item) => pathname === item.href || pathname.startsWith(item.href + "/"))
       ?.label ??
     "SalaryFlow";

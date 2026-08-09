@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Label, Select } from "@/components/ui/input";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalFooter } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
 import { projectedGoalDate } from "@/lib/calculations";
 import { GOAL_TYPES } from "@/lib/constants";
@@ -183,14 +183,14 @@ export function GoalsView() {
               onChange={(e) => setForm({ ...form, monthlyContribution: Number(e.target.value) })}
             />
           </div>
-          <div className="flex gap-3 pt-1">
-            <Button variant="secondary" className="flex-1" onClick={() => setOpen(false)}>
+          <ModalFooter>
+            <Button variant="secondary" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button className="flex-1" onClick={() => void save()}>
+            <Button onClick={() => void save()}>
               {editingId ? "Save goal" : "Create goal"}
             </Button>
-          </div>
+          </ModalFooter>
         </div>
       </Modal>
     </div>

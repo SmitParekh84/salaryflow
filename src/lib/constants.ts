@@ -1,6 +1,6 @@
-import type { ExpenseCategory, GoalType, InvestmentType, PaymentMethod } from "./types";
+import type { DefaultExpenseCategory, GoalType, InvestmentType, PaymentMethod } from "./types";
 
-export const CATEGORY_META: Record<ExpenseCategory, { color: string }> = {
+export const CATEGORY_META: Record<DefaultExpenseCategory, { color: string }> = {
   Food: { color: "#f97316" },
   Groceries: { color: "#22c55e" },
   Fuel: { color: "#ef4444" },
@@ -23,7 +23,7 @@ export const CATEGORY_META: Record<ExpenseCategory, { color: string }> = {
   Other: { color: "#94a3b8" },
 };
 
-export const CATEGORIES = Object.keys(CATEGORY_META) as ExpenseCategory[];
+export const CATEGORIES = Object.keys(CATEGORY_META) as DefaultExpenseCategory[];
 
 export const PAYMENT_METHODS: PaymentMethod[] = ["UPI", "Card", "Cash", "Bank Transfer", "Wallet"];
 

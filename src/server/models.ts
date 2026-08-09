@@ -56,6 +56,17 @@ const SalaryProfileSchema = new Schema(
     savingsGoal: { type: Number, default: 0 },
     emergencyFundGoal: { type: Number, default: 0 },
     investmentAmount: { type: Number, default: 0 },
+    customCategories: [
+      new Schema(
+        {
+          id: { type: String, required: true },
+          name: { type: String, required: true },
+          icon: { type: String, required: true },
+          color: { type: String, required: true },
+        },
+        { _id: false },
+      ),
+    ],
   },
   { timestamps: true },
 );
@@ -71,6 +82,8 @@ const BillSchema = new Schema(
     intervalDays: { type: Number, min: 1 },
     category: { type: String, default: "Utilities" },
     paid: { type: Boolean, default: false },
+    provider: String,
+    purchaseDate: Date,
     // optional maturity date for bills (e.g., fixed-term bills or subscriptions)
     maturityDate: { type: Date },
     accountId: String,

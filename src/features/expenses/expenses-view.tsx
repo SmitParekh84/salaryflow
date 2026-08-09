@@ -16,6 +16,8 @@ import { SeedPrompt, TransactionList } from "./transaction-list";
 export function ExpensesView() {
   const expenses = useFinanceStore((s) => s.expenses);
   const currency = useFinanceStore((s) => s.profile.currency);
+  const storedCustomCategories = useFinanceStore((s) => s.profile.customCategories);
+  const customCategories = storedCustomCategories ?? [];
 
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | null>(null);
@@ -81,6 +83,11 @@ export function ExpensesView() {
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>
               {c}
+            </option>
+          ))}
+          {customCategories.map((category) => (
+            <option key={category.id} value={category.name}>
+              {category.name}
             </option>
           ))}
         </Select>

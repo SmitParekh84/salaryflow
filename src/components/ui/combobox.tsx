@@ -5,11 +5,12 @@ import { cn } from "@/lib/utils";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { Command } from "cmdk";
 import { Check, ChevronsUpDown, Search } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 export interface ComboboxOption {
   label: string;
   value: string;
+  icon?: ReactNode;
 }
 
 export function Combobox({
@@ -19,6 +20,7 @@ export function Combobox({
   placeholder = "Select an option",
   searchPlaceholder = "Search...",
   emptyText = "No results found.",
+  ariaLabel,
   className,
 }: {
   options: ComboboxOption[];
@@ -27,6 +29,7 @@ export function Combobox({
   placeholder?: string;
   searchPlaceholder?: string;
   emptyText?: string;
+  ariaLabel?: string;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -39,11 +42,13 @@ export function Combobox({
           type="button"
           variant="secondary"
           role="combobox"
+          aria-label={ariaLabel}
           aria-expanded={open}
           className={cn("h-11 w-full justify-between px-3.5 font-normal", className)}
         >
-          <span className={cn("truncate", !selected && "text-muted")}>
-            {selected?.label ?? placeholder}
+          <span className={cn("flex min-w-0 items-center gap-2", !selected && "text-muted")}>
+            {selected?.icon}
+            <span className="truncate">{selected?.label ?? placeholder}</span>
           </span>
           <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted" />
         </Button>
@@ -82,6 +87,7 @@ export function Combobox({
                       option.value === value ? "opacity-100" : "opacity-0",
                     )}
                   />
+                  {option.icon}
                   <span>{option.label}</span>
                 </Command.Item>
               ))}

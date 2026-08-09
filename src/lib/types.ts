@@ -1,6 +1,6 @@
 export type SalaryCycle = "monthly" | "weekly" | "biweekly" | "custom";
 
-export type ExpenseCategory =
+export type DefaultExpenseCategory =
   | "Food"
   | "Groceries"
   | "Fuel"
@@ -21,6 +21,41 @@ export type ExpenseCategory =
   | "Personal Care"
   | "Business"
   | "Other";
+
+export type ExpenseCategory = DefaultExpenseCategory | (string & {});
+
+export type CategoryIconName =
+  | "utensils"
+  | "cart"
+  | "fuel"
+  | "plane"
+  | "bag"
+  | "film"
+  | "bank"
+  | "home"
+  | "lightbulb"
+  | "phone"
+  | "shield"
+  | "medical"
+  | "education"
+  | "trend"
+  | "tv"
+  | "pet"
+  | "users"
+  | "sparkles"
+  | "briefcase"
+  | "package"
+  | "globe"
+  | "gamepad"
+  | "gift"
+  | "coffee";
+
+export interface CustomCategory {
+  id: string;
+  name: string;
+  icon: CategoryIconName;
+  color: string;
+}
 
 export type PaymentMethod = "Cash" | "Card" | "UPI" | "Bank Transfer" | "Wallet";
 
@@ -80,6 +115,8 @@ export interface Bill {
   intervalDays?: number;
   category: ExpenseCategory;
   paid: boolean;
+  provider?: string;
+  purchaseDate?: string;
   maturityDate?: string; // optional ISO date when the bill/contract matures
   accountId?: string;
 }
@@ -147,6 +184,7 @@ export interface SalaryProfile {
   savingsGoal: number;
   emergencyFundGoal: number;
   investmentAmount: number;
+  customCategories?: CustomCategory[];
 }
 
 export interface UserProfile {

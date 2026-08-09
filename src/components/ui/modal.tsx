@@ -50,17 +50,11 @@ export function Modal({
                   exit={{ opacity: 0, y: 20, scale: 0.98 }}
                   transition={{ type: "spring", damping: 28, stiffness: 320 }}
                 >
-                  <DialogPrimitive.Title className={cn(!title && "sr-only")}>
-                    {title || "Dialog"}
-                  </DialogPrimitive.Title>
                   {title && (
                     <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3 sm:px-5 sm:py-4">
-                      <div
-                        aria-hidden="true"
-                        className="min-w-0 truncate text-base font-semibold sm:text-lg"
-                      >
+                      <DialogPrimitive.Title className="min-w-0 truncate text-base font-semibold sm:text-lg">
                         {title}
-                      </div>
+                      </DialogPrimitive.Title>
                       <DialogPrimitive.Close asChild>
                         <button
                           type="button"
@@ -72,6 +66,7 @@ export function Modal({
                       </DialogPrimitive.Close>
                     </div>
                   )}
+                  {!title && <DialogPrimitive.Title className="sr-only">Dialog</DialogPrimitive.Title>}
                   <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
                     {children}
                   </div>
@@ -82,5 +77,18 @@ export function Modal({
         )}
       </AnimatePresence>
     </DialogPrimitive.Root>
+  );
+}
+
+export function ModalFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      data-slot="dialog-footer"
+      className={cn(
+        "sticky -bottom-4 z-10 -mx-4 -mb-4 mt-5 flex justify-end gap-3 border-t border-border bg-surface px-4 py-4 sm:-bottom-5 sm:-mx-5 sm:-mb-5 sm:px-5 [&_[data-slot=button]]:min-w-28",
+        className,
+      )}
+      {...props}
+    />
   );
 }

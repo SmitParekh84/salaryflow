@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalFooter } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
 import { useSummary } from "@/hooks/use-summary";
 import { buildFundingPlan, type FundingPlanItem } from "@/lib/funding-plan";
@@ -290,18 +290,17 @@ export function FundingPlanView() {
             Saving creates the matching expense and updates this month&apos;s plan. Your account
             balance is not changed automatically.
           </p>
-          <div className="flex gap-3">
-            <Button variant="secondary" className="flex-1" onClick={() => setPayingItem(null)}>
+          <ModalFooter>
+            <Button variant="secondary" onClick={() => setPayingItem(null)}>
               Cancel
             </Button>
             <Button
-              className="flex-1"
               disabled={saving || !paymentAccountId}
               onClick={() => void savePayments()}
             >
               {saving ? "Saving…" : "Save payment"}
             </Button>
-          </div>
+          </ModalFooter>
         </div>
       </Modal>
     </div>

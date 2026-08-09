@@ -1,15 +1,15 @@
 "use client";
 
-import { CategoryIcon } from "@/components/category-icon";
+import { CategoryIcon, getCategoryColor } from "@/components/category-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Combobox } from "@/components/ui/combobox";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Label, Select } from "@/components/ui/input";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalFooter } from "@/components/ui/modal";
 import { billCycle, billOccurrenceDate, monthlyBillReserve } from "@/lib/bill-cycle";
-import { CATEGORIES, CATEGORY_META } from "@/lib/constants";
+import { CATEGORIES } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { Bill, BillFrequency } from "@/lib/types";
 import { dateInputToIso, formatMoney, localDateInputValue, parseFinancialDate } from "@/lib/utils";
@@ -20,6 +20,8 @@ export function BillsView() {
   const bills = useFinanceStore((s) => s.bills);
   const expenses = useFinanceStore((s) => s.expenses);
   const currency = useFinanceStore((s) => s.profile.currency);
+  const storedCustomCategories = useFinanceStore((s) => s.profile.customCategories);
+  const customCategories = storedCustomCategories ?? [];
   const deleteBill = useFinanceStore((s) => s.deleteBill);
   const addBill = useFinanceStore((s) => s.addBill);
   const updateBill = useFinanceStore((s) => s.updateBill);
@@ -149,7 +151,7 @@ export function BillsView() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {sorted.map((b) => {
-            const meta = CATEGORY_META[b.category];
+            const categoryColor = getCategoryColor(b.category, customCategories);
             const cycle = billCycle(b, expenses);
             const account = accounts.find((item) => item.id === b.accountId);
             const dateLabel = cycle.occurrenceDate.toLocaleDateString("en-US", {
@@ -163,7 +165,7 @@ export function BillsView() {
                 <div
                   className="flex h-11 w-11 items-center justify-center rounded-xl text-lg"
                   style={{
-                    backgroundColor: `color-mix(in srgb, ${meta.color} 15%, transparent)`,
+                    backgroundColor: `color-mix(in srgb, ${categoryColor} 15%, transparent)`,
                   }}
                 >
                   <CategoryIcon category={b.category} className="h-5 w-5" />
@@ -317,9 +319,21 @@ export function BillsView() {
           <div>
             <Label>Category</Label>
             <Combobox
-              options={CATEGORIES.map((category) => ({ label: category, value: category }))}
+              options={[
+                ...CATEGORIES.map((category) => ({
+                  label: category,
+                  value: category,
+                  icon: <CategoryIcon category={category} />,
+                })),
+                ...customCategories.map((category) => ({
+                  label: category.name,
+                  value: category.name,
+                  icon: <CategoryIcon category={category.name} />,
+                })),
+              ]}
               value={form.category}
               onValueChange={(value) => setForm({ ...form, category: value as Bill["category"] })}
+              ariaLabel="Bill category"
               searchPlaceholder="Search categories..."
             />
           </div>
@@ -341,14 +355,14 @@ export function BillsView() {
               </Select>
             </div>
           )}
-          <div className="flex gap-3 pt-1">
-            <Button variant="secondary" className="flex-1" onClick={() => setOpen(false)}>
+          <ModalFooter>
+            <Button variant="secondary" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button className="flex-1" onClick={() => void save()}>
+            <Button onClick={() => void save()}>
               {editingId ? "Save changes" : "Add bill"}
             </Button>
-          </div>
+          </ModalFooter>
         </div>
       </Modal>
     </div>

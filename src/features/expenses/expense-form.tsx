@@ -1,9 +1,10 @@
 "use client";
 
+import { CategoryIcon } from "@/components/category-icon";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Checkbox, Input, Label, Select, Textarea } from "@/components/ui/input";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalFooter } from "@/components/ui/modal";
 import { CATEGORIES, PAYMENT_METHODS } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
@@ -73,6 +74,8 @@ export function ExpenseForm({
   editing?: Expense | null;
   sharedMode?: boolean;
 }) {
+  const storedCustomCategories = useFinanceStore((state) => state.profile.customCategories);
+  const customCategories = storedCustomCategories ?? [];
   const addExpense = useFinanceStore((s) => s.addExpense);
   const addBill = useFinanceStore((s) => s.addBill);
   const updateExpense = useFinanceStore((s) => s.updateExpense);
@@ -246,24 +249,35 @@ export function ExpenseForm({
 
         {(accounts.length > 0 || creditCards.length > 0) && (
           <div>
-            <Label>Paid from</Label>
-            <Select {...register("accountId")}>
-              <option value="">No account selected</option>
-              {accounts
-                .filter((account) => account.status === "active")
-                .map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.bankName}
-                  </option>
-                ))}
-              {creditCards
-                .filter((card) => card.status === "active")
-                .map((card) => (
-                  <option key={card.id} value={card.id}>
-                    {card.name} · Credit card
-                  </option>
-                ))}
-            </Select>
+            <Label htmlFor="expense-account">Paid from</Label>
+            <Controller
+              control={control}
+              name="accountId"
+              render={({ field }) => (
+                <Select
+                  id="expense-account"
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                >
+                  <option value="">No account selected</option>
+                  {accounts
+                    .filter((account) => account.status === "active")
+                    .map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.bankName}
+                      </option>
+                    ))}
+                  {creditCards
+                    .filter((card) => card.status === "active")
+                    .map((card) => (
+                      <option key={card.id} value={card.id}>
+                        {card.name} · Credit card
+                      </option>
+                    ))}
+                </Select>
+              )}
+            />
             <p className="mt-1 text-xs text-muted">
               Records the source only. Your balance will not change automatically.
             </p>
@@ -278,12 +292,21 @@ export function ExpenseForm({
               name="category"
               render={({ field }) => (
                 <Combobox
-                  options={CATEGORIES.map((category) => ({
-                    label: category,
-                    value: category,
-                  }))}
+                  options={[
+                    ...CATEGORIES.map((category) => ({
+                      label: category,
+                      value: category,
+                      icon: <CategoryIcon category={category} />,
+                    })),
+                    ...customCategories.map((category) => ({
+                      label: category.name,
+                      value: category.name,
+                      icon: <CategoryIcon category={category.name} />,
+                    })),
+                  ]}
                   value={field.value}
                   onValueChange={field.onChange}
+                  ariaLabel="Expense category"
                   placeholder="Select category"
                   searchPlaceholder="Search categories..."
                   emptyText="No category found."
@@ -292,21 +315,32 @@ export function ExpenseForm({
             />
           </div>
           <div>
-            <Label>Payment</Label>
-            <Select {...register("paymentMethod")}>
-              {PAYMENT_METHODS.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </Select>
+            <Label htmlFor="expense-payment-method">Payment</Label>
+            <Controller
+              control={control}
+              name="paymentMethod"
+              render={({ field }) => (
+                <Select
+                  id="expense-payment-method"
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                >
+                  {PAYMENT_METHODS.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label>Title or place</Label>
-            <Input placeholder="e.g. Hotel Adhyay Palace" {...register("merchant")} />
+            <Input placeholder="e.g. Grocery store or restaurant" {...register("merchant")} />
           </div>
           <div>
             <Label>Date</Label>
@@ -431,14 +465,14 @@ export function ExpenseForm({
           </div>
         )}
 
-        <div className="flex gap-3 pt-1">
-          <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>
+        <ModalFooter>
+          <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" className="flex-1" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting}>
             {editing ? "Save changes" : sharedMode ? "Add shared expense" : "Add expense"}
           </Button>
-        </div>
+        </ModalFooter>
       </form>
     </Modal>
   );

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Label, Select } from "@/components/ui/input";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalFooter } from "@/components/ui/modal";
 import { useSummary } from "@/hooks/use-summary";
 import { INVESTMENT_TYPES } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
@@ -223,14 +223,12 @@ export function InvestmentsView() {
               </Select>
             </div>
           )}
-          <div className="flex gap-3 pt-1">
-            <Button variant="secondary" className="flex-1" onClick={() => setOpen(false)}>
+          <ModalFooter>
+            <Button variant="secondary" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button className="flex-1" onClick={() => void save()}>
-              Add
-            </Button>
-          </div>
+            <Button onClick={() => void save()}>Add</Button>
+          </ModalFooter>
         </div>
       </Modal>
     </div>

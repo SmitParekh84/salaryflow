@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalFooter } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
 import { useSummary } from "@/hooks/use-summary";
 import { BUDGET_RULE_TEMPLATES, createRuleFromTemplate } from "@/lib/budget-rules";
@@ -292,18 +292,17 @@ export function RulesView() {
           >
             Total: {total}% {total === 100 ? "· Ready to save" : "· Must equal 100%"}
           </div>
-          <div className="flex gap-3 pt-1">
-            <Button variant="secondary" className="flex-1" onClick={() => setOpen(false)}>
+          <ModalFooter>
+            <Button variant="secondary" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button
-              className="flex-1"
               disabled={total !== 100 || !name.trim()}
               onClick={() => void saveCustomRule()}
             >
               Save & activate
             </Button>
-          </div>
+          </ModalFooter>
         </div>
       </Modal>
     </div>

@@ -1,14 +1,20 @@
 "use client";
 
+import {
+  CATEGORY_ICON_OPTIONS,
+  CategoryGlyph,
+  CategoryIcon,
+} from "@/components/category-icon";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { useSummary } from "@/hooks/use-summary";
-import { COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
+import { CATEGORIES, COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
 import { download, exportExpensesCsv } from "@/lib/export";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/lib/useAuth";
-import { cn, formatMoney } from "@/lib/utils";
+import type { CategoryIconName } from "@/lib/types";
+import { cn, formatMoney, uid } from "@/lib/utils";
 import {
   ChevronRight,
   Download,
@@ -17,6 +23,7 @@ import {
   Landmark,
   ListChecks,
   LogOut,
+  Shapes,
   MonitorCog,
   Moon,
   PiggyBank,
@@ -33,7 +40,13 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-export type SettingsSection = "profile" | "money" | "accounts" | "planning" | "system";
+export type SettingsSection =
+  | "profile"
+  | "money"
+  | "accounts"
+  | "categories"
+  | "planning"
+  | "system";
 
 const SETTINGS_SECTIONS: {
   id: SettingsSection;
@@ -53,6 +66,12 @@ const SETTINGS_SECTIONS: {
     label: "Financial accounts",
     description: "Banks, cards and visibility",
     icon: WalletCards,
+  },
+  {
+    id: "categories",
+    label: "Categories",
+    description: "Organize expenses your way",
+    icon: Shapes,
   },
   {
     id: "planning",
@@ -83,13 +102,15 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
 
   const requestedSection = searchParams.get("section");
   const hasRequestedSection = SETTINGS_SECTIONS.some((item) => item.id === requestedSection);
-  const section = hasRequestedSection
-    ? (requestedSection as SettingsSection)
-    : initialSection;
+  const section = hasRequestedSection ? (requestedSection as SettingsSection) : initialSection;
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [saved, setSaved] = useState(false);
   const [preferencesSaved, setPreferencesSaved] = useState(false);
+  const [categoryName, setCategoryName] = useState("");
+  const [categoryIcon, setCategoryIcon] = useState<CategoryIconName>("package");
+  const [categoryColor, setCategoryColor] = useState("#0ea5e9");
+  const [categoryError, setCategoryError] = useState("");
 
   const selectSection = (nextSection: SettingsSection) => {
     window.history.replaceState(null, "", `/settings?section=${nextSection}`);
@@ -106,6 +127,36 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
     await syncWithServer();
     setPreferencesSaved(true);
     setTimeout(() => setPreferencesSaved(false), 1600);
+  };
+
+  const addCategory = async () => {
+    const name = categoryName.trim();
+    const allNames = [
+      ...CATEGORIES,
+      ...(profile.customCategories ?? []).map((category) => category.name),
+    ];
+    if (!name) return;
+    if (allNames.some((category) => category.toLowerCase() === name.toLowerCase())) {
+      setCategoryError("A category with this name already exists.");
+      return;
+    }
+
+    updateProfile({
+      customCategories: [
+        ...(profile.customCategories ?? []),
+        { id: uid("category"), name, icon: categoryIcon, color: categoryColor },
+      ],
+    });
+    setCategoryName("");
+    setCategoryError("");
+    await syncWithServer();
+  };
+
+  const deleteCategory = async (id: string) => {
+    updateProfile({
+      customCategories: (profile.customCategories ?? []).filter((category) => category.id !== id),
+    });
+    await syncWithServer();
   };
 
   const exportJson = () => {
@@ -152,7 +203,10 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
             Personalize how SalaryFlow works for you.
           </p>
         </div>
-        <nav aria-label="Mobile settings sections" className="divide-y divide-border border-y border-border lg:hidden">
+        <nav
+          aria-label="Mobile settings sections"
+          className="divide-y divide-border border-y border-border lg:hidden"
+        >
           {SETTINGS_SECTIONS.map((item) => {
             const Icon = item.icon;
             return (
@@ -202,298 +256,417 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
       </aside>
 
       <div className={cn("min-w-0", !hasRequestedSection && "hidden lg:block")}>
-      <Card className="min-w-0 rounded-none bg-transparent shadow-none lg:rounded-2xl lg:bg-surface">
-        {section === "profile" && (
-          <SettingsPane
-            title="User profile"
-            description="Keep the name and email associated with your SalaryFlow account up to date."
-          >
-            <form
-              className="space-y-4"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void saveProfile();
-              }}
+        <Card className="min-w-0 rounded-none bg-transparent shadow-none lg:rounded-2xl lg:bg-surface">
+          {section === "profile" && (
+            <SettingsPane
+              title="User profile"
+              description="Keep the name and email associated with your SalaryFlow account up to date."
             >
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="profile-name">Name</Label>
-                  <Input id="profile-name" value={name} onChange={(e) => setName(e.target.value)} />
+              <form
+                className="space-y-4"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void saveProfile();
+                }}
+              >
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="profile-name">Name</Label>
+                    <Input
+                      id="profile-name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="profile-email">Email</Label>
+                    <Input
+                      id="profile-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="profile-email">Email</Label>
-                  <Input
-                    id="profile-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-              </div>
-              <Button type="submit" size="sm" disabled={!name.trim() || !email.trim()}>
-                {saved ? "Saved" : "Save changes"}
-              </Button>
-            </form>
-          </SettingsPane>
-        )}
+                <Button type="submit" size="sm" disabled={!name.trim() || !email.trim()}>
+                  {saved ? "Saved" : "Save changes"}
+                </Button>
+              </form>
+            </SettingsPane>
+          )}
 
-        {section === "money" && (
-          <SettingsPane
-            title="Money setup"
-            description="Set the salary cycle and regional formats used throughout the app."
-          >
-            <form
-              className="space-y-4"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void savePreferences();
-              }}
+          {section === "money" && (
+            <SettingsPane
+              title="Money setup"
+              description="Set the salary cycle and regional formats used throughout the app."
             >
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div>
-                  <Label htmlFor="salary-amount">Salary amount</Label>
-                  <Input
-                    id="salary-amount"
-                    type="number"
-                    min={0}
-                    value={profile.amount || ""}
-                    onChange={(e) => updateProfile({ amount: Number(e.target.value) })}
-                  />
+              <form
+                className="space-y-4"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void savePreferences();
+                }}
+              >
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <Label htmlFor="salary-amount">Salary amount</Label>
+                    <Input
+                      id="salary-amount"
+                      type="number"
+                      min={0}
+                      value={profile.amount || ""}
+                      onChange={(e) => updateProfile({ amount: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="salary-day">Salary day</Label>
+                    <Input
+                      id="salary-day"
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={profile.salaryDay}
+                      onChange={(e) =>
+                        updateProfile({
+                          salaryDay: Math.max(1, Math.min(31, Number(e.target.value))),
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="profile-country">Country</Label>
+                    <Select
+                      id="profile-country"
+                      value={profile.country}
+                      onChange={(event) => {
+                        const country = event.target.value;
+                        updateProfile({
+                          country,
+                          currency: COUNTRY_CURRENCIES[country] ?? profile.currency,
+                        });
+                      }}
+                    >
+                      {COUNTRIES.map((country) => (
+                        <option key={country} value={country}>
+                          {country}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="profile-currency">Currency</Label>
+                    <Select
+                      id="profile-currency"
+                      value={profile.currency}
+                      onChange={(e) => updateProfile({ currency: e.target.value })}
+                    >
+                      {CURRENCIES.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.code}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="salary-day">Salary day</Label>
-                  <Input
-                    id="salary-day"
-                    type="number"
-                    min={1}
-                    max={31}
-                    value={profile.salaryDay}
-                    onChange={(e) =>
-                      updateProfile({
-                        salaryDay: Math.max(1, Math.min(31, Number(e.target.value))),
-                      })
-                    }
-                  />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="savings-goal">
+                      {activeBudgetRule
+                        ? "Monthly savings target (current cycle)"
+                        : "Monthly savings goal"}
+                    </Label>
+                    <Input
+                      id="savings-goal"
+                      type="number"
+                      min={0}
+                      value={
+                        ruleSavingsTarget === undefined
+                          ? profile.savingsGoal || ""
+                          : Math.round(ruleSavingsTarget)
+                      }
+                      readOnly={Boolean(activeBudgetRule)}
+                      onChange={(e) => updateProfile({ savingsGoal: Number(e.target.value) })}
+                    />
+                    <p className="mt-1 text-xs text-muted">
+                      {activeBudgetRule
+                        ? `${activeBudgetRule.name} sets ${savingsPercentage ?? 0}% of this cycle's confirmed ${formatMoney(summary.salaryIncome, profile.currency)} salary. Other income does not increase this target.`
+                        : "Used when no budget rule is active."}
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="emergency-target">Emergency fund target</Label>
+                    <Input
+                      id="emergency-target"
+                      type="number"
+                      min={0}
+                      value={profile.emergencyFundGoal || ""}
+                      onChange={(e) => updateProfile({ emergencyFundGoal: Number(e.target.value) })}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="profile-country">Country</Label>
-                  <Select
-                    id="profile-country"
-                    value={profile.country}
-                    onChange={(event) => {
-                      const country = event.target.value;
-                      updateProfile({
-                        country,
-                        currency: COUNTRY_CURRENCIES[country] ?? profile.currency,
-                      });
-                    }}
-                  >
-                    {COUNTRIES.map((country) => (
-                      <option key={country} value={country}>
-                        {country}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="profile-currency">Currency</Label>
-                  <Select
-                    id="profile-currency"
-                    value={profile.currency}
-                    onChange={(e) => updateProfile({ currency: e.target.value })}
-                  >
-                    {CURRENCIES.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.code}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="savings-goal">
-                    {activeBudgetRule
-                      ? "Monthly savings target (current cycle)"
-                      : "Monthly savings goal"}
-                  </Label>
-                  <Input
-                    id="savings-goal"
-                    type="number"
-                    min={0}
-                    value={
-                      ruleSavingsTarget === undefined
-                        ? profile.savingsGoal || ""
-                        : Math.round(ruleSavingsTarget)
-                    }
-                    readOnly={Boolean(activeBudgetRule)}
-                    onChange={(e) => updateProfile({ savingsGoal: Number(e.target.value) })}
-                  />
-                  <p className="mt-1 text-xs text-muted">
-                    {activeBudgetRule
-                      ? `${activeBudgetRule.name} sets ${savingsPercentage ?? 0}% of this cycle's confirmed ${formatMoney(summary.salaryIncome, profile.currency)} salary. Other income does not increase this target.`
-                      : "Used when no budget rule is active."}
-                  </p>
-                </div>
-                <div>
-                  <Label htmlFor="emergency-target">Emergency fund target</Label>
-                  <Input
-                    id="emergency-target"
-                    type="number"
-                    min={0}
-                    value={profile.emergencyFundGoal || ""}
-                    onChange={(e) => updateProfile({ emergencyFundGoal: Number(e.target.value) })}
-                  />
-                </div>
-              </div>
-              <Button type="submit" size="sm">
-                {preferencesSaved ? "Saved" : "Save preferences"}
-              </Button>
-            </form>
-          </SettingsPane>
-        )}
+                <Button type="submit" size="sm">
+                  {preferencesSaved ? "Saved" : "Save preferences"}
+                </Button>
+              </form>
+            </SettingsPane>
+          )}
 
-        {section === "accounts" && (
-          <SettingsPane
-            title="Financial accounts"
-            description="Accounts stay in the main navigation because balances and transfers are everyday tasks. Visibility controls live here."
-          >
-            <div className="grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3">
-              <AccountStat
-                label="Included balance"
-                value={formatMoney(visibleBalance, profile.currency)}
+          {section === "accounts" && (
+            <SettingsPane
+              title="Financial accounts"
+              description="Accounts stay in the main navigation because balances and transfers are everyday tasks. Visibility controls live here."
+            >
+              <div className="grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3">
+                <AccountStat
+                  label="Included balance"
+                  value={formatMoney(visibleBalance, profile.currency)}
+                />
+                <AccountStat
+                  label="Balances included"
+                  value={String(includedBalanceAccounts.length)}
+                />
+                <AccountStat label="Credit cards" value={String(creditCards.length)} />
+              </div>
+
+              <SettingsLink
+                href="/accounts"
+                icon={Landmark}
+                title="Manage financial accounts"
+                description="Update balances, cards, transfers and account roles."
               />
-              <AccountStat label="Balances included" value={String(includedBalanceAccounts.length)} />
-              <AccountStat label="Credit cards" value={String(creditCards.length)} />
-            </div>
 
-            <SettingsLink
-              href="/accounts"
-              icon={Landmark}
-              title="Manage financial accounts"
-              description="Update balances, cards, transfers and account roles."
-            />
-
-            {hiddenAccounts.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold">Hidden bank accounts</h3>
-                <div className="mt-2 divide-y divide-border border-y border-border">
-                  {hiddenAccounts.map((account) => (
-                    <div key={account.id} className="flex items-center gap-3 py-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{account.bankName}</p>
-                        <p className="text-xs text-muted">Excluded from account totals</p>
+              {hiddenAccounts.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold">Hidden bank accounts</h3>
+                  <div className="mt-2 divide-y divide-border border-y border-border">
+                    {hiddenAccounts.map((account) => (
+                      <div key={account.id} className="flex items-center gap-3 py-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{account.bankName}</p>
+                          <p className="text-xs text-muted">Excluded from account totals</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => void restoreAccount(account.id)}
+                        >
+                          <Eye className="h-4 w-4" /> Unhide
+                        </Button>
                       </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </SettingsPane>
+          )}
+
+          {section === "categories" && (
+            <SettingsPane
+              title="Expense categories"
+              description="Create categories that match how you spend. Default categories remain available everywhere."
+            >
+              <form
+                className="space-y-4"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void addCategory();
+                }}
+              >
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                  <div>
+                    <Label htmlFor="category-name">Category name</Label>
+                    <Input
+                      id="category-name"
+                      value={categoryName}
+                      onChange={(event) => {
+                        setCategoryName(event.target.value);
+                        setCategoryError("");
+                      }}
+                      placeholder="e.g. Domains"
+                    />
+                    {categoryError && <p className="mt-1 text-xs text-danger">{categoryError}</p>}
+                  </div>
+                  <div>
+                    <Label htmlFor="category-color">Color</Label>
+                    <Input
+                      id="category-color"
+                      type="color"
+                      value={categoryColor}
+                      onChange={(event) => setCategoryColor(event.target.value)}
+                      className="w-full p-1 sm:w-16"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Icon</Label>
+                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                    {CATEGORY_ICON_OPTIONS.map((option) => (
                       <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => void restoreAccount(account.id)}
+                        key={option.value}
+                        type="button"
+                        variant={categoryIcon === option.value ? "primary" : "secondary"}
+                        aria-label={option.label}
+                        title={option.label}
+                        onClick={() => setCategoryIcon(option.value)}
+                        className="h-11 px-0"
                       >
-                        <Eye className="h-4 w-4" /> Unhide
+                        <CategoryGlyph icon={option.value} />
                       </Button>
-                    </div>
+                    ))}
+                  </div>
+                </div>
+                <Button type="submit" size="sm" disabled={!categoryName.trim()}>
+                  Add category
+                </Button>
+              </form>
+
+              <div>
+                <h3 className="text-sm font-semibold">Your categories</h3>
+                {(profile.customCategories ?? []).length === 0 ? (
+                  <p className="mt-2 text-sm text-muted">No custom categories yet.</p>
+                ) : (
+                  <div className="mt-2 divide-y divide-border border-y border-border">
+                    {(profile.customCategories ?? []).map((category) => (
+                      <div key={category.id} className="flex items-center gap-3 py-3">
+                        <span
+                          className="flex h-9 w-9 items-center justify-center rounded-lg"
+                          style={{
+                            color: category.color,
+                            backgroundColor: `color-mix(in srgb, ${category.color} 15%, transparent)`,
+                          }}
+                        >
+                          <CategoryGlyph icon={category.icon} />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                          {category.name}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Delete ${category.name}`}
+                          onClick={() => void deleteCategory(category.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold">Default categories</h3>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {CATEGORIES.map((category) => (
+                    <span
+                      key={category}
+                      className="flex items-center gap-2 rounded-lg bg-surface-2 px-2.5 py-2 text-xs"
+                    >
+                      <CategoryIcon category={category} />
+                      {category}
+                    </span>
                   ))}
                 </div>
               </div>
-            )}
-          </SettingsPane>
-        )}
+            </SettingsPane>
+          )}
 
-        {section === "planning" && (
-          <SettingsPane
-            title="Goals & budget rules"
-            description="Manage what you are saving toward and how each salary cycle should be allocated."
-          >
-            <div className="divide-y divide-border border-y border-border">
-              <SettingsLink
-                href="/goals"
-                icon={PiggyBank}
-                title="Savings goals"
-                description={`${goals.length} active ${goals.length === 1 ? "goal" : "goals"}. Track targets and contributions.`}
-              />
-              <SettingsLink
-                href="/rules"
-                icon={ListChecks}
-                title="Budget rules"
-                description={
-                  activeBudgetRule
-                    ? `${activeBudgetRule.name} is active across Salary Plan and safe-to-spend.`
-                    : "Choose how salary is split between needs, wants, savings and investments."
-                }
-              />
-            </div>
-          </SettingsPane>
-        )}
-
-        {section === "system" && (
-          <SettingsPane
-            title="System"
-            description="Control appearance, exports, deleted records and account access."
-          >
-            <div>
-              <h3 className="text-sm font-semibold">Appearance</h3>
-              <p className="mt-1 text-xs text-muted">Choose a theme or follow this device.</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button
-                  variant={theme === "light" ? "primary" : "secondary"}
-                  size="sm"
-                  onClick={() => setTheme("light")}
-                >
-                  <Sun className="h-4 w-4" /> Light
-                </Button>
-                <Button
-                  variant={theme === "dark" ? "primary" : "secondary"}
-                  size="sm"
-                  onClick={() => setTheme("dark")}
-                >
-                  <Moon className="h-4 w-4" /> Dark
-                </Button>
-                <Button
-                  variant={theme === "system" ? "primary" : "secondary"}
-                  size="sm"
-                  onClick={() => setTheme("system")}
-                >
-                  System
-                </Button>
+          {section === "planning" && (
+            <SettingsPane
+              title="Goals & budget rules"
+              description="Manage what you are saving toward and how each salary cycle should be allocated."
+            >
+              <div className="divide-y divide-border border-y border-border">
+                <SettingsLink
+                  href="/goals"
+                  icon={PiggyBank}
+                  title="Savings goals"
+                  description={`${goals.length} active ${goals.length === 1 ? "goal" : "goals"}. Track targets and contributions.`}
+                />
+                <SettingsLink
+                  href="/rules"
+                  icon={ListChecks}
+                  title="Budget rules"
+                  description={
+                    activeBudgetRule
+                      ? `${activeBudgetRule.name} is active across Salary Plan and safe-to-spend.`
+                      : "Choose how salary is split between needs, wants, savings and investments."
+                  }
+                />
               </div>
-            </div>
+            </SettingsPane>
+          )}
 
-            <div className="border-t border-border pt-5">
-              <h3 className="text-sm font-semibold">Data & export</h3>
-              <p className="mt-1 text-xs text-muted">
-                Download a portable copy of your financial records.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button variant="secondary" size="sm" onClick={exportCsv}>
-                  <Download className="h-4 w-4" /> Export CSV
-                </Button>
-                <Button variant="secondary" size="sm" onClick={exportJson}>
-                  <FileJson className="h-4 w-4" /> Backup JSON
-                </Button>
-              </div>
-            </div>
-
-            <div className="divide-y divide-border border-y border-border">
-              <SettingsLink
-                href="/recycle-bin"
-                icon={Trash2}
-                title="Recycle bin"
-                description="Restore deleted records or remove them permanently."
-              />
-            </div>
-
-            <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+          {section === "system" && (
+            <SettingsPane
+              title="System"
+              description="Control appearance, exports, deleted records and account access."
+            >
               <div>
-                <h3 className="text-sm font-semibold">Account access</h3>
-                <p className="mt-1 text-xs text-muted">Sign out of SalaryFlow on this device.</p>
+                <h3 className="text-sm font-semibold">Appearance</h3>
+                <p className="mt-1 text-xs text-muted">Choose a theme or follow this device.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    variant={theme === "light" ? "primary" : "secondary"}
+                    size="sm"
+                    onClick={() => setTheme("light")}
+                  >
+                    <Sun className="h-4 w-4" /> Light
+                  </Button>
+                  <Button
+                    variant={theme === "dark" ? "primary" : "secondary"}
+                    size="sm"
+                    onClick={() => setTheme("dark")}
+                  >
+                    <Moon className="h-4 w-4" /> Dark
+                  </Button>
+                  <Button
+                    variant={theme === "system" ? "primary" : "secondary"}
+                    size="sm"
+                    onClick={() => setTheme("system")}
+                  >
+                    System
+                  </Button>
+                </div>
               </div>
-              <Button variant="secondary" size="sm" onClick={() => void logout()}>
-                <LogOut className="h-4 w-4" /> Sign out
-              </Button>
-            </div>
-          </SettingsPane>
-        )}
-      </Card>
+
+              <div className="border-t border-border pt-5">
+                <h3 className="text-sm font-semibold">Data & export</h3>
+                <p className="mt-1 text-xs text-muted">
+                  Download a portable copy of your financial records.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button variant="secondary" size="sm" onClick={exportCsv}>
+                    <Download className="h-4 w-4" /> Export CSV
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={exportJson}>
+                    <FileJson className="h-4 w-4" /> Backup JSON
+                  </Button>
+                </div>
+              </div>
+
+              <div className="divide-y divide-border border-y border-border">
+                <SettingsLink
+                  href="/recycle-bin"
+                  icon={Trash2}
+                  title="Recycle bin"
+                  description="Restore deleted records or remove them permanently."
+                />
+              </div>
+
+              <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold">Account access</h3>
+                  <p className="mt-1 text-xs text-muted">Sign out of SalaryFlow on this device.</p>
+                </div>
+                <Button variant="secondary" size="sm" onClick={() => void logout()}>
+                  <LogOut className="h-4 w-4" /> Sign out
+                </Button>
+              </div>
+            </SettingsPane>
+          )}
+        </Card>
       </div>
     </div>
   );

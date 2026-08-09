@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Checkbox, Input, Label, Select } from "@/components/ui/input";
-import { Modal } from "@/components/ui/modal";
+import { Modal, ModalFooter } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
 import { creditCardUsage } from "@/lib/credit-cards";
 import { useFinanceStore } from "@/lib/store";
@@ -600,14 +600,12 @@ export function AccountsView() {
               </Button>
             </div>
           )}
-          <div className="flex gap-3 pt-1">
-            <Button variant="secondary" className="flex-1" onClick={() => setOpen(false)}>
+          <ModalFooter>
+            <Button variant="secondary" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button className="flex-1" onClick={() => void save()}>
-              Save account
-            </Button>
-          </div>
+            <Button onClick={() => void save()}>Save account</Button>
+          </ModalFooter>
         </div>
       </Modal>
 
@@ -685,25 +683,23 @@ export function AccountsView() {
             />
           </div>
           {transferError && <p className="text-sm text-danger">{transferError}</p>}
-          <div className="flex gap-3 pt-1">
+          <ModalFooter className="flex-wrap">
             <Button
               variant="secondary"
-              className="flex-1"
               onClick={() => saveTransfer("scheduled")}
             >
               Schedule
             </Button>
             <Button
               variant="secondary"
-              className="flex-1"
               onClick={() => saveTransfer("already-transferred")}
             >
               Already transferred
             </Button>
-            <Button className="flex-1" onClick={() => saveTransfer("transfer-now")}>
+            <Button onClick={() => saveTransfer("transfer-now")}>
               Transfer now
             </Button>
-          </div>
+          </ModalFooter>
         </div>
       </Modal>
 
@@ -757,14 +753,12 @@ export function AccountsView() {
               />
             </div>
           </div>
-          <div className="flex gap-3 pt-1">
-            <Button variant="secondary" className="flex-1" onClick={() => setCardOpen(false)}>
+          <ModalFooter>
+            <Button variant="secondary" onClick={() => setCardOpen(false)}>
               Cancel
             </Button>
-            <Button className="flex-1" onClick={() => void saveCard()}>
-              Save card
-            </Button>
-          </div>
+            <Button onClick={() => void saveCard()}>Save card</Button>
+          </ModalFooter>
         </div>
       </Modal>
     </div>
