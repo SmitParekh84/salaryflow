@@ -126,7 +126,7 @@ export function computeSummary(
   expenses: Expense[],
   incomes: Income[],
   investments: Investment[],
-  goals: Goal[],
+  _goals: Goal[],
   salaryHistory: { amount: number; date: string; confirmed?: boolean; source?: string }[] = [],
   budgetRule?: BudgetRule,
   accounts: BankAccount[] = [],
@@ -162,13 +162,6 @@ export function computeSummary(
   const investedThisCycle = cycleExpenses
     .filter((expense) => expense.category === "Investment")
     .reduce((sum, expense) => sum + expense.amount, 0);
-  // `opening` records are migrated legacy balances stamped with today's date.
-  // They are real money, but they were not saved this cycle — counting them
-  // would distort Safe-to-Spend for every existing user on upgrade day.
-  const cycleContributions = goals
-    .flatMap((goal) => goal.contributions ?? [])
-    .filter((contribution) => !contribution.opening)
-    .filter((contribution) => isInCurrentCycle(contribution.date, profile, now));
   const savingsAccountIds = new Set(
     accounts
       .filter((account) => account.defaultFor?.includes("savings"))
@@ -194,12 +187,9 @@ export function computeSummary(
     cycleExpenses
       .filter((expense) => expense.accountId && savingsAccountIds.has(expense.accountId))
       .reduce((sum, expense) => sum + expense.amount, 0);
-  // Assigning money already held in an account to a goal is a label, not new
-  // savings. Only unlinked deposits and actual savings-account cash flow count.
-  const unlinkedGoalDeposits = cycleContributions
-    .filter((contribution) => !contribution.accountId)
-    .reduce((sum, contribution) => sum + contribution.amount, 0);
-  const savedThisCycle = Math.max(0, savingsAccountCashFlow + unlinkedGoalDeposits);
+  // Goals track purpose and progress, not cash movement. Every goal
+  // contribution is excluded; only evidenced savings-account flow counts.
+  const savedThisCycle = Math.max(0, savingsAccountCashFlow);
 
   const savingsTarget = budgetRule
     ? budgetAllocationTarget(budgetRule, "savings", baseIncome)

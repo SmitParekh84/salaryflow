@@ -124,16 +124,14 @@ netSavingsAccountFlow =
   + incomes deposited directly into savings accounts
   - expenses paid from savings accounts
 
-unlinkedGoalDeposits = current-cycle goal contributions with no accountId
-
-cashSavedThisCycle = max(0, netSavingsAccountFlow + unlinkedGoalDeposits)
+cashSavedThisCycle = max(0, netSavingsAccountFlow)
 ```
 
 ### Explicit Exclusions
 
 The following contribute exactly zero to `cashSavedThisCycle`:
 
-- Goal allocations with an `accountId`.
+- All goal contributions, whether linked or unlinked.
 - Migrated opening goal balances.
 - Existing savings-account balances.
 - Savings targets from a budget rule.
@@ -289,9 +287,9 @@ An account cannot be deleted while expenses, income, bills, investments, goal al
 A goal contribution can be one of two concepts:
 
 1. Linked allocation: has `accountId`; identifies where existing money is reserved.
-2. Unlinked deposit: has no `accountId`; records new savings without a linked account.
+2. Unlinked contribution: has no `accountId`; records goal progress without an identified account.
 
-Only the second concept contributes to `cashSavedThisCycle`.
+Neither concept contributes to `cashSavedThisCycle`. Cash saved requires savings-account cash-flow evidence.
 
 Goal progress is:
 

@@ -943,7 +943,7 @@ describe("goal contributions in the cycle", () => {
     expect(summary.savedThisCycle).toBe(0);
   });
 
-  it("counts an unlinked in-cycle goal deposit as new savings", () => {
+  it("does not count an unlinked goal contribution as cash saved", () => {
     const summary = computeSummary(
       profile,
       [],
@@ -956,7 +956,7 @@ describe("goal contributions in the cycle", () => {
       [],
       inCycle,
     );
-    expect(summary.savedThisCycle).toBe(5_000);
+    expect(summary.savedThisCycle).toBe(0);
   });
 
   it("no longer exposes savingsEvidence", () => {
