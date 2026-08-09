@@ -2,15 +2,15 @@
 
 import { StatCard } from "@/components/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSummary } from "@/hooks/use-summary";
-import { useFinanceStore } from "@/lib/store";
-import { formatMoney } from "@/lib/utils";
 import {
   CategoryDonut,
   IncomeExpenseBars,
   MonthlyBars,
   SpendTrendChart,
 } from "@/features/analytics/charts";
+import { useSummary } from "@/hooks/use-summary";
+import { useFinanceStore } from "@/lib/store";
+import { formatMoney } from "@/lib/utils";
 import { ArrowLeftRight, PiggyBank, TrendingDown, Wallet } from "lucide-react";
 import { useMemo } from "react";
 
@@ -25,10 +25,7 @@ export function AnalyticsView() {
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
       d.setMonth(d.getMonth() - i);
-      map.set(
-        d.toLocaleDateString("en-US", { month: "short" }),
-        0
-      );
+      map.set(d.toLocaleDateString("en-US", { month: "short" }), 0);
     }
     for (const e of expenses) {
       const key = new Date(e.date).toLocaleDateString("en-US", { month: "short" });

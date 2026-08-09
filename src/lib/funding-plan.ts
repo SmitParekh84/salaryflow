@@ -150,12 +150,12 @@ export function buildFundingPlan({
       bill.category === "Investment"
         ? "investment"
         : bill.category === "Rent"
-        ? "rent"
-        : bill.category === "Subscriptions"
-          ? "subscription"
-          : bill.category === "Utilities"
-            ? "utility"
-            : "bill";
+          ? "rent"
+          : bill.category === "Subscriptions"
+            ? "subscription"
+            : bill.category === "Utilities"
+              ? "utility"
+              : "bill";
     const cycle = billCycle(bill, expenses, now);
     const utilityMonth = cycle.billedMonth.toLocaleDateString("en-US", { month: "long" });
     items.push({

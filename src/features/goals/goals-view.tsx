@@ -11,7 +11,16 @@ import { GOAL_TYPES } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { Goal, GoalType } from "@/lib/types";
 import { formatMoney } from "@/lib/utils";
-import { Bike, CircleCheck, Landmark, Pencil, Plus, Smartphone, Target, Trash2 } from "lucide-react";
+import {
+  Bike,
+  CircleCheck,
+  Landmark,
+  Pencil,
+  Plus,
+  Smartphone,
+  Target,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 
 const EMPTY_FORM = {
@@ -105,7 +114,9 @@ export function GoalsView() {
                   : g
               }
               currency={currency}
-              trackedAccountName={g.type === "Emergency Fund" ? savingsAccount?.bankName : undefined}
+              trackedAccountName={
+                g.type === "Emergency Fund" ? savingsAccount?.bankName : undefined
+              }
               onEdit={() => openEdit(g)}
               onDelete={() => deleteGoal(g.id)}
               onContribute={(amount) => void contribute(g.id, amount)}

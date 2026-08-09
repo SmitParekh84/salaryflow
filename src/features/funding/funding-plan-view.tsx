@@ -96,11 +96,11 @@ export function FundingPlanView() {
             ? "Rent"
             : payingItem.kind === "investment"
               ? "Investment"
-            : payingItem.kind === "utility"
-              ? "Utilities"
-              : payingItem.kind === "subscription"
-                ? "Subscriptions"
-                : "Other",
+              : payingItem.kind === "utility"
+                ? "Utilities"
+                : payingItem.kind === "subscription"
+                  ? "Subscriptions"
+                  : "Other",
         merchant: payingItem.label,
         paymentMethod: "UPI",
         note: `${new Date(year, month - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" })} payment${account ? ` · Paid from ${account.bankName}` : ""}`,

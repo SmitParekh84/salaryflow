@@ -1,6 +1,5 @@
 import { billCycle } from "./bill-cycle";
 import { evaluateBudgetRule } from "./budget-rules";
-import { parseFinancialDate } from "./utils";
 import type {
   AccountTransfer,
   BankAccount,
@@ -14,6 +13,7 @@ import type {
   SalaryProfile,
   SpendStatus,
 } from "./types";
+import { parseFinancialDate } from "./utils";
 
 /** Days in the current salary cycle and days remaining until next salary. */
 export function cycleInfo(profile: SalaryProfile, now = new Date()) {
@@ -44,11 +44,7 @@ export function cycleInfo(profile: SalaryProfile, now = new Date()) {
       break;
     default: {
       const salaryDate = (year: number, month: number) =>
-        new Date(
-          year,
-          month,
-          Math.min(profile.salaryDay, new Date(year, month + 1, 0).getDate()),
-        );
+        new Date(year, month, Math.min(profile.salaryDay, new Date(year, month + 1, 0).getDate()));
       const thisMonthSalary = salaryDate(today.getFullYear(), today.getMonth());
       cycleStart =
         today >= thisMonthSalary
@@ -139,7 +135,9 @@ export function computeSummary(
   const { daysRemaining, daysElapsed, cycleLength, nextSalary } = cycleInfo(profile, now);
 
   const cycleExpenses = expenses.filter((e) => isInCurrentCycle(e.date, profile, now));
-  const spendingCycleExpenses = cycleExpenses.filter((expense) => expense.category !== "Investment");
+  const spendingCycleExpenses = cycleExpenses.filter(
+    (expense) => expense.category !== "Investment",
+  );
   const extraIncome = incomes
     .filter((i) => isInCurrentCycle(i.date, profile, now))
     .reduce((s, i) => s + i.amount, 0);
@@ -173,14 +171,11 @@ export function computeSummary(
       .map((account) => account.id),
   );
   const completedCycleTransfers = accountTransfers.filter(
-    (transfer) =>
-      transfer.status === "completed" && isInCurrentCycle(transfer.date, profile, now),
+    (transfer) => transfer.status === "completed" && isInCurrentCycle(transfer.date, profile, now),
   );
   const savingsAccountCashFlow =
     completedCycleTransfers.reduce((sum, transfer) => {
-      const incoming = savingsAccountIds.has(transfer.destinationAccountId)
-        ? transfer.amount
-        : 0;
+      const incoming = savingsAccountIds.has(transfer.destinationAccountId) ? transfer.amount : 0;
       const outgoing = savingsAccountIds.has(transfer.sourceAccountId) ? transfer.amount : 0;
       return sum + incoming - outgoing;
     }, 0) +

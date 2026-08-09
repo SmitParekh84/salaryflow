@@ -322,9 +322,7 @@ describe("bills and funding plan", () => {
       accounts: savingsAccounts,
       bills: [bill],
       creditCards: [card],
-      expenses: [
-        expense({ amount: 1_000, accountId: "card", date: "2026-03-10T10:00:00.000Z" }),
-      ],
+      expenses: [expense({ amount: 1_000, accountId: "card", date: "2026-03-10T10:00:00.000Z" })],
       incomes: [],
       investments: [
         {
