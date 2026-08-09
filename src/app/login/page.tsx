@@ -40,14 +40,30 @@ export default function LoginPage() {
           SalaryFlow
         </div>
         <div className="max-w-md">
-          <p className="text-3xl font-semibold leading-tight">Your salary cycle, ready where you left it.</p>
+          <p className="text-3xl font-semibold leading-tight">
+            Your salary cycle, ready where you left it.
+          </p>
           <div className="mt-10 space-y-6">
-            <LoginStep number="1" title="Sign in securely" detail="Use the email linked to your account." />
-            <LoginStep number="2" title="Sync your records" detail="Expenses, bills, goals and balances load together." />
-            <LoginStep number="3" title="Continue this cycle" detail="See what is safe to spend today." />
+            <LoginStep
+              number="1"
+              title="Sign in securely"
+              detail="Use the email linked to your account."
+            />
+            <LoginStep
+              number="2"
+              title="Sync your records"
+              detail="Expenses, bills, goals and balances load together."
+            />
+            <LoginStep
+              number="3"
+              title="Continue this cycle"
+              detail="See what is safe to spend today."
+            />
           </div>
         </div>
-        <p className="text-xs text-background/60">Private financial records stay tied to your account.</p>
+        <p className="text-xs text-background/60">
+          Private financial records stay tied to your account.
+        </p>
       </section>
 
       <section className="flex min-h-dvh flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-8 lg:items-center lg:justify-center lg:px-12">
@@ -61,81 +77,95 @@ export default function LoginPage() {
 
           <div className="mt-10 lg:mt-0">
             <div className="flex items-center gap-2 text-xs font-medium text-muted lg:hidden">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white">1</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white">
+                1
+              </span>
               Sign in
               <span className="h-px flex-1 bg-border" />
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-2">2</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-2">
+                2
+              </span>
               Sync
               <span className="h-px flex-1 bg-border" />
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-2">3</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-2">
+                3
+              </span>
               Continue
             </div>
             <div className="mt-8 lg:mt-0">
               <p className="text-sm font-medium text-primary">Welcome back</p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-[-0.03em]">Sign in to your money</h1>
-              <p className="mt-2 text-sm text-muted">Your latest salary cycle will be ready after a secure sync.</p>
+              <h1 className="mt-2 text-3xl font-semibold tracking-[-0.03em]">
+                Sign in to your money
+              </h1>
+              <p className="mt-2 text-sm text-muted">
+                Your latest salary cycle will be ready after a secure sync.
+              </p>
             </div>
           </div>
 
           <form onSubmit={submit} className="mt-8 space-y-5">
-          <div>
-            <Label htmlFor="login-email">Email</Label>
-            <Input
-              id="login-email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="login-password">Password</Label>
-            <div className="relative">
-              <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+            <div>
+              <Label htmlFor="login-email">Email</Label>
               <Input
-                id="login-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                type={showPassword ? "text" : "password"}
-                autoComplete="current-password"
-                className="px-10"
+                id="login-email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
                 required
               />
-              <button
-                type="button"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                onClick={() => setShowPassword((current) => !current)}
-                className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-xl text-muted outline-none focus-visible:ring-2 focus-visible:ring-(--ring)"
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
             </div>
-          </div>
+            <div>
+              <Label htmlFor="login-password">Password</Label>
+              <div className="relative">
+                <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+                <Input
+                  id="login-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  className="px-10"
+                  required
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-xl text-muted outline-none focus-visible:ring-2 focus-visible:ring-(--ring)"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-              Remember me
-            </label>
-            <Link href="/forgot-password" className="text-sm font-medium text-primary">
-              Forgot password?
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+                Remember me
+              </label>
+              <Link href="/forgot-password" className="text-sm font-medium text-primary">
+                Forgot password?
+              </Link>
+            </div>
+
+            {error && (
+              <div role="alert" className="rounded-xl bg-danger/10 px-3 py-2.5 text-sm text-danger">
+                {error}
+              </div>
+            )}
+            <Button className="w-full" disabled={loading || !email || !password}>
+              {loading ? "Signing in..." : "Sign in securely"}
+              {!loading && <ArrowRight className="h-4 w-4" />}
+            </Button>
+          </form>
+          <div className="mt-auto pt-8 text-center text-sm lg:mt-6 lg:pt-0">
+            No account?{" "}
+            <Link href="/register" className="font-medium text-primary">
+              Create one
             </Link>
           </div>
-
-          {error && <div role="alert" className="rounded-xl bg-danger/10 px-3 py-2.5 text-sm text-danger">{error}</div>}
-          <Button className="w-full" disabled={loading || !email || !password}>
-            {loading ? "Signing in..." : "Sign in securely"}
-            {!loading && <ArrowRight className="h-4 w-4" />}
-          </Button>
-        </form>
-        <div className="mt-auto pt-8 text-center text-sm lg:mt-6 lg:pt-0">
-          No account?{" "}
-          <Link href="/register" className="font-medium text-primary">
-            Create one
-          </Link>
-        </div>
         </div>
       </section>
     </main>

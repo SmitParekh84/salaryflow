@@ -3,12 +3,12 @@ import { billCycle, billOccurrenceDate, monthlyBillReserve } from "./bill-cycle"
 import { budgetAllocationTarget } from "./budget-rules";
 import { computeSummary, cycleInfo, isInCurrentCycle } from "./calculations";
 import { creditCardUsage } from "./credit-cards";
-import { buildFundingPlan } from "./funding-plan";
 import {
   currentFinancialYearStart,
   financialYearMonths,
   isInFinancialYear,
 } from "./financial-year";
+import { buildFundingPlan } from "./funding-plan";
 import type {
   AccountTransfer,
   BankAccount,

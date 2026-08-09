@@ -392,13 +392,14 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                   >
                     {financialYears.map((year) => (
                       <option key={year} value={year}>
-                        {financialYearLabel(year)}{year === currentFinancialYear ? " · Current" : ""}
+                        {financialYearLabel(year)}
+                        {year === currentFinancialYear ? " · Current" : ""}
                       </option>
                     ))}
                   </Select>
                   <p className="mt-1.5 text-xs text-muted">
-                    India financial years run from April 1 to March 31. Historical screens use
-                    this selection.
+                    India financial years run from April 1 to March 31. Historical screens use this
+                    selection.
                   </p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">

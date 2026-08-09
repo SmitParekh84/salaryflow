@@ -32,10 +32,7 @@ export function financialYearMonths(startYear: number) {
   });
 }
 
-export function availableFinancialYears(
-  dates: Array<string | undefined>,
-  now = new Date(),
-) {
+export function availableFinancialYears(dates: Array<string | undefined>, now = new Date()) {
   const current = currentFinancialYearStart(now);
   const years = new Set(Array.from({ length: 6 }, (_, index) => current - index));
   for (const value of dates) {

@@ -13,8 +13,8 @@ import { SeedPrompt, TransactionList } from "@/features/expenses/transaction-lis
 import { useSummary } from "@/hooks/use-summary";
 import { billCycle } from "@/lib/bill-cycle";
 import { projectedGoalDate, upcomingBills } from "@/lib/calculations";
-import { buildFundingPlan } from "@/lib/funding-plan";
 import { currentFinancialYearStart, financialYearLabel } from "@/lib/financial-year";
+import { buildFundingPlan } from "@/lib/funding-plan";
 import { useFinanceStore } from "@/lib/store";
 import { formatMoney, newestFirst } from "@/lib/utils";
 import { motion } from "framer-motion";

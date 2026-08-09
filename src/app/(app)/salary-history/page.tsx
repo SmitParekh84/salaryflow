@@ -58,7 +58,8 @@ export default function SalaryHistoryPage() {
     <div className="space-y-5">
       <p className="text-sm text-muted">
         Record one salary credit per month. Your normal salary is{" "}
-        {formatMoney(profile.amount, profile.currency)}. Showing {financialYearLabel(financialYearStart)}.
+        {formatMoney(profile.amount, profile.currency)}. Showing{" "}
+        {financialYearLabel(financialYearStart)}.
       </p>
 
       <Card className="p-4 shadow-none sm:p-5">
