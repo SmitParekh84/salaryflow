@@ -280,7 +280,7 @@ Transfers from one savings account to another do not create new savings.
 
 When a transfer fully empties an account marked as closing, linked goal allocations move to the destination account. Partial transfers leave allocations on the source account because that money has not fully moved.
 
-An account cannot be deleted while expenses, income, bills, investments, goal allocations, or transfers still reference it. Removing a referenced account would change historical classifications or leave money attached to a missing source. The account can be hidden while those records are retained.
+An account cannot be deleted while expenses, income, bills, investments, goal allocations, transfers, or recycled records still reference it. Recycled expenses, income, bills, investments, and goals retain their account links because they may be restored. Removing a referenced account would change historical classifications or leave money attached to a missing source. The account can be hidden while those records are retained.
 
 ## Goals
 
@@ -299,7 +299,12 @@ goalRemaining = max(0, target - goalSaved)
 monthsToGoal = ceil(goalRemaining / monthlyContribution)
 ```
 
+New allocations cannot exceed `goalRemaining`. A multi-goal split is rejected as a whole if any
+entry would overfund its goal.
+
 Goal progress can include linked allocations while cash-saved actuals exclude them. These are intentionally different views of the same user's money.
+
+A recycled goal can be restored only when every linked account still exists and its restored allocations fit the account's current free balance after live goal claims. A failed restore leaves the goal in the recycle bin and does not alter account balances or allocations.
 
 ## UI Binding Map
 
@@ -338,4 +343,6 @@ Important regression cases include:
 - Today's spending is subtracted exactly once.
 - Shared bank payments deduct only the current user's amount.
 - Expense delete and restore reverse account mutations exactly once.
+- Recycled records prevent deletion of accounts they still reference.
+- Goal restore rejects missing accounts and over-allocation.
 - Legacy monthly bill dates use the current month.

@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertDialog } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -8,7 +9,7 @@ import { Modal, ModalFooter } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
 import { AllocationSheet } from "@/features/goals/allocation-sheet";
 import { goalAccountBreakdown, goalSaved } from "@/lib/allocations";
-import { projectGoal, whatIfDelta } from "@/lib/goal-projection";
+import { goalContributionStep, projectGoal, whatIfDelta } from "@/lib/goal-projection";
 import { GOAL_TYPES } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { BankAccount, Goal, GoalType } from "@/lib/types";
@@ -45,6 +46,7 @@ export function GoalsView() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [allocateOpen, setAllocateOpen] = useState(false);
+  const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
   const savingsAccount =
     accounts.find(
       (account) => account.status === "active" && account.defaultFor?.includes("savings"),
@@ -114,7 +116,7 @@ export function GoalsView() {
               currency={currency}
               onUpdateMonthly={(monthly) => updateGoal(g.id, { monthlyContribution: monthly })}
               onEdit={() => openEdit(g)}
-              onDelete={() => deleteGoal(g.id)}
+              onDelete={() => setDeletingGoal(g)}
             />
           ))}
         </div>
@@ -185,6 +187,19 @@ export function GoalsView() {
           title="Add money to your goals"
         />
       )}
+
+      <AlertDialog
+        open={Boolean(deletingGoal)}
+        onOpenChange={(nextOpen) => !nextOpen && setDeletingGoal(null)}
+        title={deletingGoal ? `Delete ${deletingGoal.name}?` : "Delete goal?"}
+        description="The goal and its allocations will move to the recycle bin. Account balances will not change, and you can restore the goal later if its allocations still fit."
+        confirmLabel="Delete goal"
+        onConfirm={() => {
+          if (!deletingGoal) return;
+          deleteGoal(deletingGoal.id);
+          setDeletingGoal(null);
+        }}
+      />
     </div>
   );
 }
@@ -296,7 +311,7 @@ function GoalCard({
               type="range"
               min={goal.monthlyContribution}
               max={goal.monthlyContribution * 3}
-              step={500}
+              step={goalContributionStep(goal.monthlyContribution)}
               value={whatIf ?? goal.monthlyContribution}
               onChange={(event) => setWhatIf(Number(event.target.value))}
               className="w-full accent-primary"

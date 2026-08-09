@@ -1,4 +1,4 @@
-import { accountAllocated } from "./allocations";
+import { accountAllocated, goalSaved } from "./allocations";
 import type { BankAccount, Goal } from "./types";
 import { uid } from "./utils";
 
@@ -41,6 +41,16 @@ export function applyAllocation(
 
   const unknown = positive.find((entry) => !goals.some((goal) => goal.id === entry.goalId));
   if (unknown) return { ok: false, reason: "That goal no longer exists." };
+
+  const overfunded = positive.find((entry) => {
+    const goal = goals.find((candidate) => candidate.id === entry.goalId)!;
+    return entry.amount > Math.max(0, goal.target - goalSaved(goal));
+  });
+  if (overfunded) {
+    const goal = goals.find((candidate) => candidate.id === overfunded.goalId)!;
+    const remaining = Math.max(0, goal.target - goalSaved(goal));
+    return { ok: false, reason: `${goal.name} only needs ${remaining} more.` };
+  }
 
   const stamp = now.toISOString();
   return {

@@ -25,10 +25,13 @@ export function RecycleBinView() {
   const permanentlyDeleteItem = useFinanceStore((state) => state.permanentlyDeleteRecycleItem);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
 
   async function restore(id: string) {
     setBusyId(id);
-    await restoreItem(id);
+    setRestoreError(null);
+    const result = await restoreItem(id);
+    if (!result.ok) setRestoreError(result.reason ?? "Could not restore this item.");
     setBusyId(null);
   }
 
@@ -60,6 +63,12 @@ export function RecycleBinView() {
           </Button>
         )}
       </div>
+
+      {restoreError && (
+        <p role="alert" className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
+          {restoreError}
+        </p>
+      )}
 
       {items.length === 0 ? (
         <EmptyState

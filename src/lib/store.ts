@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { accountDeletionBlocker } from "./account-references";
+import { accountDeletionBlocker, goalRestoreBlocker } from "./account-references";
 import {
   applyAllocation,
   reassignGoalAccounts,
@@ -113,7 +113,7 @@ interface FinanceState {
   deleteBudgetRule: (id: string) => void;
 
   // recycle bin
-  restoreRecycleItem: (id: string) => Promise<void>;
+  restoreRecycleItem: (id: string) => Promise<{ ok: boolean; reason?: string }>;
   permanentlyDeleteRecycleItem: (id: string) => Promise<void>;
 
   // salary history
@@ -425,6 +425,7 @@ export const useFinanceStore = create<FinanceState>()(
           goals: state.goals,
           investments: state.investments,
           transfers: state.accountTransfers,
+          recycleBin: state.recycleBin,
         });
         if (reason) return { ok: false, reason };
         set((state) => ({
@@ -550,14 +551,28 @@ export const useFinanceStore = create<FinanceState>()(
 
       restoreRecycleItem: async (id) => {
         const item = get().recycleBin.find((candidate) => candidate.id === id);
-        if (!item) return;
+        if (!item) return { ok: false, reason: "That recycled item no longer exists." };
 
         if (item.entityType === "expense") {
           const expense = item.data as unknown as Expense;
           if (expense.balanceApplied && expense.accountId) {
             const account = get().accounts.find((candidate) => candidate.id === expense.accountId);
-            if (!account || account.balance < expense.amount) return;
+            if (!account) {
+              return { ok: false, reason: "The linked payment account no longer exists." };
+            }
+            if (account.balance < expense.amount) {
+              return { ok: false, reason: `Only ${account.balance} remains in ${account.bankName}.` };
+            }
           }
+        }
+
+        if (item.entityType === "goal") {
+          const reason = goalRestoreBlocker(
+            item.data as unknown as Goal,
+            get().accounts,
+            get().goals,
+          );
+          if (reason) return { ok: false, reason };
         }
 
         if (item.entityType === "salary-history") {
@@ -567,11 +582,11 @@ export const useFinanceStore = create<FinanceState>()(
             credentials: "include",
             body: JSON.stringify(item.data),
           });
-          if (!response.ok) return;
+          if (!response.ok) return { ok: false, reason: "Could not restore the salary entry." };
           set((state) => ({ recycleBin: state.recycleBin.filter((entry) => entry.id !== id) }));
           await get().loadSalaryHistory();
           await get().syncWithServer();
-          return;
+          return { ok: true };
         }
 
         set((state) => {
@@ -635,6 +650,7 @@ export const useFinanceStore = create<FinanceState>()(
           }
         });
         await get().syncWithServer();
+        return { ok: true };
       },
 
       permanentlyDeleteRecycleItem: async (id) => {

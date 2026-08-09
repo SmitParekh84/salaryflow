@@ -30,6 +30,11 @@ not replace the app with a stock shadcn theme or add a second full design system
 
 ### Incremental migration order
 
+Status: this remains an incremental backlog, not a prerequisite for the shipped product. SalaryFlow
+currently uses source-owned shared components, with Radix-backed `Dialog`, `AlertDialog`, menus,
+popover, progress, select, and checkbox behavior where implemented. The remaining migration work is
+to standardize `Switch`, `Tooltip`, `Sonner`, `Command`, and remaining native control call sites.
+
 1. Initialize shadcn for the existing Tailwind v4 token system without resetting `globals.css`.
 2. Add `Checkbox`, `Select`, `DropdownMenu`, `Dialog`, `AlertDialog`, `Switch`, `Tooltip`, and
    `Sonner` first.
@@ -96,12 +101,12 @@ correctly spelled environment variable and finance-specific validation.
 ## Milestones
 
 1. [x] Scaffold + deps
-2. [ ] Design system (tokens, dark mode, shadcn primitives, Lucide icon standard)
-3. [ ] Types + calculations + store + seed
-4. [ ] UI primitives (migrate native selects, checkboxes, menus, dialogs, and feedback)
-5. [ ] App shell (sidebar/topbar/theme)
-6. [ ] Onboarding flow
-7. [ ] Dashboard
-8. [ ] Expenses / Goals / Bills / Investments / Analytics / Settings
-9. [ ] PWA (manifest + SW + icons)
-10. [ ] Build + verify
+2. [x] Design system foundation (tokens, dark mode, shared primitives, Lucide icon standard)
+3. [x] Types + calculations + store + seed
+4. [ ] Complete UI primitive migration (`Switch`, `Tooltip`, `Sonner`, `Command`, remaining native controls)
+5. [x] App shell (sidebar/topbar/theme)
+6. [x] Onboarding flow
+7. [x] Dashboard
+8. [x] Expenses / Goals / Bills / Investments / Analytics / Settings
+9. [x] PWA (manifest + SW + icons)
+10. [x] Build + verify

@@ -52,6 +52,7 @@ export function AllocationSheet({
   // lets the user choose where the money comes from.
   const lockAccount = amount !== undefined;
   const selectableAccounts = accounts.filter((candidate) => candidate.status === "active");
+  const fundableGoals = goals.filter((goal) => goalSaved(goal) < goal.target);
   const account = accounts.find((candidate) => candidate.id === selectedId);
   const freeNow = account ? accountFree(goals, account) : 0;
   const available = amount ?? freeNow;
@@ -65,10 +66,15 @@ export function AllocationSheet({
   const left = available - assigned;
 
   function setAmount(goalId: string, next: number) {
+    const goal = goals.find((candidate) => candidate.id === goalId);
+    const goalRemaining = goal ? Math.max(0, goal.target - goalSaved(goal)) : 0;
     const others = Object.entries(draft)
       .filter(([id]) => id !== goalId)
       .reduce((sum, [, value]) => sum + (value || 0), 0);
-    const clamped = Math.max(0, Math.min(Math.round(next) || 0, available - others));
+    const clamped = Math.max(
+      0,
+      Math.min(Math.round(next) || 0, available - others, goalRemaining),
+    );
     setDraft((current) => ({ ...current, [goalId]: clamped }));
     setError(null);
   }
@@ -121,13 +127,21 @@ export function AllocationSheet({
         </div>
       )}
 
+      <p className="mt-3 rounded-xl bg-surface-2 px-3 py-2.5 text-xs leading-relaxed text-muted">
+        Assigning reserves money already in this account. It updates goal progress but does not
+        count as Cash saved this cycle.
+      </p>
+
       <div className="mt-4 space-y-4">
         {goals.length === 0 && (
           <p className="text-sm text-muted">
             Create a goal first, then you can assign money to it.
           </p>
         )}
-        {goals.map((goal) => (
+        {goals.length > 0 && fundableGoals.length === 0 && (
+          <p className="text-sm text-muted">All goals are already fully funded.</p>
+        )}
+        {fundableGoals.map((goal) => (
           <div key={goal.id}>
             <Label htmlFor={`allocate-${goal.id}`}>{goal.name}</Label>
             <Input
@@ -135,12 +149,14 @@ export function AllocationSheet({
               type="number"
               inputMode="numeric"
               min={0}
+              max={Math.max(0, goal.target - goalSaved(goal))}
               value={draft[goal.id] || ""}
               onChange={(event) => setAmount(goal.id, Number(event.target.value))}
               placeholder="0"
             />
             <p className="mt-1 text-xs text-muted">
-              {formatMoney(goalSaved(goal), currency)} of {formatMoney(goal.target, currency)}
+              {formatMoney(goalSaved(goal), currency)} of {formatMoney(goal.target, currency)} ·{" "}
+              {formatMoney(goal.target - goalSaved(goal), currency)} remaining
             </p>
           </div>
         ))}

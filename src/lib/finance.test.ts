@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { accountDeletionBlocker } from "./account-references";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { accountDeletionBlocker, goalRestoreBlocker } from "./account-references";
 import {
   applyAllocation,
   reassignGoalAccounts,
@@ -24,7 +24,13 @@ import {
 } from "./financial-year";
 import { buildFundingPlan } from "./funding-plan";
 import { migrateGoalOpeningBalances } from "./goal-migration";
-import { monthsToGoal, projectGoal, whatIfDelta } from "./goal-projection";
+import {
+  goalContributionStep,
+  monthsToGoal,
+  projectGoal,
+  whatIfDelta,
+} from "./goal-projection";
+import { useFinanceStore } from "./store";
 import type {
   AccountTransfer,
   BankAccount,
@@ -210,6 +216,7 @@ describe("account deletion references", () => {
     goals: [],
     investments: [],
     transfers: [],
+    recycleBin: [],
   };
 
   it("allows an account with no finance references to be deleted", () => {
@@ -249,6 +256,146 @@ describe("account deletion references", () => {
     });
 
     expect(reason).toContain("transfers");
+  });
+
+  it("blocks deletion when a recycled goal still allocates money to the account", () => {
+    const reason = accountDeletionBlocker("save-a", {
+      ...emptyRecords,
+      recycleBin: [
+        {
+          id: "trash-goal",
+          entityType: "goal",
+          entityId: "goal",
+          label: "Bike",
+          deletedAt: "2026-08-10T12:00:00.000Z",
+          data: {
+            id: "goal",
+            name: "Bike",
+            type: "Bike",
+            target: 80_000,
+            saved: 0,
+            monthlyContribution: 5_000,
+            contributions: [
+              {
+                id: "allocation",
+                amount: 10_000,
+                date: "2026-08-10T12:00:00.000Z",
+                accountId: "save-a",
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    expect(reason).toContain("recycled records");
+  });
+});
+
+describe("goal restoration", () => {
+  const account: BankAccount = {
+    id: "save-a",
+    bankName: "Savings A",
+    accountType: "Savings",
+    balance: 10_000,
+    status: "active",
+  };
+  const recycledGoal: Goal = {
+    id: "bike",
+    name: "Bike",
+    type: "Bike",
+    target: 80_000,
+    saved: 0,
+    monthlyContribution: 5_000,
+    contributions: [
+      {
+        id: "bike-allocation",
+        amount: 6_000,
+        date: "2026-08-10T12:00:00.000Z",
+        accountId: "save-a",
+      },
+    ],
+  };
+
+  it("allows a goal restore when its allocations still fit", () => {
+    expect(goalRestoreBlocker(recycledGoal, [account], [])).toBeUndefined();
+  });
+
+  it("blocks a goal restore when other goals have claimed the free balance", () => {
+    const liveGoal: Goal = {
+      ...recycledGoal,
+      id: "emergency",
+      name: "Emergency",
+      contributions: [
+        {
+          id: "emergency-allocation",
+          amount: 5_000,
+          date: "2026-08-10T12:00:00.000Z",
+          accountId: "save-a",
+        },
+      ],
+    };
+
+    expect(goalRestoreBlocker(recycledGoal, [account], [liveGoal])).toContain("Only 5000");
+  });
+
+  it("blocks a goal restore when its account no longer exists", () => {
+    expect(goalRestoreBlocker(recycledGoal, [], [])).toContain("no longer exists");
+  });
+});
+
+describe("shared expense balance reversal", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("refunds on delete and reapplies on restore exactly once", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+    const sharedExpense: Expense = {
+      id: "shared-expense",
+      amount: 1_000,
+      category: "Food",
+      merchant: "Shared dinner",
+      paymentMethod: "UPI",
+      date: "2026-08-10T12:00:00.000Z",
+      accountId: "spend",
+      balanceApplied: true,
+      shared: {
+        totalAmount: 1_500,
+        friendName: "Friend",
+        userPaid: 1_000,
+        friendPaid: 500,
+      },
+    };
+
+    useFinanceStore.setState({
+      accounts: [
+        {
+          id: "spend",
+          bankName: "Spending",
+          accountType: "Salary",
+          balance: 9_000,
+          status: "active",
+        },
+      ],
+      expenses: [sharedExpense],
+      recycleBin: [],
+    });
+
+    useFinanceStore.getState().deleteExpense(sharedExpense.id);
+    expect(useFinanceStore.getState().accounts[0].balance).toBe(10_000);
+    expect(useFinanceStore.getState().expenses).toHaveLength(0);
+
+    useFinanceStore.getState().deleteExpense(sharedExpense.id);
+    expect(useFinanceStore.getState().accounts[0].balance).toBe(10_000);
+
+    const recycleId = useFinanceStore.getState().recycleBin[0].id;
+    expect((await useFinanceStore.getState().restoreRecycleItem(recycleId)).ok).toBe(true);
+    expect(useFinanceStore.getState().accounts[0].balance).toBe(9_000);
+    expect(useFinanceStore.getState().expenses).toHaveLength(1);
+
+    expect((await useFinanceStore.getState().restoreRecycleItem(recycleId)).ok).toBe(false);
+    expect(useFinanceStore.getState().accounts[0].balance).toBe(9_000);
   });
 });
 
@@ -1032,6 +1179,11 @@ describe("goal projection", () => {
   it("reports zero sooner when the what-if matches the current plan", () => {
     expect(whatIfDelta(bike, 8_000, now)?.monthsSooner).toBe(0);
   });
+
+  it("scales the what-if slider step to the monthly contribution", () => {
+    expect(goalContributionStep(300)).toBe(30);
+    expect(goalContributionStep(5_000)).toBe(500);
+  });
 });
 
 describe("allocation split merges repeated goals", () => {
@@ -1066,5 +1218,37 @@ describe("allocation split merges repeated goals", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(goalSaved(result.goals[0])).toBe(300);
+  });
+
+  it("rejects a split that would overfund a goal", () => {
+    const account: BankAccount = {
+      id: "union",
+      bankName: "Union Bank",
+      accountType: "Savings",
+      balance: 10_000,
+      status: "active",
+    };
+    const goal: Goal = {
+      id: "phone",
+      name: "Phone",
+      type: "Phone",
+      target: 5_000,
+      saved: 0,
+      monthlyContribution: 500,
+      contributions: [
+        { id: "existing", amount: 4_800, date: "2026-08-01", accountId: "union" },
+      ],
+    };
+
+    const result = applyAllocation(
+      [goal],
+      [account],
+      [{ goalId: "phone", amount: 500 }],
+      "union",
+      undefined,
+      new Date("2026-08-10T10:00:00.000Z"),
+    );
+
+    expect(result).toEqual({ ok: false, reason: "Phone only needs 200 more." });
   });
 });

@@ -44,3 +44,7 @@ export function whatIfDelta(
     monthsSooner: current === null ? 0 : Math.max(0, current - proposed.months),
   };
 }
+
+export function goalContributionStep(monthlyContribution: number): number {
+  return Math.max(1, Math.round(monthlyContribution / 10));
+}
