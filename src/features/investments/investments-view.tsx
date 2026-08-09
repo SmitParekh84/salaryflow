@@ -4,6 +4,7 @@ import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { CHART_COLORS } from "@/lib/theme";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Modal, ModalFooter } from "@/components/ui/modal";
 import { useSummary } from "@/hooks/use-summary";
@@ -80,14 +81,14 @@ export function InvestmentsView() {
           label="Total invested"
           value={formatMoney(totalInvested, currency, true)}
           icon={Coins}
-          accent="#f59e0b"
+          accent={CHART_COLORS.invest}
           hint={`${formatMoney(monthly, currency, true)}/mo SIP`}
         />
         <StatCard
           label="Total returns"
           value={formatMoney(gain, currency, true)}
           icon={TrendingUp}
-          accent={gain >= 0 ? "#22c55e" : "#ef4444"}
+          accent={gain >= 0 ? CHART_COLORS.gain : CHART_COLORS.loss}
           trend={Math.round(gainPct)}
         />
         <StatCard

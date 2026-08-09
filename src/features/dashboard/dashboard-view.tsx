@@ -4,6 +4,7 @@ import { CategoryIcon } from "@/components/category-icon";
 import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CHART_COLORS } from "@/lib/theme";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Progress } from "@/components/ui/progress";
 import { CashFlowChart, CategoryDonut, SpendTrendChart } from "@/features/analytics/charts";
@@ -103,7 +104,7 @@ export function DashboardView() {
           label="Total spent"
           value={formatMoney(summary.totalExpenses, currency, true)}
           icon={Receipt}
-          accent="#f97316"
+          accent={CHART_COLORS.expense}
           hint={`Includes card purchases · Fixed ${formatMoney(summary.fixedExpenses, currency, true)}`}
           delay={0.05}
         />
@@ -111,7 +112,7 @@ export function DashboardView() {
           label="Cash saved this cycle"
           value={formatMoney(summary.savedThisCycle, currency, true)}
           icon={PiggyBank}
-          accent="#22c55e"
+          accent={CHART_COLORS.savings}
           hint={`Target ${formatMoney(summary.savingsTarget, currency, true)} · ${
             summary.savingsEvidence === "account" ? "net savings-account activity" : "goal deposits"
           }`}
@@ -121,7 +122,7 @@ export function DashboardView() {
           label="Health score"
           value={`${summary.healthScore}/100`}
           icon={HeartPulse}
-          accent="#a855f7"
+          accent={CHART_COLORS.goal}
           hint={healthLabel(summary.healthScore)}
           delay={0.15}
         />

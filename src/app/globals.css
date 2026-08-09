@@ -2,40 +2,194 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ============================================================================
+   LAYER 1 — PALETTE
+   The only place raw color values are allowed to live. Change a value here and
+   it propagates through every semantic token, component and chart below.
+
+   Email templates cannot read CSS variables, so their palette is mirrored in
+   src/lib/theme.ts (EMAIL_COLORS). Update that file alongside this block.
+   ============================================================================ */
 :root {
-  --background: #f2f2f7;
-  --surface: #ffffff;
-  --surface-2: #f2f2f7;
-  --foreground: #1d1d1f;
-  --muted: #6e6e73;
+  /* Brand — teal, taken from the SalaryFlow app icon */
+  --brand-50: #e8f8f3;
+  --brand-100: #c6ede1;
+  --brand-200: #8fdcc5;
+  --brand-300: #4fc9a8;
+  --brand-400: #21d9aa;
+  --brand-500: #079875;
+  --brand-600: #07836a;
+  --brand-700: #0a6f57;
+  --brand-800: #085644;
+  --brand-900: #063d31;
+
+  /* Brand ink — navy from the app icon backplate */
+  --ink-700: #102746;
+  --ink-800: #07182f;
+  --ink-900: #041327;
+
+  /* Neutrals — iOS system greys */
+  --grey-0: #ffffff;
+  --grey-50: #f2f2f7;
+  --grey-500: #6e6e73;
+  --grey-900: #1d1d1f;
+  --grey-dark-0: #000000;
+  --grey-dark-50: #1c1c1e;
+  --grey-dark-100: #2c2c2e;
+  --grey-dark-500: #a1a1a6;
+  --grey-dark-900: #f5f5f7;
+
+  /* Status */
+  --green-500: #16a34a;
+  --green-400: #34d399;
+  --amber-500: #d97706;
+  --amber-400: #fbbf24;
+  --red-500: #dc2626;
+  --red-400: #f87171;
+
+  /* Data — category and chart series hues.
+     Deliberately shared between light and dark: these are mid-chroma tones
+     that hold up on both grounds, and 20 hand-tuned dark variants would be a
+     maintenance burden with no legibility gain. */
+  --hue-orange: #f97316;
+  --hue-green: #22c55e;
+  --hue-red: #ef4444;
+  --hue-sky: #0ea5e9;
+  --hue-pink: #ec4899;
+  --hue-purple: #a855f7;
+  --hue-indigo: #6366f1;
+  --hue-amber: #f59e0b;
+  --hue-teal: #14b8a6;
+  --hue-cyan: #0891b2;
+  --hue-blue: #3b82f6;
+  --hue-rose: #e11d48;
+  --hue-violet: #8b5cf6;
+  --hue-emerald: #10b981;
+  --hue-crimson: #f43f5e;
+  --hue-lime: #84cc16;
+  --hue-aqua: #06b6d4;
+  --hue-fuchsia: #d946ef;
+  --hue-slate: #64748b;
+  --hue-grey: #94a3b8;
+}
+
+/* ============================================================================
+   LAYER 2 — SEMANTIC TOKENS
+   What the UI actually consumes. Never reference LAYER 1 outside this file.
+   ============================================================================ */
+:root {
+  --background: var(--grey-50);
+  --surface: var(--grey-0);
+  --surface-2: var(--grey-50);
+  --foreground: var(--grey-900);
+  --muted: var(--grey-500);
   --border: rgba(60, 60, 67, 0.14);
-  --primary: #4f46e5;
-  --primary-foreground: #ffffff;
-  --success: #16a34a;
-  --warning: #d97706;
-  --danger: #dc2626;
-  --ring: rgba(79, 70, 229, 0.35);
+
+  /* brand-600, not brand-500: it clears 4.5:1 against white for button labels
+     and inline links, where the lighter logo teal does not. */
+  --primary: var(--brand-600);
+  --primary-foreground: var(--grey-0);
+  --primary-hover: var(--brand-700);
+  --accent: var(--brand-500);
+
+  --success: var(--green-500);
+  --warning: var(--amber-500);
+  --danger: var(--red-500);
+  --ring: color-mix(in srgb, var(--brand-600) 35%, transparent);
+
   --glass: rgba(255, 255, 255, 0.82);
   --glass-border: transparent;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 8px rgba(0, 0, 0, 0.035);
+
+  /* Gradients */
+  --brand-gradient: linear-gradient(90deg, var(--brand-600), var(--brand-400));
+  --success-gradient: linear-gradient(90deg, var(--success), var(--brand-400));
+
+  /* Auth surfaces */
+  --auth-glow: color-mix(in srgb, var(--brand-400) 16%, transparent);
+  --auth-wash-warm: color-mix(in srgb, var(--surface) 94%, var(--brand-50));
+  --auth-wash-deep: color-mix(in srgb, var(--brand-700) 7%, var(--background));
+  --auth-showcase-glow: color-mix(in srgb, var(--brand-400) 20%, transparent);
+  --auth-showcase-from: var(--ink-700);
+  --auth-showcase-via: var(--ink-800);
+  --auth-showcase-to: var(--ink-900);
+  --auth-showcase-orb: color-mix(in srgb, var(--brand-500) 22%, transparent);
+  --auth-surface-bg: color-mix(in srgb, var(--surface) 78%, transparent);
+  --auth-surface-border: color-mix(in srgb, var(--grey-0) 50%, var(--border));
+  --auth-surface-sheen: rgba(255, 255, 255, 0.5);
+  --auth-surface-shadow: 0 24px 70px rgba(10, 30, 48, 0.1), 0 3px 12px rgba(10, 30, 48, 0.05);
+
+  /* Chart series */
+  --chart-income: var(--primary);
+  --chart-expense: var(--hue-orange);
+  --chart-savings: var(--success);
+  --chart-invest: var(--hue-amber);
+  --chart-goal: var(--hue-purple);
+  --chart-gain: var(--hue-green);
+  --chart-loss: var(--hue-red);
+
+  /* Expense categories */
+  --cat-food: var(--hue-orange);
+  --cat-groceries: var(--hue-green);
+  --cat-fuel: var(--hue-red);
+  --cat-travel: var(--hue-sky);
+  --cat-shopping: var(--hue-pink);
+  --cat-entertainment: var(--hue-purple);
+  --cat-emi: var(--hue-indigo);
+  --cat-rent: var(--hue-amber);
+  --cat-utilities: var(--hue-teal);
+  --cat-mobile: var(--hue-cyan);
+  --cat-insurance: var(--hue-blue);
+  --cat-medical: var(--hue-rose);
+  --cat-education: var(--hue-violet);
+  --cat-investment: var(--hue-emerald);
+  --cat-subscriptions: var(--hue-crimson);
+  --cat-pets: var(--hue-lime);
+  --cat-family: var(--hue-aqua);
+  --cat-personal-care: var(--hue-fuchsia);
+  --cat-business: var(--hue-slate);
+  --cat-other: var(--hue-grey);
 }
 
 .dark {
-  --background: #000000;
-  --surface: #1c1c1e;
-  --surface-2: #2c2c2e;
-  --foreground: #f5f5f7;
-  --muted: #a1a1a6;
+  --background: var(--grey-dark-0);
+  --surface: var(--grey-dark-50);
+  --surface-2: var(--grey-dark-100);
+  --foreground: var(--grey-dark-900);
+  --muted: var(--grey-dark-500);
   --border: rgba(84, 84, 88, 0.5);
-  --primary: #7c73ff;
-  --primary-foreground: #ffffff;
-  --success: #34d399;
-  --warning: #fbbf24;
-  --danger: #f87171;
-  --ring: rgba(124, 115, 255, 0.4);
+
+  /* Apple's dark-mode pattern: the accent gets brighter, its label goes dark.
+     A darker teal would read as muddy against a black ground. */
+  --primary: var(--brand-400);
+  --primary-foreground: #04241d;
+  --primary-hover: var(--brand-300);
+  --accent: var(--brand-400);
+
+  --success: var(--green-400);
+  --warning: var(--amber-400);
+  --danger: var(--red-400);
+  --ring: color-mix(in srgb, var(--brand-400) 40%, transparent);
+
   --glass: rgba(28, 28, 30, 0.82);
   --glass-border: transparent;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 4px 8px rgba(0, 0, 0, 0.2);
+
+  --brand-gradient: linear-gradient(90deg, var(--brand-400), var(--brand-200));
+  --success-gradient: linear-gradient(90deg, var(--success), var(--brand-300));
+
+  --auth-glow: color-mix(in srgb, var(--brand-500) 22%, transparent);
+  --auth-wash-warm: color-mix(in srgb, var(--surface) 88%, var(--brand-900));
+  --auth-wash-deep: color-mix(in srgb, var(--ink-900) 70%, var(--background));
+  --auth-showcase-glow: color-mix(in srgb, var(--brand-500) 24%, transparent);
+  --auth-showcase-from: var(--ink-800);
+  --auth-showcase-via: var(--ink-900);
+  --auth-showcase-to: var(--grey-dark-0);
+  --auth-showcase-orb: color-mix(in srgb, var(--brand-500) 18%, transparent);
+  --auth-surface-bg: color-mix(in srgb, var(--surface) 72%, transparent);
+  --auth-surface-border: color-mix(in srgb, var(--grey-dark-900) 12%, var(--border));
+  --auth-surface-sheen: rgba(255, 255, 255, 0.06);
+  --auth-surface-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), 0 3px 12px rgba(0, 0, 0, 0.4);
 }
 
 @theme inline {
@@ -47,6 +201,7 @@
   --color-border: var(--border);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
@@ -69,6 +224,17 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Apple HIG §Response: nothing on the input path that isn't essential.
+   `touch-action: manipulation` removes the ~300ms double-tap delay, and killing
+   the tap highlight lets each component own its own press feedback. */
+button,
+a,
+label,
+[role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .glass {
   background: var(--glass);
   backdrop-filter: blur(20px) saturate(140%);
@@ -79,19 +245,20 @@ body {
   box-shadow: var(--shadow);
 }
 
+/* ============================================================================
+   Auth surfaces
+   ============================================================================ */
 .auth-background {
-  --primary: #079875;
-  --ring: rgba(7, 152, 117, 0.28);
   background-color: var(--background);
   background-image:
-    radial-gradient(circle at 82% 7%, color-mix(in srgb, #21d9aa 16%, transparent) 0, transparent 36%),
-    linear-gradient(145deg, color-mix(in srgb, var(--surface) 94%, #d8fff5) 0%, var(--background) 58%, color-mix(in srgb, #0b896c 7%, var(--background)) 100%);
+    radial-gradient(circle at 82% 7%, var(--auth-glow) 0, transparent 36%),
+    linear-gradient(145deg, var(--auth-wash-warm) 0%, var(--background) 58%, var(--auth-wash-deep) 100%);
 }
 
 .auth-showcase {
   background:
-    radial-gradient(circle at 82% 18%, rgba(40, 223, 177, 0.2) 0, transparent 30%),
-    linear-gradient(145deg, #102746 0%, #07182f 52%, #041327 100%);
+    radial-gradient(circle at 82% 18%, var(--auth-showcase-glow) 0, transparent 30%),
+    linear-gradient(145deg, var(--auth-showcase-from) 0%, var(--auth-showcase-via) 52%, var(--auth-showcase-to) 100%);
 }
 
 .auth-showcase::after {
@@ -101,7 +268,7 @@ body {
   width: 32rem;
   height: 32rem;
   border-radius: 50%;
-  background: rgba(10, 181, 137, 0.12);
+  background: var(--auth-showcase-orb);
   filter: blur(1px);
   pointer-events: none;
 }
@@ -119,28 +286,43 @@ body {
 
 @media (min-width: 64rem) {
   .auth-form-surface {
-    border: 1px solid color-mix(in srgb, white 50%, var(--border));
+    border: 1px solid var(--auth-surface-border);
     border-radius: 1.75rem;
-    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    background: var(--auth-surface-bg);
     box-shadow:
-      0 1px 1px rgba(255, 255, 255, 0.5) inset,
-      0 24px 70px rgba(10, 30, 48, 0.1),
-      0 3px 12px rgba(10, 30, 48, 0.05);
+      0 1px 1px var(--auth-surface-sheen) inset,
+      var(--auth-surface-shadow);
     backdrop-filter: blur(28px) saturate(165%);
     -webkit-backdrop-filter: blur(28px) saturate(165%);
   }
 }
 
+/* Apple HIG: translucent surfaces go frosty-solid, never disappear. */
 @media (prefers-reduced-transparency: reduce) {
 
   .auth-form-surface,
-  .auth-segment {
+  .auth-segment,
+  .glass {
     background: var(--surface);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
 }
 
+@media (prefers-contrast: more) {
+
+  .auth-form-surface,
+  .auth-segment {
+    background: var(--surface);
+    border-color: var(--foreground);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* ============================================================================
+   Scrollbars
+   ============================================================================ */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -162,6 +344,9 @@ body {
   background-clip: content-box;
 }
 
+/* ============================================================================
+   Motion
+   ============================================================================ */
 @keyframes shimmer {
   100% {
     transform: translateX(100%);
@@ -199,4 +384,23 @@ body {
 
 .floaty {
   animation: floaty 6s ease-in-out infinite;
+}
+
+/* Apple HIG: reduced motion means a gentler equivalent, not a dead interface.
+   Opacity and color feedback survive; travel and looping oscillation do not. */
+@media (prefers-reduced-motion: reduce) {
+
+  .floaty,
+  .shimmer::after {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.12s !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -2,6 +2,7 @@
 
 import { CATEGORY_META } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
+import { FALLBACK_CATEGORY_COLOR } from "@/lib/theme";
 import type {
   CategoryIconName,
   CustomCategory,
@@ -110,7 +111,7 @@ export function getCategoryColor(
   return (
     defaultMeta?.color ??
     customCategories.find((item) => item.name === category)?.color ??
-    "#94a3b8"
+    FALLBACK_CATEGORY_COLOR
   );
 }
 

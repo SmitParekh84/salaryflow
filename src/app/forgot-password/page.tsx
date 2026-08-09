@@ -58,9 +58,9 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-gray-900">
+    <div className="auth-background flex min-h-dvh items-center justify-center px-5 py-10">
       <Card className="w-full max-w-md p-6">
-        <h1 className="text-2xl font-semibold mb-4">Reset password</h1>
+        <h1 className="mb-4 text-2xl font-semibold tracking-[-0.02em]">Reset password</h1>
         {step === "send" ? (
           <form onSubmit={send} className="space-y-4">
             <div>
@@ -72,7 +72,7 @@ export default function ForgotPasswordPage() {
                 type="email"
               />
             </div>
-            {error && <div className="text-sm text-red-600">{error}</div>}
+            {error && <div role="alert" className="rounded-xl bg-danger/10 px-3 py-2.5 text-sm text-danger">{error}</div>}
             <div>
               <Button className="w-full" disabled={loading}>
                 {loading ? "Sending…" : "Send reset code"}
@@ -108,7 +108,7 @@ export default function ForgotPasswordPage() {
               />
               <p className="mt-2 text-xs text-muted">Use at least 12 characters.</p>
             </div>
-            {error && <div className="text-sm text-red-600">{error}</div>}
+            {error && <div role="alert" className="rounded-xl bg-danger/10 px-3 py-2.5 text-sm text-danger">{error}</div>}
             <div>
               <Button className="w-full" disabled={loading}>
                 {loading ? "Resetting…" : "Reset password"}

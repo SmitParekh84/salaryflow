@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { useSummary } from "@/hooks/use-summary";
 import { CATEGORIES, COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
+import { PICKER_DEFAULT_COLOR } from "@/lib/theme";
 import { download, exportExpensesCsv } from "@/lib/export";
 import {
   availableFinancialYears,
@@ -114,7 +115,7 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
   const [preferencesSaved, setPreferencesSaved] = useState(false);
   const [categoryName, setCategoryName] = useState("");
   const [categoryIcon, setCategoryIcon] = useState<CategoryIconName>("package");
-  const [categoryColor, setCategoryColor] = useState("#0ea5e9");
+  const [categoryColor, setCategoryColor] = useState<string>(PICKER_DEFAULT_COLOR);
   const [categoryError, setCategoryError] = useState("");
   const currentFinancialYear = currentFinancialYearStart();
   const selectedFinancialYear = profile.financialYearStart ?? currentFinancialYear;

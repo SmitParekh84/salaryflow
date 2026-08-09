@@ -2,6 +2,7 @@
 
 import { StatCard } from "@/components/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CHART_COLORS } from "@/lib/theme";
 import {
   CategoryDonut,
   IncomeExpenseBars,
@@ -65,19 +66,19 @@ export function AnalyticsView() {
           label="Cycle expenses"
           value={formatMoney(summary.totalExpenses, currency, true)}
           icon={TrendingDown}
-          accent="#f97316"
+          accent={CHART_COLORS.expense}
         />
         <StatCard
           label="Savings rate"
           value={`${Math.round(summary.savingsRate)}%`}
           icon={PiggyBank}
-          accent="#22c55e"
+          accent={CHART_COLORS.savings}
         />
         <StatCard
           label="Avg / day"
           value={formatMoney(avgDaily, currency, true)}
           icon={ArrowLeftRight}
-          accent="#a855f7"
+          accent={CHART_COLORS.goal}
         />
       </div>
 

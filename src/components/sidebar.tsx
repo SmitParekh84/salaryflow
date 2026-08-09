@@ -15,11 +15,11 @@ import {
   Trash2,
   TrendingUp,
   Users,
-  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Brand } from "./brand";
 import { Card } from "./ui/card";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -44,14 +44,12 @@ export function Sidebar() {
       aria-label="Primary navigation"
       className="hidden lg:flex fixed inset-y-0 left-0 z-30 w-64 flex-col border-r border-border bg-surface/60 backdrop-blur-xl px-4 py-6"
     >
-      <Link href="/dashboard" className="mb-8 flex items-center gap-2.5 px-2">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
-          <Wallet className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="text-sm font-bold leading-tight">SalaryFlow</p>
-          <p className="text-[10px] text-muted">Spend with clarity</p>
-        </div>
+      <Link
+        href="/dashboard"
+        aria-label="SalaryFlow dashboard"
+        className="mb-8 flex items-center rounded-xl px-2 py-1 outline-none transition-transform duration-150 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-(--ring)"
+      >
+        <Brand tagline="Spend with clarity" />
       </Link>
 
       <nav className="flex flex-1 flex-col gap-1">

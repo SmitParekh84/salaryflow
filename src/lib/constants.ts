@@ -1,26 +1,28 @@
+import { CATEGORY_COLORS } from "./theme";
 import type { DefaultExpenseCategory, GoalType, InvestmentType, PaymentMethod } from "./types";
 
+/** Swatches resolve from globals.css tokens — see src/lib/theme.ts. */
 export const CATEGORY_META: Record<DefaultExpenseCategory, { color: string }> = {
-  Food: { color: "#f97316" },
-  Groceries: { color: "#22c55e" },
-  Fuel: { color: "#ef4444" },
-  Travel: { color: "#0ea5e9" },
-  Shopping: { color: "#ec4899" },
-  Entertainment: { color: "#a855f7" },
-  EMI: { color: "#6366f1" },
-  Rent: { color: "#f59e0b" },
-  Utilities: { color: "#14b8a6" },
-  "Mobile & Internet": { color: "#0891b2" },
-  Insurance: { color: "#3b82f6" },
-  Medical: { color: "#e11d48" },
-  Education: { color: "#8b5cf6" },
-  Investment: { color: "#10b981" },
-  Subscriptions: { color: "#f43f5e" },
-  Pets: { color: "#84cc16" },
-  Family: { color: "#06b6d4" },
-  "Personal Care": { color: "#d946ef" },
-  Business: { color: "#64748b" },
-  Other: { color: "#94a3b8" },
+  Food: { color: CATEGORY_COLORS.food },
+  Groceries: { color: CATEGORY_COLORS.groceries },
+  Fuel: { color: CATEGORY_COLORS.fuel },
+  Travel: { color: CATEGORY_COLORS.travel },
+  Shopping: { color: CATEGORY_COLORS.shopping },
+  Entertainment: { color: CATEGORY_COLORS.entertainment },
+  EMI: { color: CATEGORY_COLORS.emi },
+  Rent: { color: CATEGORY_COLORS.rent },
+  Utilities: { color: CATEGORY_COLORS.utilities },
+  "Mobile & Internet": { color: CATEGORY_COLORS.mobile },
+  Insurance: { color: CATEGORY_COLORS.insurance },
+  Medical: { color: CATEGORY_COLORS.medical },
+  Education: { color: CATEGORY_COLORS.education },
+  Investment: { color: CATEGORY_COLORS.investment },
+  Subscriptions: { color: CATEGORY_COLORS.subscriptions },
+  Pets: { color: CATEGORY_COLORS.pets },
+  Family: { color: CATEGORY_COLORS.family },
+  "Personal Care": { color: CATEGORY_COLORS.personalCare },
+  Business: { color: CATEGORY_COLORS.business },
+  Other: { color: CATEGORY_COLORS.other },
 };
 
 export const CATEGORIES = Object.keys(CATEGORY_META) as DefaultExpenseCategory[];

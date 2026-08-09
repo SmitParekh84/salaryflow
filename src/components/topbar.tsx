@@ -168,7 +168,7 @@ export function TopBar({
           <Button
             variant="ghost"
             size="icon"
-            className="bg-linear-to-br from-primary to-primary/60 text-sm font-bold text-white hover:opacity-90"
+            className="bg-linear-to-br from-primary to-primary/60 text-sm font-bold text-primary-foreground hover:opacity-90"
             aria-label="Account menu"
           >
             {initials}

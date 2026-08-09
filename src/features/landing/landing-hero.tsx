@@ -1,5 +1,6 @@
 "use client";
 
+import { Brand } from "@/components/brand";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -52,12 +53,7 @@ export function LandingHero() {
   return (
     <div className="relative min-h-screen overflow-hidden">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
-            <Wallet className="h-5 w-5" />
-          </div>
-          <span className="text-base font-bold">SalaryFlow</span>
-        </div>
+        <Brand size="lg" />
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Link href="/dashboard">
@@ -87,7 +83,7 @@ export function LandingHero() {
             className="mx-auto max-w-3xl text-balance text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl"
           >
             Always know how much you can{" "}
-            <span className="bg-gradient-to-r from-primary to-fuchsia-500 bg-clip-text text-transparent">
+            <span className="bg-clip-text text-transparent [background-image:var(--brand-gradient)]">
               safely spend today
             </span>
           </motion.h1>
@@ -132,7 +128,7 @@ export function LandingHero() {
                 ₹1,240
               </p>
               <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-surface-2">
-                <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-success to-emerald-400" />
+                <div className="h-full w-2/3 rounded-full [background-image:var(--success-gradient)]" />
               </div>
               <div className="mt-4 flex items-center justify-between text-xs text-muted">
                 <span>12 days to salary</span>

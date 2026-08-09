@@ -1,11 +1,12 @@
 "use client";
 
+import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Input, Label } from "@/components/ui/input";
 import { useAuth } from "@/lib/useAuth";
 import { cn } from "@/lib/utils";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Eye, EyeOff, LockKeyhole, MailCheck } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -43,6 +44,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
 function AuthContent({ mode }: { mode: AuthMode }) {
   const searchParams = useSearchParams();
   const [signupStep, setSignupStep] = useState<SignupStep>("identity");
+  const [direction, setDirection] = useState<1 | -1>(1);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -58,6 +60,13 @@ function AuthContent({ mode }: { mode: AuthMode }) {
   const requestedPath = searchParams.get("next");
   const nextPath =
     requestedPath?.startsWith("/") && !requestedPath.startsWith("//") ? requestedPath : undefined;
+
+  // Spatial consistency: steps enter from the side they are travelling toward,
+  // and a step reversed out of leaves the way it came in.
+  function goToStep(next: SignupStep, nextDirection: 1 | -1) {
+    setDirection(nextDirection);
+    setSignupStep(next);
+  }
 
   useEffect(() => {
     if (resendTimer <= 0) return;
@@ -89,7 +98,7 @@ function AuthContent({ mode }: { mode: AuthMode }) {
       setError("Enter a valid email address");
       return;
     }
-    setSignupStep("password");
+    goToStep("password", 1);
   }
 
   function validateNewPassword() {
@@ -110,7 +119,7 @@ function AuthContent({ mode }: { mode: AuthMode }) {
     });
     const json = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(json?.error || "Unable to send verification code");
-    setSignupStep("verify");
+    goToStep("verify", 1);
     setResendTimer(60);
   }
 
@@ -176,7 +185,7 @@ function AuthContent({ mode }: { mode: AuthMode }) {
   return (
     <main className="auth-background min-h-dvh lg:grid lg:grid-cols-[minmax(24rem,0.92fr)_minmax(30rem,1.08fr)]">
       <section className="auth-showcase relative hidden overflow-hidden px-12 py-14 text-white lg:flex lg:flex-col lg:justify-between xl:px-16">
-        <Brand />
+        <Brand size="lg" />
         <div className="relative max-w-md">
           <p className="text-[2.5rem] font-semibold leading-[1.08] tracking-[-0.025em]">
             Your salary cycle, ready where you left it.
@@ -210,7 +219,7 @@ function AuthContent({ mode }: { mode: AuthMode }) {
       <section className="flex min-h-dvh flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-8 lg:items-center lg:justify-center lg:px-12">
         <div className="auth-form-surface mx-auto flex w-full max-w-md flex-1 flex-col lg:flex-none lg:p-7 xl:p-8">
           <div className="lg:hidden">
-            <Brand />
+            <Brand size="lg" />
           </div>
 
           <nav
@@ -252,65 +261,107 @@ function AuthContent({ mode }: { mode: AuthMode }) {
             <p className="mt-2 text-sm leading-relaxed text-muted">{description}</p>
           </div>
 
-          {mode === "signin" ? (
-            <SignInForm
-              email={email}
-              setEmail={setEmail}
-              password={password}
-              setPassword={setPassword}
-              remember={remember}
-              setRemember={setRemember}
-              showPassword={showPassword}
-              setShowPassword={setShowPassword}
-              loading={loading}
-              error={error}
-              onSubmit={submitSignIn}
-            />
-          ) : signupStep === "identity" ? (
-            <IdentityForm
-              name={name}
-              setName={setName}
-              email={email}
-              setEmail={setEmail}
-              error={error}
-              onSubmit={continueToPassword}
-            />
-          ) : signupStep === "password" ? (
-            <PasswordForm
-              password={password}
-              setPassword={setPassword}
-              confirmPassword={confirmPassword}
-              setConfirmPassword={setConfirmPassword}
-              showPassword={showPassword}
-              setShowPassword={setShowPassword}
-              strength={strength}
-              loading={loading}
-              error={error}
-              onSubmit={submitPassword}
-              onBack={() => {
-                setError(null);
-                setSignupStep("identity");
-              }}
-            />
-          ) : (
-            <VerificationForm
-              email={email}
-              otp={otp}
-              setOtp={setOtp}
-              loading={loading}
-              error={error}
-              resendTimer={resendTimer}
-              onSubmit={verifyAccount}
-              onResend={resendCode}
-              onBack={() => {
-                setError(null);
-                setSignupStep("password");
-              }}
-            />
-          )}
+          <AuthStep stepKey={mode === "signin" ? "signin" : signupStep} direction={direction}>
+            {mode === "signin" ? (
+              <SignInForm
+                email={email}
+                setEmail={setEmail}
+                password={password}
+                setPassword={setPassword}
+                remember={remember}
+                setRemember={setRemember}
+                showPassword={showPassword}
+                setShowPassword={setShowPassword}
+                loading={loading}
+                error={error}
+                onSubmit={submitSignIn}
+              />
+            ) : signupStep === "identity" ? (
+              <IdentityForm
+                name={name}
+                setName={setName}
+                email={email}
+                setEmail={setEmail}
+                error={error}
+                onSubmit={continueToPassword}
+              />
+            ) : signupStep === "password" ? (
+              <PasswordForm
+                password={password}
+                setPassword={setPassword}
+                confirmPassword={confirmPassword}
+                setConfirmPassword={setConfirmPassword}
+                showPassword={showPassword}
+                setShowPassword={setShowPassword}
+                strength={strength}
+                loading={loading}
+                error={error}
+                onSubmit={submitPassword}
+                onBack={() => {
+                  setError(null);
+                  goToStep("identity", -1);
+                }}
+              />
+            ) : (
+              <VerificationForm
+                email={email}
+                otp={otp}
+                setOtp={setOtp}
+                loading={loading}
+                error={error}
+                resendTimer={resendTimer}
+                onSubmit={verifyAccount}
+                onResend={resendCode}
+                onBack={() => {
+                  setError(null);
+                  goToStep("password", -1);
+                }}
+              />
+            )}
+          </AuthStep>
         </div>
       </section>
     </main>
+  );
+}
+
+/**
+ * Signup steps travel along a consistent axis: forward enters from the right,
+ * Back re-enters from the left along the same path it left by. The spring is
+ * critically damped (bounce 0) because nothing here carries user momentum —
+ * overshoot on a form that simply appeared would read as noise.
+ *
+ * Exit is deliberately faster than enter so the swap never feels like waiting.
+ * Under reduced motion the travel is dropped and only the cross-fade remains.
+ */
+function AuthStep({
+  stepKey,
+  direction,
+  children,
+}: {
+  stepKey: string;
+  direction: 1 | -1;
+  children: React.ReactNode;
+}) {
+  const reduceMotion = useReducedMotion();
+  const travel = reduceMotion ? 0 : 24 * direction;
+
+  return (
+    <AnimatePresence mode="wait" initial={false} custom={direction}>
+      <motion.div
+        key={stepKey}
+        custom={direction}
+        initial={{ opacity: 0, x: travel }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -travel }}
+        transition={{
+          x: { type: "spring", bounce: 0, duration: 0.35 },
+          opacity: { duration: 0.18, ease: "easeOut" },
+        }}
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -564,22 +615,6 @@ function SignupProgress({ step }: { step: SignupStep }) {
   );
 }
 
-function Brand() {
-  return (
-    <div className="relative flex items-center gap-3 text-sm font-semibold">
-      <Image
-        src="/icons/icon-192.png"
-        width={40}
-        height={40}
-        priority
-        alt=""
-        className="h-10 w-10"
-      />
-      <span className="tracking-[-0.01em]">SalaryFlow</span>
-    </div>
-  );
-}
-
 function EmailField({ email, setEmail }: { email: string; setEmail: (value: string) => void }) {
   return (
     <div>
@@ -694,7 +729,9 @@ function AuthError({ message }: { message: string }) {
 function FlowStep({ number, title, detail }: { number: string; title: string; detail: string }) {
   return (
     <div className="flex gap-4">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background/10 text-xs font-semibold">
+      {/* The showcase panel is dark in both themes, so this badge keys off white
+          rather than --background, which would go invisible in dark mode. */}
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold">
         {number}
       </span>
       <div>

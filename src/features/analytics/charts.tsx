@@ -2,6 +2,7 @@
 
 import { getCategoryColor } from "@/components/category-icon";
 import { financialYearMonths } from "@/lib/financial-year";
+import { CHART_COLORS } from "@/lib/theme";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense, Income, SalaryHistoryEntry } from "@/lib/types";
 import { formatMoney, parseFinancialDate } from "@/lib/utils";
@@ -163,7 +164,7 @@ export function CashFlowChart({
           wrapperStyle={{ fontSize: 11 }}
         />
         <Bar dataKey="inflow" fill="var(--success)" radius={[5, 5, 0, 0]} maxBarSize={34} />
-        <Bar dataKey="outflow" fill="#f97316" radius={[5, 5, 0, 0]} maxBarSize={34} />
+        <Bar dataKey="outflow" fill={CHART_COLORS.expense} radius={[5, 5, 0, 0]} maxBarSize={34} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -250,7 +251,7 @@ export function IncomeExpenseBars({
 }) {
   const data = [
     { name: "Income", value: Math.round(income), color: "var(--primary)" },
-    { name: "Expenses", value: Math.round(expenses), color: "#f97316" },
+    { name: "Expenses", value: Math.round(expenses), color: CHART_COLORS.expense },
     { name: "Savings", value: Math.round(savings), color: "var(--success)" },
   ];
   return (
@@ -310,7 +311,7 @@ export function MonthlyBars({
         />
         <Legend wrapperStyle={{ fontSize: 11 }} />
         <Bar dataKey="income" name="Income" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-        <Bar dataKey="expense" name="Expense" fill="#f97316" radius={[6, 6, 0, 0]} />
+        <Bar dataKey="expense" name="Expense" fill={CHART_COLORS.expense} radius={[6, 6, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

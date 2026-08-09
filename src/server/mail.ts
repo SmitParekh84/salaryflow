@@ -1,3 +1,4 @@
+import { EMAIL_COLORS } from "@/lib/theme";
 import nodemailer from "nodemailer";
 
 type OtpEmailOptions = {
@@ -70,32 +71,32 @@ function createOtpEmail({ code, purpose, expiresInMinutes }: OtpEmailOptions) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>${title}</title>
   </head>
-  <body style="margin:0;background:#f2f2f7;color:#1d1d1f;font-family:Arial,sans-serif;">
+  <body style="margin:0;background:${EMAIL_COLORS.background};color:${EMAIL_COLORS.foreground};font-family:Arial,sans-serif;">
     <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${preheader}</div>
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f2f2f7;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:${EMAIL_COLORS.background};">
       <tr>
         <td align="center" style="padding:32px 16px;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:520px;background:#ffffff;border:1px solid #e5e5ea;border-radius:12px;overflow:hidden;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:520px;background:${EMAIL_COLORS.surface};border:1px solid ${EMAIL_COLORS.border};border-radius:12px;overflow:hidden;">
             <tr>
               <td style="padding:28px 32px 18px;">
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                   <tr>
-                    <td align="center" width="36" height="36" style="width:36px;height:36px;border-radius:8px;background:#4f46e5;color:#ffffff;font-size:17px;font-weight:700;">S</td>
-                    <td style="padding-left:10px;font-size:16px;font-weight:700;color:#1d1d1f;">SalaryFlow</td>
+                    <td align="center" width="36" height="36" style="width:36px;height:36px;border-radius:8px;background:${EMAIL_COLORS.brand};color:${EMAIL_COLORS.brandOn};font-size:17px;font-weight:700;">S</td>
+                    <td style="padding-left:10px;font-size:16px;font-weight:700;color:${EMAIL_COLORS.foreground};">SalaryFlow</td>
                   </tr>
                 </table>
               </td>
             </tr>
             <tr>
               <td style="padding:10px 32px 32px;">
-                <h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:#1d1d1f;">${title}</h1>
-                <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#6e6e73;">Use this verification code to ${action}.</p>
-                <div style="padding:20px;border-radius:10px;background:#f2f2f7;text-align:center;font-family:'Courier New',monospace;font-size:32px;font-weight:700;line-height:1;letter-spacing:8px;color:#1d1d1f;">${safeCode}</div>
-                <p style="margin:20px 0 0;font-size:13px;line-height:1.6;color:#6e6e73;">This code expires in ${expiresInMinutes} minutes. If you did not request it, you can safely ignore this email.</p>
+                <h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:${EMAIL_COLORS.foreground};">${title}</h1>
+                <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:${EMAIL_COLORS.muted};">Use this verification code to ${action}.</p>
+                <div style="padding:20px;border-radius:10px;background:${EMAIL_COLORS.background};text-align:center;font-family:'Courier New',monospace;font-size:32px;font-weight:700;line-height:1;letter-spacing:8px;color:${EMAIL_COLORS.foreground};">${safeCode}</div>
+                <p style="margin:20px 0 0;font-size:13px;line-height:1.6;color:${EMAIL_COLORS.muted};">This code expires in ${expiresInMinutes} minutes. If you did not request it, you can safely ignore this email.</p>
               </td>
             </tr>
           </table>
-          <p style="margin:18px 0 0;font-size:12px;line-height:1.5;color:#8e8e93;">SalaryFlow account security</p>
+          <p style="margin:18px 0 0;font-size:12px;line-height:1.5;color:${EMAIL_COLORS.subtle};">SalaryFlow account security</p>
         </td>
       </tr>
     </table>
