@@ -115,8 +115,9 @@ export function buildFundingPlan({
     const savingsTarget = (monthlyIncome * savingsPercentage) / 100;
     const investmentTarget = (monthlyIncome * investmentPercentage) / 100;
     const monthlyInvestments =
-      investments.reduce((sum, investment) => sum + (investment.monthly ?? 0), 0) ||
-      investmentBills.reduce((sum, bill) => sum + bill.amount, 0);
+      investmentBills.length > 0
+        ? investmentBills.reduce((sum, bill) => sum + bill.amount, 0)
+        : investments.reduce((sum, investment) => sum + (investment.monthly ?? 0), 0);
     const investmentTopUp = Math.max(0, investmentTarget - monthlyInvestments);
     if (investmentTopUp > 0) {
       items.push({

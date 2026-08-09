@@ -15,6 +15,7 @@ const ExpenseSchema = new Schema(
     accountId: String,
     billId: String,
     billingMonth: String,
+    balanceApplied: { type: Boolean, default: false },
     shared: {
       type: new Schema(
         {

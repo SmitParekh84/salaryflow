@@ -2,7 +2,6 @@
 
 import { StatCard } from "@/components/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CHART_COLORS } from "@/lib/theme";
 import {
   CategoryDonut,
   IncomeExpenseBars,
@@ -10,6 +9,7 @@ import {
   SpendTrendChart,
 } from "@/features/analytics/charts";
 import { useSummary } from "@/hooks/use-summary";
+import { countsAsEarnedIncome } from "@/lib/calculations";
 import {
   currentFinancialYearStart,
   financialYearLabel,
@@ -17,7 +17,8 @@ import {
   isInFinancialYear,
 } from "@/lib/financial-year";
 import { useFinanceStore } from "@/lib/store";
-import { formatMoney } from "@/lib/utils";
+import { CHART_COLORS } from "@/lib/theme";
+import { formatMoney, parseFinancialDate } from "@/lib/utils";
 import { ArrowLeftRight, PiggyBank, TrendingDown, Wallet } from "lucide-react";
 import { useMemo } from "react";
 
@@ -25,6 +26,8 @@ export function AnalyticsView() {
   const expenses = useFinanceStore((s) => s.expenses);
   const currency = useFinanceStore((s) => s.profile.currency);
   const salary = useFinanceStore((s) => s.profile.amount);
+  const incomes = useFinanceStore((s) => s.incomes);
+  const salaryHistory = useFinanceStore((s) => s.salaryHistory);
   const financialYearStart = useFinanceStore(
     (s) => s.profile.financialYearStart ?? currentFinancialYearStart(),
   );
@@ -35,21 +38,47 @@ export function AnalyticsView() {
   );
 
   const monthly = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { income: number; expense: number; confirmedSalary: boolean }>();
     for (const month of financialYearMonths(financialYearStart)) {
-      map.set(month.key, 0);
+      map.set(month.key, { income: 0, expense: 0, confirmedSalary: false });
     }
-    for (const e of visibleExpenses) {
-      const date = new Date(e.date);
+    for (const expense of visibleExpenses.filter((item) => item.category !== "Investment")) {
+      const date = parseFinancialDate(expense.date);
       const key = `${date.getFullYear()}-${date.getMonth()}`;
-      if (map.has(key)) map.set(key, (map.get(key) ?? 0) + e.amount);
+      const month = map.get(key);
+      if (month) month.expense += expense.amount;
     }
+    for (const entry of salaryHistory.filter(
+      (item) => item.confirmed && isInFinancialYear(item.date, financialYearStart),
+    )) {
+      const date = parseFinancialDate(entry.date);
+      const month = map.get(`${date.getFullYear()}-${date.getMonth()}`);
+      if (month) {
+        month.income += entry.amount;
+        month.confirmedSalary = true;
+      }
+    }
+    for (const income of incomes.filter(
+      (item) => countsAsEarnedIncome(item) && isInFinancialYear(item.date, financialYearStart),
+    )) {
+      const date = parseFinancialDate(income.date);
+      const month = map.get(`${date.getFullYear()}-${date.getMonth()}`);
+      if (month) month.income += income.amount;
+    }
+    const currentMonth = new Date();
     return financialYearMonths(financialYearStart).map((month) => ({
       label: month.label,
-      income: salary,
-      expense: Math.round(map.get(month.key) ?? 0),
+      income: Math.round(
+        (map.get(month.key)?.income ?? 0) +
+          (!map.get(month.key)?.confirmedSalary &&
+          month.date.getFullYear() === currentMonth.getFullYear() &&
+          month.date.getMonth() === currentMonth.getMonth()
+            ? salary
+            : 0),
+      ),
+      expense: Math.round(map.get(month.key)?.expense ?? 0),
     }));
-  }, [financialYearStart, salary, visibleExpenses]);
+  }, [financialYearStart, incomes, salary, salaryHistory, visibleExpenses]);
 
   const avgDaily = summary.totalExpenses / Math.max(1, summary.daysElapsed + 1);
 

@@ -89,6 +89,7 @@ export function ExpenseForm({
     reset,
     control,
     formState: { errors, isSubmitting },
+    setError,
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -180,9 +181,14 @@ export function ExpenseForm({
           }
         : undefined,
     };
-    if (editing) updateExpense(editing.id, payload);
-    else {
-      addExpense(payload);
+    const expenseSaved = editing ? updateExpense(editing.id, payload) : addExpense(payload);
+    if (!expenseSaved) {
+      setError("amount", {
+        message: "The selected account does not have enough balance for this payment",
+      });
+      return;
+    }
+    if (!editing) {
       if (parsed.planNextPayment && parsed.recurrenceDays) {
         const nextPayment = parseFinancialDate(parsed.date);
         nextPayment.setDate(nextPayment.getDate() + parsed.recurrenceDays);
@@ -279,7 +285,9 @@ export function ExpenseForm({
               )}
             />
             <p className="mt-1 text-xs text-muted">
-              Records the source only. Your balance will not change automatically.
+              {isSharedForm
+                ? "Your payment reduces the selected bank-account balance. Credit cards track usage instead."
+                : "Records the payment source. Credit-card purchases appear in card usage."}
             </p>
           </div>
         )}

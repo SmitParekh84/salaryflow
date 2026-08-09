@@ -55,8 +55,8 @@ interface FinanceState {
   updateUser: (patch: Partial<UserProfile>) => void;
 
   // expenses
-  addExpense: (e: Omit<Expense, "id">) => void;
-  updateExpense: (id: string, patch: Partial<Expense>) => void;
+  addExpense: (e: Omit<Expense, "id">) => boolean;
+  updateExpense: (id: string, patch: Partial<Expense>) => boolean;
   deleteExpense: (id: string) => void;
   toggleFavorite: (id: string) => void;
 
@@ -228,16 +228,68 @@ export const useFinanceStore = create<FinanceState>()(
 
       updateUser: (patch) => set((s) => ({ user: { ...s.user, ...patch } })),
 
-      addExpense: (e) => set((s) => ({ expenses: [{ ...e, id: uid("exp") }, ...s.expenses] })),
-      updateExpense: (id, patch) =>
-        set((s) => ({
-          expenses: s.expenses.map((e) => (e.id === id ? { ...e, ...patch } : e)),
-        })),
+      addExpense: (expense) => {
+        const account = expense.accountId
+          ? get().accounts.find((candidate) => candidate.id === expense.accountId)
+          : undefined;
+        const balanceApplied = Boolean(account && expense.shared);
+        if (balanceApplied && account!.balance < expense.amount) return false;
+        set((state) => ({
+          expenses: [{ ...expense, balanceApplied, id: uid("exp") }, ...state.expenses],
+          accounts: balanceApplied
+            ? state.accounts.map((candidate) =>
+                candidate.id === expense.accountId
+                  ? { ...candidate, balance: candidate.balance - expense.amount }
+                  : candidate,
+              )
+            : state.accounts,
+        }));
+        return true;
+      },
+      updateExpense: (id, patch) => {
+        const existing = get().expenses.find((expense) => expense.id === id);
+        if (!existing) return false;
+        const updated = { ...existing, ...patch };
+        const nextAccount = updated.accountId
+          ? get().accounts.find((candidate) => candidate.id === updated.accountId)
+          : undefined;
+        const restoredBalance = nextAccount
+          ? nextAccount.balance +
+            (existing.balanceApplied && existing.accountId === updated.accountId
+              ? existing.amount
+              : 0)
+          : 0;
+        const shouldApplyBalance = Boolean(nextAccount && updated.shared);
+        if (shouldApplyBalance && restoredBalance < updated.amount) return false;
+
+        set((state) => ({
+          expenses: state.expenses.map((expense) =>
+            expense.id === id ? { ...updated, balanceApplied: shouldApplyBalance } : expense,
+          ),
+          accounts: state.accounts.map((account) => {
+            let balance = account.balance;
+            if (existing.balanceApplied && account.id === existing.accountId) {
+              balance += existing.amount;
+            }
+            if (shouldApplyBalance && account.id === updated.accountId) balance -= updated.amount;
+            return balance === account.balance ? account : { ...account, balance };
+          }),
+        }));
+        return true;
+      },
       deleteExpense: (id) => {
         const item = get().expenses.find((expense) => expense.id === id);
         if (!item) return;
         set((state) => ({
           expenses: state.expenses.filter((expense) => expense.id !== id),
+          accounts:
+            item.balanceApplied && item.accountId
+              ? state.accounts.map((account) =>
+                  account.id === item.accountId
+                    ? { ...account, balance: account.balance + item.amount }
+                    : account,
+                )
+              : state.accounts,
           recycleBin: [
             recycleItem("expense", id, item.merchant || item.category, item),
             ...state.recycleBin,
@@ -481,6 +533,14 @@ export const useFinanceStore = create<FinanceState>()(
         const item = get().recycleBin.find((candidate) => candidate.id === id);
         if (!item) return;
 
+        if (item.entityType === "expense") {
+          const expense = item.data as unknown as Expense;
+          if (expense.balanceApplied && expense.accountId) {
+            const account = get().accounts.find((candidate) => candidate.id === expense.accountId);
+            if (!account || account.balance < expense.amount) return;
+          }
+        }
+
         if (item.entityType === "salary-history") {
           const response = await fetch("/api/salary/history", {
             method: "POST",
@@ -498,8 +558,30 @@ export const useFinanceStore = create<FinanceState>()(
         set((state) => {
           const recycleBin = state.recycleBin.filter((entry) => entry.id !== id);
           switch (item.entityType) {
-            case "expense":
-              return { expenses: [item.data as unknown as Expense, ...state.expenses], recycleBin };
+            case "expense": {
+              const expense = item.data as unknown as Expense;
+              const canReapplyBalance =
+                expense.balanceApplied &&
+                expense.accountId &&
+                state.accounts.some(
+                  (account) =>
+                    account.id === expense.accountId && account.balance >= expense.amount,
+                );
+              return {
+                expenses: [
+                  { ...expense, balanceApplied: Boolean(canReapplyBalance) },
+                  ...state.expenses,
+                ],
+                accounts: canReapplyBalance
+                  ? state.accounts.map((account) =>
+                      account.id === expense.accountId
+                        ? { ...account, balance: account.balance - expense.amount }
+                        : account,
+                    )
+                  : state.accounts,
+                recycleBin,
+              };
+            }
             case "income":
               return { incomes: [item.data as unknown as Income, ...state.incomes], recycleBin };
             case "bill":

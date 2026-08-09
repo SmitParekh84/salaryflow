@@ -73,6 +73,7 @@ export interface Expense {
   accountId?: string;
   billId?: string;
   billingMonth?: string;
+  balanceApplied?: boolean;
   shared?: SharedExpenseDetails;
 }
 

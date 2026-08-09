@@ -1,26 +1,26 @@
 "use client";
 
 import { CategoryIcon } from "@/components/category-icon";
-import { AllocationSheet } from "@/features/goals/allocation-sheet";
-import { goalSaved } from "@/lib/allocations";
-import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CHART_COLORS } from "@/lib/theme";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Progress } from "@/components/ui/progress";
 import { CashFlowChart, CategoryDonut, SpendTrendChart } from "@/features/analytics/charts";
 import { SafeToSpendHero } from "@/features/dashboard/safe-to-spend-hero";
 import { ExpenseForm } from "@/features/expenses/expense-form";
 import { SeedPrompt, TransactionList } from "@/features/expenses/transaction-list";
+import { AllocationSheet } from "@/features/goals/allocation-sheet";
 import { useSummary } from "@/hooks/use-summary";
+import { goalSaved } from "@/lib/allocations";
 import { billCycle } from "@/lib/bill-cycle";
 import { projectedGoalDate, upcomingBills } from "@/lib/calculations";
 import { currentFinancialYearStart, financialYearLabel } from "@/lib/financial-year";
 import { buildFundingPlan } from "@/lib/funding-plan";
 import { useFinanceStore } from "@/lib/store";
+import { CHART_COLORS } from "@/lib/theme";
 import { formatMoney, newestFirst } from "@/lib/utils";
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { motion } from "framer-motion";
 import {
   Activity,
@@ -160,7 +160,7 @@ export function DashboardView() {
           value={formatMoney(summary.savedThisCycle, currency, true)}
           icon={PiggyBank}
           accent={CHART_COLORS.savings}
-          hint={`Target ${formatMoney(summary.savingsTarget, currency, true)} · goal deposits and savings activity`}
+          hint={`Target ${formatMoney(summary.savingsTarget, currency, true)} · net savings activity, excluding goal allocations`}
           delay={0.1}
         />
         <StatCard
@@ -227,11 +227,7 @@ export function DashboardView() {
                 [
                   ["needs", "Needs", "Spent"],
                   ["wants", "Wants", "Spent"],
-                  [
-                    "savings",
-                    "Cash savings",
-                    "Saved this cycle",
-                  ],
+                  ["savings", "Cash savings", "Saved this cycle"],
                   ["investments", "Investments", "Invested"],
                 ] as const
               ).map(([kind, label, usedLabel]) => {

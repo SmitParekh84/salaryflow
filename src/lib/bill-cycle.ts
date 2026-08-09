@@ -8,7 +8,7 @@ export function monthKey(date: Date): string {
 function sourceDate(bill: Bill, now: Date): Date {
   return bill.dueDate
     ? parseFinancialDate(bill.dueDate)
-    : new Date(now.getFullYear(), 0, bill.dueDay);
+    : new Date(now.getFullYear(), now.getMonth(), bill.dueDay, 12);
 }
 
 export function billOccurrenceDate(bill: Bill, now = new Date()): Date {

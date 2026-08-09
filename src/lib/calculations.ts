@@ -19,7 +19,6 @@ import { parseFinancialDate } from "./utils";
 /** Days in the current salary cycle and days remaining until next salary. */
 export function cycleInfo(profile: SalaryProfile, now = new Date()) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const day = today.getDate();
 
   let cycleLength: number;
   let dayInCycle: number;
@@ -28,21 +27,17 @@ export function cycleInfo(profile: SalaryProfile, now = new Date()) {
 
   switch (profile.cycle) {
     case "weekly":
-      cycleLength = 7;
-      dayInCycle = (((day - profile.salaryDay) % 7) + 7) % 7;
+    case "biweekly": {
+      cycleLength = profile.cycle === "weekly" ? 7 : 14;
+      const anchor = new Date(1970, 0, Math.max(1, Math.min(31, profile.salaryDay)));
+      const daysSinceAnchor = calendarDayDifference(anchor, today);
+      dayInCycle = ((daysSinceAnchor % cycleLength) + cycleLength) % cycleLength;
       cycleStart = new Date(today);
       cycleStart.setDate(today.getDate() - dayInCycle);
       nextSalary = new Date(cycleStart);
       nextSalary.setDate(cycleStart.getDate() + cycleLength);
       break;
-    case "biweekly":
-      cycleLength = 14;
-      dayInCycle = (((day - profile.salaryDay) % 14) + 14) % 14;
-      cycleStart = new Date(today);
-      cycleStart.setDate(today.getDate() - dayInCycle);
-      nextSalary = new Date(cycleStart);
-      nextSalary.setDate(cycleStart.getDate() + cycleLength);
-      break;
+    }
     default: {
       const salaryDate = (year: number, month: number) =>
         new Date(year, month, Math.min(profile.salaryDay, new Date(year, month + 1, 0).getDate()));
@@ -174,10 +169,6 @@ export function computeSummary(
     .flatMap((goal) => goal.contributions ?? [])
     .filter((contribution) => !contribution.opening)
     .filter((contribution) => isInCurrentCycle(contribution.date, profile, now));
-  const goalContributionsThisCycle = cycleContributions.reduce(
-    (sum, contribution) => sum + contribution.amount,
-    0,
-  );
   const savingsAccountIds = new Set(
     accounts
       .filter((account) => account.defaultFor?.includes("savings"))
@@ -203,13 +194,12 @@ export function computeSummary(
     cycleExpenses
       .filter((expense) => expense.accountId && savingsAccountIds.has(expense.accountId))
       .reduce((sum, expense) => sum + expense.amount, 0);
-  // Contributions created by splitting a transfer are already inside
-  // savingsAccountCashFlow; subtracting them stops the same rupee counting twice.
-  const allocatedFromTransfers = cycleContributions
-    .filter((contribution) => contribution.transferId)
+  // Assigning money already held in an account to a goal is a label, not new
+  // savings. Only unlinked deposits and actual savings-account cash flow count.
+  const unlinkedGoalDeposits = cycleContributions
+    .filter((contribution) => !contribution.accountId)
     .reduce((sum, contribution) => sum + contribution.amount, 0);
-  const unallocatedSavingsFlow = Math.max(0, savingsAccountCashFlow - allocatedFromTransfers);
-  const savedThisCycle = Math.max(0, goalContributionsThisCycle + unallocatedSavingsFlow);
+  const savedThisCycle = Math.max(0, savingsAccountCashFlow + unlinkedGoalDeposits);
 
   const savingsTarget = budgetRule
     ? budgetAllocationTarget(budgetRule, "savings", baseIncome)
@@ -219,10 +209,7 @@ export function computeSummary(
     : investedThisCycle;
   const plannedSavings = Math.max(0, savingsTarget);
   const plannedInvestments = Math.max(0, investmentTarget - investedThisCycle);
-  // savingsTarget is a plan, goal contributions are actuals — take the larger so
-  // committed goal money leaves the spendable pool without being charged twice.
-  const savingsCommitted = Math.max(savingsTarget, goalContributionsThisCycle);
-  const spendingBudget = Math.max(0, income - savingsCommitted - investmentTarget);
+  const spendingBudget = Math.max(0, income - savingsTarget - investmentTarget);
   const needsBudget = budgetRule ? budgetAllocationTarget(budgetRule, "needs", baseIncome) : 0;
   const wantsBudget = budgetRule
     ? budgetAllocationTarget(budgetRule, "wants", baseIncome)
@@ -230,12 +217,12 @@ export function computeSummary(
   const remaining =
     income - totalExpenses - investedThisCycle - plannedInvestments - plannedSavings;
 
-  const safeToSpendPerDay = Math.max(0, remaining / daysRemaining);
-
   const todayKey = new Date(now).toDateString();
   const spentToday = spendingCycleExpenses
-    .filter((e) => new Date(e.date).toDateString() === todayKey)
+    .filter((expense) => parseFinancialDate(expense.date).toDateString() === todayKey)
     .reduce((s, e) => s + e.amount, 0);
+  const remainingBeforeToday = remaining + spentToday;
+  const safeToSpendPerDay = Math.max(0, remainingBeforeToday / daysRemaining);
   const safeToSpendToday = Math.max(0, safeToSpendPerDay - spentToday);
 
   let status: SpendStatus = "green";

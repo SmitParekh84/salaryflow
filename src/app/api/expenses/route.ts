@@ -8,17 +8,56 @@ import { z } from "zod";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const createSchema = z.object({
+const sharedSchema = z.object({
+  totalAmount: z.number().positive(),
+  friendName: z.string().trim().min(1),
+  friendEmail: z.string().trim().toLowerCase().email().optional(),
+  userPaid: z.number().nonnegative(),
+  friendPaid: z.number().nonnegative(),
+  inviteRequested: z.boolean().optional(),
+});
+
+const expenseFields = z.object({
   amount: z.number().positive(),
   category: z.string().min(1),
   merchant: z.string().optional(),
   paymentMethod: z.string().default("UPI"),
   note: z.string().optional(),
-  date: z.string().optional(),
+  date: z.string().datetime().optional(),
   recurring: z.boolean().optional(),
+  favorite: z.boolean().optional(),
+  tags: z.array(z.string()).optional(),
+  accountId: z.string().optional(),
+  billId: z.string().optional(),
+  billingMonth: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .optional(),
+  shared: sharedSchema.optional(),
 });
 
-const updateSchema = createSchema.partial();
+const createSchema = expenseFields.superRefine((expense, context) => {
+  if (!expense.shared) return;
+  if (
+    Math.abs(expense.shared.userPaid + expense.shared.friendPaid - expense.shared.totalAmount) >
+    0.01
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["shared"],
+      message: "Shared payments must equal the group total",
+    });
+  }
+  if (Math.abs(expense.amount - expense.shared.userPaid) > 0.01) {
+    context.addIssue({
+      code: "custom",
+      path: ["amount"],
+      message: "Expense amount must equal the current user's payment",
+    });
+  }
+});
+
+const updateSchema = expenseFields.partial();
 
 export async function GET() {
   const auth = await getAuthenticatedContext();

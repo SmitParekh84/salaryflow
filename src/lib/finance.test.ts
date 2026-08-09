@@ -1,4 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { applyAllocation, reassignGoalAccounts } from "./allocation-writes";
+import {
+  accountAllocated,
+  accountFree,
+  goalAccountBreakdown,
+  goalSaved,
+  isOverAllocated,
+  unassignedSaved,
+} from "./allocations";
 import { billCycle, billOccurrenceDate, monthlyBillReserve } from "./bill-cycle";
 import { budgetAllocationTarget } from "./budget-rules";
 import { computeSummary, cycleInfo, isInCurrentCycle } from "./calculations";
@@ -9,6 +18,8 @@ import {
   isInFinancialYear,
 } from "./financial-year";
 import { buildFundingPlan } from "./funding-plan";
+import { migrateGoalOpeningBalances } from "./goal-migration";
+import { monthsToGoal, projectGoal, whatIfDelta } from "./goal-projection";
 import type {
   AccountTransfer,
   BankAccount,
@@ -23,17 +34,6 @@ import type {
   SalaryProfile,
 } from "./types";
 import { formatMoney } from "./utils";
-import {
-  accountAllocated,
-  accountFree,
-  goalAccountBreakdown,
-  goalSaved,
-  isOverAllocated,
-  unassignedSaved,
-} from "./allocations";
-import { migrateGoalOpeningBalances } from "./goal-migration";
-import { applyAllocation, reassignGoalAccounts } from "./allocation-writes";
-import { monthsToGoal, projectGoal, whatIfDelta } from "./goal-projection";
 
 const profile: SalaryProfile = {
   amount: 30_000,
@@ -158,6 +158,14 @@ describe("salary cycles", () => {
     expect(isInCurrentCycle("2026-02-28", profile, now)).toBe(true);
     expect(isInCurrentCycle("2026-02-27", profile, now)).toBe(false);
   });
+
+  it("keeps weekly cycles continuous across a month boundary", () => {
+    const weeklyProfile = { ...profile, cycle: "weekly" as const, salaryDay: 30 };
+    const july = cycleInfo(weeklyProfile, new Date(2026, 6, 31, 12));
+    const august = cycleInfo(weeklyProfile, new Date(2026, 7, 1, 12));
+
+    expect((august.daysElapsed - july.daysElapsed + 7) % 7).toBe(1);
+  });
 });
 
 describe("currency formatting", () => {
@@ -202,6 +210,26 @@ describe("finance summary", () => {
     expect(summary.savingsTarget).toBe(4_800);
     expect(summary.investmentTarget).toBe(4_800);
     expect(summary.spendingBudget).toBe(23_400);
+  });
+
+  it("subtracts today's spending exactly once from today's safe amount", () => {
+    const today = new Date("2026-03-02T12:00:00.000Z");
+    const withoutToday = computeSummary(profile, [], [], [], [], [], undefined, [], [], today);
+    const withToday = computeSummary(
+      profile,
+      [expense({ amount: 500, date: today.toISOString() })],
+      [],
+      [],
+      [],
+      [],
+      undefined,
+      [],
+      [],
+      today,
+    );
+
+    expect(withToday.safeToSpendPerDay).toBeCloseTo(withoutToday.safeToSpendPerDay);
+    expect(withToday.safeToSpendToday).toBeCloseTo(withoutToday.safeToSpendToday - 500);
   });
 
   it("does not count reimbursements or cashback as income", () => {
@@ -444,6 +472,11 @@ describe("bills and funding plan", () => {
     expect(plan.total).toBeCloseTo(899 / 3);
   });
 
+  it("anchors a legacy bill without dueDate in the current month", () => {
+    const legacy = { ...bill, dueDate: undefined, dueDay: 12 };
+    expect(billOccurrenceDate(legacy, new Date(2026, 7, 9, 12))).toEqual(new Date(2026, 7, 12));
+  });
+
   it("reserves card outstanding, SIPs, unpaid bills, and only the remaining savings target", () => {
     const card: CreditCard = {
       id: "card",
@@ -481,6 +514,38 @@ describe("bills and funding plan", () => {
     expect(plan.items.find((item) => item.label.includes("top-up"))?.amount).toBe(2_500);
     expect(plan.items.find((item) => item.kind === "rent")?.remainingAmount).toBe(8_000);
     expect(plan.total).toBe(14_000);
+  });
+
+  it("uses displayed investment bills when calculating the rule top-up", () => {
+    const investmentBill: Bill = {
+      ...bill,
+      id: "sip-bill",
+      name: "Index SIP",
+      amount: 5_000,
+      category: "Investment",
+    };
+    const plan = buildFundingPlan({
+      accounts: savingsAccounts,
+      bills: [investmentBill],
+      creditCards: [],
+      expenses: [],
+      incomes: [],
+      investments: [
+        {
+          id: "legacy-sip",
+          name: "Legacy SIP",
+          type: "SIP",
+          invested: 0,
+          currentValue: 0,
+          monthly: 2_000,
+        },
+      ],
+      budgetRule: rule,
+      monthlyIncome: 30_000,
+      now: new Date("2026-03-20T12:00:00.000Z"),
+    });
+
+    expect(plan.items.find((item) => item.label.includes("top-up"))).toBeUndefined();
   });
 });
 
@@ -622,20 +687,36 @@ describe("allocation writes", () => {
     status: "active",
   };
   const bike: Goal = {
-    id: "bike", name: "Bike", type: "Bike", target: 85000,
-    saved: 0, monthlyContribution: 8000, contributions: [],
+    id: "bike",
+    name: "Bike",
+    type: "Bike",
+    target: 85000,
+    saved: 0,
+    monthlyContribution: 8000,
+    contributions: [],
   };
   const mobile: Goal = {
-    id: "mobile", name: "Mobile", type: "Phone", target: 25000,
-    saved: 0, monthlyContribution: 2000, contributions: [],
+    id: "mobile",
+    name: "Mobile",
+    type: "Phone",
+    target: 25000,
+    saved: 0,
+    monthlyContribution: 2000,
+    contributions: [],
   };
   const when = new Date("2026-08-09T10:00:00.000Z");
 
   it("splits a transfer across goals atomically", () => {
     const result = applyAllocation(
-      [bike, mobile], [union],
-      [{ goalId: "bike", amount: 10000 }, { goalId: "mobile", amount: 489 }],
-      "union", "transfer-1", when,
+      [bike, mobile],
+      [union],
+      [
+        { goalId: "bike", amount: 10000 },
+        { goalId: "mobile", amount: 489 },
+      ],
+      "union",
+      "transfer-1",
+      when,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -647,18 +728,27 @@ describe("allocation writes", () => {
 
   it("rejects a split that exceeds the free balance", () => {
     const result = applyAllocation(
-      [bike, mobile], [union],
+      [bike, mobile],
+      [union],
       [{ goalId: "bike", amount: 11000 }],
-      "union", undefined, when,
+      "union",
+      undefined,
+      when,
     );
     expect(result.ok).toBe(false);
   });
 
   it("writes nothing at all when one entry breaks the invariant", () => {
     const result = applyAllocation(
-      [bike, mobile], [union],
-      [{ goalId: "bike", amount: 10000 }, { goalId: "mobile", amount: 5000 }],
-      "union", undefined, when,
+      [bike, mobile],
+      [union],
+      [
+        { goalId: "bike", amount: 10000 },
+        { goalId: "mobile", amount: 5000 },
+      ],
+      "union",
+      undefined,
+      when,
     );
     expect(result.ok).toBe(false);
     expect(goalSaved(bike)).toBe(0);
@@ -667,25 +757,41 @@ describe("allocation writes", () => {
 
   it("counts money already allocated when checking the invariant", () => {
     const funded = [
-      { ...bike, contributions: [{ id: "c1", amount: 10000, date: "2026-08-01", accountId: "union" }] },
+      {
+        ...bike,
+        contributions: [{ id: "c1", amount: 10000, date: "2026-08-01", accountId: "union" }],
+      },
       mobile,
     ];
     const result = applyAllocation(
-      funded, [union], [{ goalId: "mobile", amount: 600 }], "union", undefined, when,
+      funded,
+      [union],
+      [{ goalId: "mobile", amount: 600 }],
+      "union",
+      undefined,
+      when,
     );
     expect(result.ok).toBe(false);
   });
 
   it("rejects an unknown account", () => {
     const result = applyAllocation(
-      [bike], [union], [{ goalId: "bike", amount: 100 }], "missing", undefined, when,
+      [bike],
+      [union],
+      [{ goalId: "bike", amount: 100 }],
+      "missing",
+      undefined,
+      when,
     );
     expect(result.ok).toBe(false);
   });
 
   it("moves allocations to the destination when an account closes", () => {
     const funded = [
-      { ...bike, contributions: [{ id: "c1", amount: 10000, date: "2026-08-01", accountId: "hdfc" }] },
+      {
+        ...bike,
+        contributions: [{ id: "c1", amount: 10000, date: "2026-08-01", accountId: "hdfc" }],
+      },
     ];
     const moved = reassignGoalAccounts(funded, "hdfc", "union");
     expect(accountAllocated(moved, "union")).toBe(10000);
@@ -722,13 +828,29 @@ describe("goal contributions in the cycle", () => {
     expect(summary.savedThisCycle).toBe(0);
   });
 
-  it("counts a real in-cycle contribution", () => {
+  it("does not count assigning existing account money to a goal as new savings", () => {
     const summary = computeSummary(
       profile,
       [],
       [],
       [],
       [goalWith([{ id: "c1", amount: 5_000, date: inCycle.toISOString(), accountId: "union" }])],
+      [],
+      undefined,
+      [],
+      [],
+      inCycle,
+    );
+    expect(summary.savedThisCycle).toBe(0);
+  });
+
+  it("counts an unlinked in-cycle goal deposit as new savings", () => {
+    const summary = computeSummary(
+      profile,
+      [],
+      [],
+      [],
+      [goalWith([{ id: "c1", amount: 5_000, date: inCycle.toISOString() }])],
       [],
       undefined,
       [],
@@ -743,7 +865,7 @@ describe("goal contributions in the cycle", () => {
     expect("savingsEvidence" in summary).toBe(false);
   });
 
-  it("keeps committed goal money out of the spendable pool", () => {
+  it("does not let goal allocations override the rule-bound spending budget", () => {
     const withContribution = computeSummary(
       profile,
       [],
@@ -768,7 +890,7 @@ describe("goal contributions in the cycle", () => {
       [],
       inCycle,
     );
-    expect(withContribution.spendingBudget).toBeLessThan(withoutContribution.spendingBudget);
+    expect(withContribution.spendingBudget).toBe(withoutContribution.spendingBudget);
   });
 });
 
