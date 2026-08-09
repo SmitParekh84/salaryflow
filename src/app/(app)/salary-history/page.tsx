@@ -52,7 +52,7 @@ export default function SalaryHistoryPage() {
         {formatMoney(profile.amount, profile.currency)}.
       </p>
 
-      <Card className="p-5 shadow-none">
+      <Card className="p-4 shadow-none sm:p-5">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <Label htmlFor="salary-month">Salary month</Label>
@@ -123,8 +123,11 @@ export default function SalaryHistoryPage() {
             const difference =
               entry.varianceAmount ?? entry.amount - (entry.baseAmount ?? profile.amount);
             return (
-              <div key={entry._id ?? entry.date} className="flex flex-wrap items-center gap-3 py-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <div
+                key={entry._id ?? entry.date}
+                className="grid grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 py-4 sm:flex sm:flex-wrap sm:gap-3"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   {entry.confirmed ? <Check className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -136,37 +139,44 @@ export default function SalaryHistoryPage() {
                     {entry.note ? ` · ${entry.note}` : ""}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold">{formatMoney(entry.amount, profile.currency)}</p>
-                  {difference > 0 && (
-                    <p className="flex items-center justify-end gap-1 text-xs text-success">
-                      <Plus className="h-3 w-3" /> {formatMoney(difference, profile.currency)} extra
+                <div className="col-span-2 flex items-center justify-between gap-3 sm:contents">
+                  <div className="text-left sm:text-right">
+                    <p className="text-sm font-bold">
+                      {formatMoney(entry.amount, profile.currency)}
                     </p>
-                  )}
-                  {difference < 0 && (
-                    <p className="flex items-center justify-end gap-1 text-xs text-warning">
-                      <Minus className="h-3 w-3" />{" "}
-                      {formatMoney(Math.abs(difference), profile.currency)} lower
-                    </p>
-                  )}
+                    {difference > 0 && (
+                      <p className="flex items-center gap-1 text-xs text-success sm:justify-end">
+                        <Plus className="h-3 w-3" /> {formatMoney(difference, profile.currency)} extra
+                      </p>
+                    )}
+                    {difference < 0 && (
+                      <p className="flex items-center gap-1 text-xs text-warning sm:justify-end">
+                        <Minus className="h-3 w-3" />{" "}
+                        {formatMoney(Math.abs(difference), profile.currency)} lower
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() =>
+                        entry._id &&
+                        void updateSalaryEntry(entry._id, { confirmed: !entry.confirmed })
+                      }
+                    >
+                      {entry.confirmed ? "Credited" : "Mark credited"}
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label={`Delete ${format(parseFinancialDate(entry.date), "LLLL yyyy")} salary`}
+                      onClick={() => entry._id && void deleteSalaryEntry(entry._id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-danger" />
+                    </Button>
+                  </div>
                 </div>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() =>
-                    entry._id && void updateSalaryEntry(entry._id, { confirmed: !entry.confirmed })
-                  }
-                >
-                  {entry.confirmed ? "Credited" : "Mark credited"}
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label={`Delete ${format(parseFinancialDate(entry.date), "LLLL yyyy")} salary`}
-                  onClick={() => entry._id && void deleteSalaryEntry(entry._id)}
-                >
-                  <Trash2 className="h-4 w-4 text-danger" />
-                </Button>
               </div>
             );
           })}

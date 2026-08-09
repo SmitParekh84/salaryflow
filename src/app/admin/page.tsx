@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 type User = { _id: string; email: string; name?: string; isAdmin?: boolean };
 
@@ -98,12 +98,35 @@ export default function AdminPage() {
                   <td className="px-4 py-2">{u.isAdmin ? "Yes" : "No"}</td>
                   <td className="px-4 py-2">
                     {!u.isAdmin && (
-                      <Button size="sm" variant="success" disabled={actionLoading === u._id} onClick={() => toggleAdmin(u._id, true)} className="mr-2">Promote</Button>
+                      <Button
+                        size="sm"
+                        variant="success"
+                        disabled={actionLoading === u._id}
+                        onClick={() => toggleAdmin(u._id, true)}
+                        className="mr-2"
+                      >
+                        Promote
+                      </Button>
                     )}
                     {u.isAdmin && (
-                      <Button size="sm" variant="warning" disabled={actionLoading === u._id} onClick={() => toggleAdmin(u._id, false)} className="mr-2">Demote</Button>
+                      <Button
+                        size="sm"
+                        variant="warning"
+                        disabled={actionLoading === u._id}
+                        onClick={() => toggleAdmin(u._id, false)}
+                        className="mr-2"
+                      >
+                        Demote
+                      </Button>
                     )}
-                    <Button size="sm" variant="danger" disabled={actionLoading === u._id} onClick={() => deleteUser(u._id)}>Delete</Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      disabled={actionLoading === u._id}
+                      onClick={() => deleteUser(u._id)}
+                    >
+                      Delete
+                    </Button>
                   </td>
                 </tr>
               ))}

@@ -255,9 +255,10 @@ export interface AppNotification {
   id: string;
   title: string;
   body: string;
-  type: "salary" | "bill" | "overspend" | "goal" | "info";
+  type: "salary" | "bill" | "overspend" | "goal" | "shared" | "info";
   date: string;
   read: boolean;
+  href?: string;
 }
 
 export type SpendStatus = "green" | "yellow" | "red";

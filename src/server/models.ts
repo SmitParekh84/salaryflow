@@ -208,6 +208,28 @@ const RecycleBinSchema = new Schema(
   { timestamps: true },
 );
 
+const NotificationSchema = new Schema(
+  {
+    userId: { type: String, required: true, index: true },
+    title: { type: String, required: true },
+    body: { type: String, required: true },
+    type: {
+      type: String,
+      enum: ["salary", "bill", "overspend", "goal", "shared", "info"],
+      default: "info",
+    },
+    read: { type: Boolean, default: false },
+    href: String,
+    dedupeKey: String,
+  },
+  { timestamps: true },
+);
+
+NotificationSchema.index(
+  { userId: 1, dedupeKey: 1 },
+  { unique: true, partialFilterExpression: { dedupeKey: { $type: "string" } } },
+);
+
 const UserSchema = new Schema(
   {
     email: { type: String, required: true, unique: true, index: true },
@@ -230,6 +252,7 @@ export type AccountTransferDoc = InferSchemaType<typeof AccountTransferSchema>;
 export type CreditCardDoc = InferSchemaType<typeof CreditCardSchema>;
 export type BudgetRuleDoc = InferSchemaType<typeof BudgetRuleSchema>;
 export type RecycleBinDoc = InferSchemaType<typeof RecycleBinSchema>;
+export type NotificationDoc = InferSchemaType<typeof NotificationSchema>;
 export type UserDoc = InferSchemaType<typeof UserSchema>;
 
 export const ExpenseModel = models.Expense || model("Expense", ExpenseSchema);
@@ -245,6 +268,8 @@ export const AccountTransferModel =
 export const CreditCardModel = models.CreditCard || model("CreditCard", CreditCardSchema);
 export const BudgetRuleModel = models.BudgetRule || model("BudgetRule", BudgetRuleSchema);
 export const RecycleBinModel = models.RecycleBin || model("RecycleBin", RecycleBinSchema);
+export const NotificationModel =
+  models.Notification || model("Notification", NotificationSchema);
 export const UserModel = models.User || model("User", UserSchema);
 
 const SharedExpenseInviteSchema = new Schema(

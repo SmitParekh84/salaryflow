@@ -7,8 +7,7 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "success" | "warni
 type Size = "sm" | "md" | "lg" | "icon";
 
 const variants: Record<Variant, string> = {
-  primary:
-    "bg-primary text-primary-foreground hover:opacity-90 shadow-sm shadow-primary/20",
+  primary: "bg-primary text-primary-foreground hover:opacity-90 shadow-sm shadow-primary/20",
   secondary: "bg-surface-2 text-foreground hover:bg-surface-2/70 border border-border",
   ghost: "hover:bg-surface-2 text-foreground",
   danger: "bg-danger text-white hover:opacity-90",
@@ -18,14 +17,13 @@ const variants: Record<Variant, string> = {
 };
 
 const sizes: Record<Size, string> = {
-  sm: "h-8 px-3 text-xs rounded-lg",
-  md: "h-10 px-4 text-sm rounded-xl",
+  sm: "h-10 px-3 text-xs rounded-lg sm:h-8",
+  md: "h-11 px-4 text-sm rounded-xl sm:h-10",
   lg: "h-12 px-6 text-base rounded-xl",
-  icon: "h-10 w-10 rounded-xl",
+  icon: "h-11 w-11 rounded-xl sm:h-10 sm:w-10",
 };
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
 }
@@ -35,7 +33,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     <button
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ring) disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 font-medium transition-all duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ring) disabled:pointer-events-none disabled:opacity-50 sm:min-h-0 sm:min-w-0",
         variants[variant],
         sizes[size],
         className,

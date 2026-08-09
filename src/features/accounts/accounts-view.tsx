@@ -224,18 +224,18 @@ export function AccountsView() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm text-muted">{visibleAccounts.length} linked accounts</p>
           <p className="mt-1 text-2xl font-bold">{formatMoney(totalBalance, currency)}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex w-full gap-2 sm:w-auto">
           {accounts.length >= 2 && (
-            <Button size="sm" variant="secondary" onClick={openTransfer}>
+            <Button className="flex-1 sm:flex-none" size="sm" variant="secondary" onClick={openTransfer}>
               <ArrowRightLeft className="h-4 w-4" /> Transfer
             </Button>
           )}
-          <Button size="sm" onClick={openAdd}>
+          <Button className="flex-1 sm:flex-none" size="sm" onClick={openAdd}>
             <Plus className="h-4 w-4" /> Add account
           </Button>
         </div>
@@ -276,7 +276,10 @@ export function AccountsView() {
       ) : (
         <div className="divide-y divide-border border-y border-border">
           {visibleAccounts.map((account) => (
-            <div key={account.id} className="flex items-center gap-3 py-4">
+            <div
+              key={account.id}
+              className="grid grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 py-4 sm:flex sm:gap-3"
+            >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <Landmark className="h-5 w-5" />
               </div>
@@ -299,46 +302,50 @@ export function AccountsView() {
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-1">
-                <p className="min-w-20 text-right text-sm font-bold tabular-nums">
-                  {account.maskBalance ? "••••••" : formatMoney(account.balance, currency)}
-                </p>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => void toggleBalanceMask(account)}
-                  className="h-8 w-8 text-muted"
-                  aria-label={
-                    account.maskBalance
-                      ? `Show ${account.bankName} balance`
-                      : `Hide ${account.bankName} balance`
-                  }
-                >
-                  {account.maskBalance ? (
-                    <Eye className="h-4 w-4" />
-                  ) : (
-                    <EyeOff className="h-4 w-4" />
-                  )}
-                </Button>
+              <div className="col-span-2 flex items-center justify-between gap-2 sm:contents">
+                <div className="flex items-center gap-1">
+                  <p className="min-w-20 text-left text-sm font-bold tabular-nums sm:text-right">
+                    {account.maskBalance ? "••••••" : formatMoney(account.balance, currency)}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => void toggleBalanceMask(account)}
+                    className="h-8 w-8 text-muted"
+                    aria-label={
+                      account.maskBalance
+                        ? `Show ${account.bankName} balance`
+                        : `Hide ${account.bankName} balance`
+                    }
+                  >
+                    {account.maskBalance ? (
+                      <Eye className="h-4 w-4" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => openEdit(account)}
+                    className="h-8 w-8 text-muted"
+                    aria-label={`Edit ${account.bankName}`}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => void remove(account.id)}
+                    className="h-8 w-8 text-danger hover:bg-danger/10"
+                    aria-label={`Delete ${account.bankName}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => openEdit(account)}
-                className="h-8 w-8 text-muted"
-                aria-label={`Edit ${account.bankName}`}
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => void remove(account.id)}
-                className="h-8 w-8 text-danger hover:bg-danger/10"
-                aria-label={`Delete ${account.bankName}`}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
             </div>
           ))}
         </div>

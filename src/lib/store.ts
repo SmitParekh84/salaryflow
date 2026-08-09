@@ -110,6 +110,7 @@ interface FinanceState {
   deleteSalaryEntry: (id: string) => Promise<void> | void;
 
   // notifications
+  loadNotifications: () => Promise<void>;
   markNotificationRead: (id: string) => void;
   markAllRead: () => void;
 
@@ -567,14 +568,42 @@ export const useFinanceStore = create<FinanceState>()(
         } catch {}
       },
 
-      markNotificationRead: (id) =>
+      loadNotifications: async () => {
+        try {
+          const response = await fetch("/api/notifications", {
+            credentials: "include",
+            cache: "no-store",
+          });
+          if (!response.ok) return;
+
+          const json = await response.json();
+          set({ notifications: normalizeServerItems<AppNotification>(json?.data, []) });
+        } catch {
+          // Keep locally persisted notifications while offline.
+        }
+      },
+      markNotificationRead: (id) => {
         set((s) => ({
           notifications: s.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)),
-        })),
-      markAllRead: () =>
+        }));
+        void fetch("/api/notifications", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ id }),
+        }).catch(() => null);
+      },
+      markAllRead: () => {
         set((s) => ({
           notifications: s.notifications.map((n) => ({ ...n, read: true })),
-        })),
+        }));
+        void fetch("/api/notifications", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ all: true }),
+        }).catch(() => null);
+      },
 
       // sync store to server (requires authenticated session cookie)
       syncWithServer: async () => {

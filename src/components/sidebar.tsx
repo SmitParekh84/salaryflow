@@ -2,7 +2,6 @@
 
 import { NAV_ITEMS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { Card } from "./ui/card";
 import {
   BadgeIndianRupee,
   BarChart3,
@@ -21,6 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Card } from "./ui/card";
 
 const ICONS: Record<string, LucideIcon> = {
   LayoutDashboard,
@@ -95,22 +95,28 @@ export function MobileNav() {
     ["/dashboard", "/funding-plan", "/accounts", "/expenses", "/shared"].includes(item.href),
   );
   return (
-    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 glass border-t border-border px-2 pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-center justify-around">
+    <nav
+      aria-label="Mobile navigation"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
+    >
+      <div className="mx-auto grid h-16 max-w-lg grid-cols-5 items-stretch">
         {items.map((item) => {
           const Icon = ICONS[item.icon];
-          const active = pathname.startsWith(item.href);
+          const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          const label = "mobileLabel" in item ? item.mobileLabel : item.label;
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-label={item.label}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors",
+                "relative flex min-w-0 flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-(--ring)",
                 active ? "text-primary" : "text-muted",
               )}
             >
-              <Icon className="h-5 w-5" />
-              {item.label}
+              <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+              <span className="max-w-full truncate whitespace-nowrap">{label}</span>
             </Link>
           );
         })}

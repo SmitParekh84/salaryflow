@@ -5,7 +5,7 @@ import { Moon, Sun } from "lucide-react";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { Button } from "./ui/button";
 
-export function ThemeToggle() {
+export function ThemeToggle({ menu = false }: { menu?: boolean }) {
   const { theme, setTheme } = useTheme();
   const mounted = useHydrated();
 
@@ -13,8 +13,9 @@ export function ThemeToggle() {
 
   return (
     <Button
-      variant="secondary"
-      size="icon"
+      variant={menu ? "ghost" : "secondary"}
+      size={menu ? "sm" : "icon"}
+      className={menu ? "w-full justify-start" : undefined}
       aria-label="Toggle theme"
       onClick={() => setTheme(isDark ? "light" : "dark")}
     >
@@ -23,6 +24,7 @@ export function ThemeToggle() {
       ) : (
         <Moon className="h-4 w-4" />
       )}
+      {menu && <span>{isDark ? "Light mode" : "Dark mode"}</span>}
     </Button>
   );
 }

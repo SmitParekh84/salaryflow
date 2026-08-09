@@ -1,6 +1,6 @@
 import { verifyJwt } from "@/server/auth";
 import { connectDB } from "@/server/db";
-import { SharedExpenseInviteModel, UserModel } from "@/server/models";
+import { NotificationModel, SharedExpenseInviteModel, UserModel } from "@/server/models";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
   const ownerId = user.email || String(user._id);
   const recipient = await UserModel.findOne({ email: parsed.data.friendEmail })
-    .select("_id")
+    .select("_id email")
     .lean();
   const invite = await SharedExpenseInviteModel.findOneAndUpdate(
     {
@@ -56,6 +56,27 @@ export async function POST(request: Request) {
     },
     { upsert: true, new: true },
   ).lean();
+
+  if (recipient?.email) {
+    await NotificationModel.findOneAndUpdate(
+      {
+        userId: recipient.email,
+        dedupeKey: `shared-invite:${String(invite._id)}`,
+      },
+      {
+        $setOnInsert: {
+          userId: recipient.email,
+          title: "Shared spending invite",
+          body: `${user.name || user.email} invited you to review ${parsed.data.title}.`,
+          type: "shared",
+          href: "/shared",
+          read: false,
+          dedupeKey: `shared-invite:${String(invite._id)}`,
+        },
+      },
+      { upsert: true, new: true },
+    );
+  }
 
   return NextResponse.json({ data: invite }, { status: 201 });
 }

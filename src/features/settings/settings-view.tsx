@@ -165,9 +165,7 @@ export function SettingsView() {
                 aria-current={selected ? "page" : undefined}
                 className={cn(
                   "h-auto shrink-0 justify-start gap-3 px-3 py-2.5 text-left lg:w-full",
-                  selected
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted hover:text-foreground",
+                  selected ? "bg-primary/10 text-primary" : "text-muted hover:text-foreground",
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />

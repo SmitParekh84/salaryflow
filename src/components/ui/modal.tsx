@@ -1,9 +1,11 @@
 "use client";
 
+import { useHydrated } from "@/hooks/use-hydrated";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { Button } from "./button";
 
 export function Modal({
@@ -20,6 +22,7 @@ export function Modal({
   className?: string;
 }) {
   const titleId = React.useId();
+  const mounted = useHydrated();
 
   React.useEffect(() => {
     if (!open) return;
@@ -32,7 +35,9 @@ export function Modal({
     };
   }, [open, onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
@@ -52,11 +57,11 @@ export function Modal({
             exit={{ opacity: 0, y: 24, scale: 0.98 }}
             transition={{ type: "spring", stiffness: 320, damping: 30 }}
             className={cn(
-              "relative z-10 w-full max-w-lg rounded-t-2xl sm:rounded-2xl border border-border bg-surface card-shadow max-h-[92vh] overflow-y-auto no-scrollbar",
+              "relative z-10 max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-xl border border-border bg-surface card-shadow no-scrollbar sm:rounded-xl",
               className,
             )}
           >
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface/90 px-5 py-4 backdrop-blur">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface/90 px-4 py-3 backdrop-blur sm:px-5 sm:py-4">
               <h2 id={titleId} className="text-base font-semibold">
                 {title}
               </h2>
@@ -64,10 +69,11 @@ export function Modal({
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <div className="p-5">{children}</div>
+            <div className="p-4 sm:p-5">{children}</div>
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
