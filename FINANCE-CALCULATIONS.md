@@ -305,21 +305,21 @@ Goal progress can include linked allocations while cash-saved actuals exclude th
 
 ## UI Binding Map
 
-| UI | Source |
-| --- | --- |
-| Safe to spend today | `summary.safeToSpendToday` |
-| Balance left | `summary.remaining` clamped for display |
-| Invested this cycle | `summary.investedThisCycle` |
-| Total spent | `summary.totalExpenses` |
-| Cash saved this cycle | `summary.savedThisCycle` |
-| Cash savings target | `summary.savingsTarget` |
-| Investment target | `summary.investmentTarget` |
-| Savings rate | `summary.savingsRate` |
-| Shared group total | Sum of `shared.totalAmount` |
-| Shared you paid | Sum of `Expense.amount` |
-| Shared friends paid | Sum of `shared.friendPaid` |
-| Credit-card outstanding | `creditCardUsage(...).outstanding` |
-| Funding plan | Sum of remaining funding items |
+| UI                      | Source                                  |
+| ----------------------- | --------------------------------------- |
+| Safe to spend today     | `summary.safeToSpendToday`              |
+| Balance left            | `summary.remaining` clamped for display |
+| Invested this cycle     | `summary.investedThisCycle`             |
+| Total spent             | `summary.totalExpenses`                 |
+| Cash saved this cycle   | `summary.savedThisCycle`                |
+| Cash savings target     | `summary.savingsTarget`                 |
+| Investment target       | `summary.investmentTarget`              |
+| Savings rate            | `summary.savingsRate`                   |
+| Shared group total      | Sum of `shared.totalAmount`             |
+| Shared you paid         | Sum of `Expense.amount`                 |
+| Shared friends paid     | Sum of `shared.friendPaid`              |
+| Credit-card outstanding | `creditCardUsage(...).outstanding`      |
+| Funding plan            | Sum of remaining funding items          |
 
 ## Validation Contract
 

@@ -1,11 +1,4 @@
-import type {
-  AccountTransfer,
-  Bill,
-  Expense,
-  Goal,
-  Income,
-  Investment,
-} from "./types";
+import type { AccountTransfer, Bill, Expense, Goal, Income, Investment } from "./types";
 
 export function accountDeletionBlocker(
   accountId: string,
@@ -19,7 +12,9 @@ export function accountDeletionBlocker(
   },
 ): string | undefined {
   const linked: string[] = [];
-  if (records.goals.some((goal) => goal.contributions?.some((item) => item.accountId === accountId))) {
+  if (
+    records.goals.some((goal) => goal.contributions?.some((item) => item.accountId === accountId))
+  ) {
     linked.push("goal allocations");
   }
   if (records.expenses.some((expense) => expense.accountId === accountId)) linked.push("expenses");

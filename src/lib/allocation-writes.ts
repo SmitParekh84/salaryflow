@@ -4,9 +4,7 @@ import { uid } from "./utils";
 
 export type AllocationEntry = { goalId: string; amount: number };
 
-export type AllocationResult =
-  | { ok: true; goals: Goal[] }
-  | { ok: false; reason: string };
+export type AllocationResult = { ok: true; goals: Goal[] } | { ok: false; reason: string };
 
 /**
  * Applies a whole split at once. Either every entry lands or none does, so a
