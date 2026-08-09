@@ -1,8 +1,9 @@
 "use client";
 
 import { CATEGORY_META } from "@/lib/constants";
-import type { Expense } from "@/lib/types";
-import { formatMoney } from "@/lib/utils";
+import { cycleInfo } from "@/lib/calculations";
+import type { Expense, Income, SalaryHistoryEntry, SalaryProfile } from "@/lib/types";
+import { formatMoney, parseFinancialDate } from "@/lib/utils";
 import { useMemo } from "react";
 import {
   Area,
@@ -82,6 +83,90 @@ export function SpendTrendChart({
           fill="url(#spendGrad)"
         />
       </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+export function CashFlowChart({
+  expenses,
+  incomes,
+  salaryHistory,
+  profile,
+  currency,
+}: {
+  expenses: Expense[];
+  incomes: Income[];
+  salaryHistory: SalaryHistoryEntry[];
+  profile: SalaryProfile;
+  currency: string;
+}) {
+  const data = useMemo(() => {
+    const today = new Date();
+    const { cycleStart } = cycleInfo(profile, today);
+    const points = new Map<string, { date: Date; inflow: number; outflow: number }>();
+
+    for (const date = new Date(cycleStart); date <= today; date.setDate(date.getDate() + 1)) {
+      const key = date.toDateString();
+      points.set(key, { date: new Date(date), inflow: 0, outflow: 0 });
+    }
+
+    for (const salary of salaryHistory) {
+      if (!salary.confirmed) continue;
+      const date = parseFinancialDate(salary.date);
+      const point = points.get(date.toDateString());
+      if (point) point.inflow += salary.amount;
+    }
+
+    for (const income of incomes) {
+      const date = parseFinancialDate(income.date);
+      const point = points.get(date.toDateString());
+      if (point) point.inflow += income.amount;
+    }
+
+    for (const expense of expenses) {
+      const date = parseFinancialDate(expense.date);
+      const point = points.get(date.toDateString());
+      if (point) point.outflow += expense.amount;
+    }
+
+    return Array.from(points.values()).map((point) => ({
+      label: point.date.toLocaleDateString("en-US", { day: "numeric", month: "short" }),
+      inflow: Math.round(point.inflow),
+      outflow: Math.round(point.outflow),
+    }));
+  }, [expenses, incomes, profile, salaryHistory]);
+
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <BarChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+        <XAxis
+          dataKey="label"
+          tick={{ fontSize: 10, fill: "var(--muted)" }}
+          tickLine={false}
+          axisLine={false}
+          interval="preserveStartEnd"
+          minTickGap={20}
+        />
+        <Tooltip
+          cursor={{ fill: "color-mix(in srgb, var(--muted) 10%, transparent)" }}
+          contentStyle={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: 12,
+            fontSize: 12,
+          }}
+          formatter={(value, name) => [
+            formatMoney(Number(value), currency),
+            name === "inflow" ? "Money in" : "Money out",
+          ]}
+        />
+        <Legend
+          formatter={(value) => (value === "inflow" ? "Money in" : "Money out")}
+          wrapperStyle={{ fontSize: 11 }}
+        />
+        <Bar dataKey="inflow" fill="var(--success)" radius={[5, 5, 0, 0]} maxBarSize={34} />
+        <Bar dataKey="outflow" fill="#f97316" radius={[5, 5, 0, 0]} maxBarSize={34} />
+      </BarChart>
     </ResponsiveContainer>
   );
 }

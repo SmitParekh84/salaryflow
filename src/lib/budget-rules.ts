@@ -109,11 +109,7 @@ export function createRuleFromTemplate(template: BudgetRuleTemplate): Omit<Budge
   };
 }
 
-export function budgetAllocationTarget(
-  rule: BudgetRule,
-  kind: BudgetBucketKind,
-  income: number,
-) {
+export function budgetAllocationTarget(rule: BudgetRule, kind: BudgetBucketKind, income: number) {
   const percentage =
     rule.allocations.find((allocation) => allocation.kind === kind)?.percentage ?? 0;
   return Math.max(0, (income * percentage) / 100);

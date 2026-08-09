@@ -19,6 +19,8 @@ export function Modal({
   children: React.ReactNode;
   className?: string;
 }) {
+  const titleId = React.useId();
+
   React.useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -42,6 +44,9 @@ export function Modal({
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
           />
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={title ? titleId : undefined}
             initial={{ opacity: 0, y: 24, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.98 }}
@@ -52,7 +57,7 @@ export function Modal({
             )}
           >
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface/90 px-5 py-4 backdrop-blur">
-              <h2 className="text-base font-semibold">{title}</h2>
+              <h2 id={titleId} className="text-base font-semibold">{title}</h2>
               <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
                 <X className="h-4 w-4" />
               </Button>

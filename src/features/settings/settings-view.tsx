@@ -133,7 +133,9 @@ export function SettingsView() {
       <aside className="lg:sticky lg:top-24">
         <div className="mb-3 px-1">
           <h2 className="text-sm font-semibold">Settings</h2>
-          <p className="mt-1 text-xs leading-relaxed text-muted">Personalize how SalaryFlow works for you.</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted">
+            Personalize how SalaryFlow works for you.
+          </p>
         </div>
         <div className="lg:hidden">
           <Label htmlFor="settings-section">Settings section</Label>
@@ -183,32 +185,32 @@ export function SettingsView() {
             title="User profile"
             description="Keep the name and email associated with your SalaryFlow account up to date."
           >
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void saveProfile();
-            }}
-          >
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="profile-name">Name</Label>
-              <Input id="profile-name" value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="profile-email">Email</Label>
-              <Input
-                id="profile-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-          </div>
-          <Button type="submit" size="sm" disabled={!name.trim() || !email.trim()}>
-            {saved ? "Saved" : "Save changes"}
-          </Button>
-          </form>
+            <form
+              className="space-y-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void saveProfile();
+              }}
+            >
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="profile-name">Name</Label>
+                  <Input id="profile-name" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="profile-email">Email</Label>
+                  <Input
+                    id="profile-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+              <Button type="submit" size="sm" disabled={!name.trim() || !email.trim()}>
+                {saved ? "Saved" : "Save changes"}
+              </Button>
+            </form>
           </SettingsPane>
         )}
 
@@ -217,112 +219,114 @@ export function SettingsView() {
             title="Money setup"
             description="Set the salary cycle and regional formats used throughout the app."
           >
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void savePreferences();
-            }}
-          >
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <Label htmlFor="salary-amount">Salary amount</Label>
-              <Input
-                id="salary-amount"
-                type="number"
-                min={0}
-                value={profile.amount || ""}
-                onChange={(e) => updateProfile({ amount: Number(e.target.value) })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="salary-day">Salary day</Label>
-              <Input
-                id="salary-day"
-                type="number"
-                min={1}
-                max={31}
-                value={profile.salaryDay}
-                onChange={(e) =>
-                  updateProfile({
-                    salaryDay: Math.max(1, Math.min(31, Number(e.target.value))),
-                  })
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="profile-country">Country</Label>
-              <Select
-                id="profile-country"
-                value={profile.country}
-                onChange={(event) => {
-                  const country = event.target.value;
-                  updateProfile({
-                    country,
-                    currency: COUNTRY_CURRENCIES[country] ?? profile.currency,
-                  });
-                }}
-              >
-                {COUNTRIES.map((country) => (
-                  <option key={country} value={country}>
-                    {country}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="profile-currency">Currency</Label>
-              <Select
-                id="profile-currency"
-                value={profile.currency}
-                onChange={(e) => updateProfile({ currency: e.target.value })}
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.code}
-                  </option>
-                ))}
-              </Select>
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="savings-goal">
-                {activeBudgetRule ? "Monthly savings target (current cycle)" : "Monthly savings goal"}
-              </Label>
-              <Input
-                id="savings-goal"
-                type="number"
-                min={0}
-                value={
-                  ruleSavingsTarget === undefined
-                    ? profile.savingsGoal || ""
-                    : Math.round(ruleSavingsTarget)
-                }
-                readOnly={Boolean(activeBudgetRule)}
-                onChange={(e) => updateProfile({ savingsGoal: Number(e.target.value) })}
-              />
-              <p className="mt-1 text-xs text-muted">
-                {activeBudgetRule
-                  ? `${activeBudgetRule.name} sets ${savingsPercentage ?? 0}% of this cycle's confirmed ${formatMoney(summary.salaryIncome, profile.currency)} salary. Other income does not increase this target.`
-                  : "Used when no budget rule is active."}
-              </p>
-            </div>
-            <div>
-              <Label htmlFor="emergency-target">Emergency fund target</Label>
-              <Input
-                id="emergency-target"
-                type="number"
-                min={0}
-                value={profile.emergencyFundGoal || ""}
-                onChange={(e) => updateProfile({ emergencyFundGoal: Number(e.target.value) })}
-              />
-            </div>
-          </div>
-          <Button type="submit" size="sm">
-            {preferencesSaved ? "Saved" : "Save preferences"}
-          </Button>
-          </form>
+            <form
+              className="space-y-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void savePreferences();
+              }}
+            >
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <Label htmlFor="salary-amount">Salary amount</Label>
+                  <Input
+                    id="salary-amount"
+                    type="number"
+                    min={0}
+                    value={profile.amount || ""}
+                    onChange={(e) => updateProfile({ amount: Number(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="salary-day">Salary day</Label>
+                  <Input
+                    id="salary-day"
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={profile.salaryDay}
+                    onChange={(e) =>
+                      updateProfile({
+                        salaryDay: Math.max(1, Math.min(31, Number(e.target.value))),
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="profile-country">Country</Label>
+                  <Select
+                    id="profile-country"
+                    value={profile.country}
+                    onChange={(event) => {
+                      const country = event.target.value;
+                      updateProfile({
+                        country,
+                        currency: COUNTRY_CURRENCIES[country] ?? profile.currency,
+                      });
+                    }}
+                  >
+                    {COUNTRIES.map((country) => (
+                      <option key={country} value={country}>
+                        {country}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="profile-currency">Currency</Label>
+                  <Select
+                    id="profile-currency"
+                    value={profile.currency}
+                    onChange={(e) => updateProfile({ currency: e.target.value })}
+                  >
+                    {CURRENCIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.code}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="savings-goal">
+                    {activeBudgetRule
+                      ? "Monthly savings target (current cycle)"
+                      : "Monthly savings goal"}
+                  </Label>
+                  <Input
+                    id="savings-goal"
+                    type="number"
+                    min={0}
+                    value={
+                      ruleSavingsTarget === undefined
+                        ? profile.savingsGoal || ""
+                        : Math.round(ruleSavingsTarget)
+                    }
+                    readOnly={Boolean(activeBudgetRule)}
+                    onChange={(e) => updateProfile({ savingsGoal: Number(e.target.value) })}
+                  />
+                  <p className="mt-1 text-xs text-muted">
+                    {activeBudgetRule
+                      ? `${activeBudgetRule.name} sets ${savingsPercentage ?? 0}% of this cycle's confirmed ${formatMoney(summary.salaryIncome, profile.currency)} salary. Other income does not increase this target.`
+                      : "Used when no budget rule is active."}
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="emergency-target">Emergency fund target</Label>
+                  <Input
+                    id="emergency-target"
+                    type="number"
+                    min={0}
+                    value={profile.emergencyFundGoal || ""}
+                    onChange={(e) => updateProfile({ emergencyFundGoal: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+              <Button type="submit" size="sm">
+                {preferencesSaved ? "Saved" : "Save preferences"}
+              </Button>
+            </form>
           </SettingsPane>
         )}
 
@@ -332,7 +336,10 @@ export function SettingsView() {
             description="Accounts stay in the main navigation because balances and transfers are everyday tasks. Visibility controls live here."
           >
             <div className="grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3">
-              <AccountStat label="Visible balance" value={formatMoney(visibleBalance, profile.currency)} />
+              <AccountStat
+                label="Visible balance"
+                value={formatMoney(visibleBalance, profile.currency)}
+              />
               <AccountStat label="Bank accounts" value={String(visibleAccounts.length)} />
               <AccountStat label="Credit cards" value={String(creditCards.length)} />
             </div>
@@ -404,40 +411,42 @@ export function SettingsView() {
               <h3 className="text-sm font-semibold">Appearance</h3>
               <p className="mt-1 text-xs text-muted">Choose a theme or follow this device.</p>
               <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              variant={theme === "light" ? "primary" : "secondary"}
-              size="sm"
-              onClick={() => setTheme("light")}
-            >
-              <Sun className="h-4 w-4" /> Light
-            </Button>
-            <Button
-              variant={theme === "dark" ? "primary" : "secondary"}
-              size="sm"
-              onClick={() => setTheme("dark")}
-            >
-              <Moon className="h-4 w-4" /> Dark
-            </Button>
-            <Button
-              variant={theme === "system" ? "primary" : "secondary"}
-              size="sm"
-              onClick={() => setTheme("system")}
-            >
-              System
-            </Button>
+                <Button
+                  variant={theme === "light" ? "primary" : "secondary"}
+                  size="sm"
+                  onClick={() => setTheme("light")}
+                >
+                  <Sun className="h-4 w-4" /> Light
+                </Button>
+                <Button
+                  variant={theme === "dark" ? "primary" : "secondary"}
+                  size="sm"
+                  onClick={() => setTheme("dark")}
+                >
+                  <Moon className="h-4 w-4" /> Dark
+                </Button>
+                <Button
+                  variant={theme === "system" ? "primary" : "secondary"}
+                  size="sm"
+                  onClick={() => setTheme("system")}
+                >
+                  System
+                </Button>
               </div>
-          </div>
+            </div>
 
             <div className="border-t border-border pt-5">
               <h3 className="text-sm font-semibold">Data & export</h3>
-              <p className="mt-1 text-xs text-muted">Download a portable copy of your financial records.</p>
+              <p className="mt-1 text-xs text-muted">
+                Download a portable copy of your financial records.
+              </p>
               <div className="mt-3 flex flex-wrap gap-2">
-          <Button variant="secondary" size="sm" onClick={exportCsv}>
-            <Download className="h-4 w-4" /> Export CSV
-          </Button>
-          <Button variant="secondary" size="sm" onClick={exportJson}>
-            <FileJson className="h-4 w-4" /> Backup JSON
-          </Button>
+                <Button variant="secondary" size="sm" onClick={exportCsv}>
+                  <Download className="h-4 w-4" /> Export CSV
+                </Button>
+                <Button variant="secondary" size="sm" onClick={exportJson}>
+                  <FileJson className="h-4 w-4" /> Backup JSON
+                </Button>
               </div>
             </div>
 

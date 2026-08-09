@@ -2,9 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Checkbox, Input, Label } from "@/components/ui/input";
-import React, { useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import Link from "next/link";
+import React, { useState } from "react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -35,11 +35,21 @@ export default function LoginPage() {
         <form onSubmit={submit} className="space-y-4">
           <div>
             <Label htmlFor="login-email">Email</Label>
-            <Input id="login-email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
+            <Input
+              id="login-email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              type="email"
+            />
           </div>
           <div>
             <Label htmlFor="login-password">Password</Label>
-            <Input id="login-password" value={password} onChange={(e) => setPassword(e.target.value)} type="password" />
+            <Input
+              id="login-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              type="password"
+            />
           </div>
 
           <div className="flex items-center justify-between">
@@ -47,7 +57,9 @@ export default function LoginPage() {
               <Checkbox checked={remember} onChange={(e) => setRemember(e.target.checked)} />
               Remember me
             </label>
-            <Link href="/forgot-password" className="text-sm text-blue-600">Forgot password?</Link>
+            <Link href="/forgot-password" className="text-sm text-blue-600">
+              Forgot password?
+            </Link>
           </div>
 
           {error && <div className="text-sm text-red-600">{error}</div>}
@@ -58,7 +70,10 @@ export default function LoginPage() {
           </div>
         </form>
         <div className="mt-4 text-sm text-center">
-          No account? <Link href="/register" className="text-blue-600">Create one</Link>
+          No account?{" "}
+          <Link href="/register" className="text-blue-600">
+            Create one
+          </Link>
         </div>
       </div>
     </div>

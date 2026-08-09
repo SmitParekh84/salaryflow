@@ -103,11 +103,7 @@ export default function RegisterPage() {
         <form onSubmit={codeSent ? verifyAndRegister : sendOtp} className="space-y-4">
           <div>
             <Label htmlFor="register-name">Full name</Label>
-            <Input
-              id="register-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+            <Input id="register-name" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
             <Label htmlFor="register-email">Email</Label>
@@ -176,11 +172,7 @@ export default function RegisterPage() {
           {error && <div className="text-sm text-red-600">{error}</div>}
 
           <div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loadingSend || loadingVerify}
-            >
+            <Button type="submit" className="w-full" disabled={loadingSend || loadingVerify}>
               {codeSent
                 ? loadingVerify
                   ? "Verifying…"

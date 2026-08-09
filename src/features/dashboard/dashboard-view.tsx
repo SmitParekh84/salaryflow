@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Progress } from "@/components/ui/progress";
-import { CategoryDonut, SpendTrendChart } from "@/features/analytics/charts";
+import { CashFlowChart, CategoryDonut, SpendTrendChart } from "@/features/analytics/charts";
 import { SafeToSpendHero } from "@/features/dashboard/safe-to-spend-hero";
 import { ExpenseForm } from "@/features/expenses/expense-form";
 import { SeedPrompt, TransactionList } from "@/features/expenses/transaction-list";
 import { useSummary } from "@/hooks/use-summary";
 import { billCycle } from "@/lib/bill-cycle";
-import { projectedGoalDate, upcomingBills } from "@/lib/calculations";
+import { isInCurrentCycle, projectedGoalDate, upcomingBills } from "@/lib/calculations";
 import { buildFundingPlan } from "@/lib/funding-plan";
 import { useFinanceStore } from "@/lib/store";
 import { formatMoney, newestFirst } from "@/lib/utils";
@@ -42,6 +42,7 @@ export function DashboardView() {
   const creditCards = useFinanceStore((s) => s.creditCards);
   const incomes = useFinanceStore((s) => s.incomes);
   const investments = useFinanceStore((s) => s.investments);
+  const salaryHistory = useFinanceStore((s) => s.salaryHistory);
   const activeBudgetRule = useFinanceStore((s) => s.budgetRules.find((rule) => rule.active));
   const summary = useSummary();
   const [addOpen, setAddOpen] = useState(false);
@@ -63,9 +64,18 @@ export function DashboardView() {
     incomes,
     investments,
     budgetRule: activeBudgetRule,
-    monthlyIncome: summary.income,
+    monthlyIncome: summary.salaryIncome,
     savedThisCycle: summary.savedThisCycle,
   });
+  const confirmedSalaryIn = salaryHistory
+    .filter((entry) => entry.confirmed && isInCurrentCycle(entry.date, profile))
+    .reduce((total, entry) => total + entry.amount, 0);
+  const otherCreditsIn = incomes
+    .filter((income) => isInCurrentCycle(income.date, profile))
+    .reduce((total, income) => total + income.amount, 0);
+  const moneyOut = expenses
+    .filter((expense) => isInCurrentCycle(expense.date, profile))
+    .reduce((total, expense) => total + expense.amount, 0);
 
   const insights = buildInsights(summary, nextBills.length);
 
@@ -208,6 +218,37 @@ export function DashboardView() {
           )}
         </Card>
       )}
+
+      <Card>
+        <CardHeader className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle>Cash flow · current salary cycle</CardTitle>
+            <p className="mt-1 text-xs text-muted">
+              Confirmed salary and credits in, recorded spending out
+            </p>
+          </div>
+          <div className="text-right text-xs text-muted">
+            <p>
+              Salary in <span className="font-semibold text-success">{formatMoney(confirmedSalaryIn, currency)}</span>
+            </p>
+            <p>
+              Other credits <span className="font-semibold text-foreground">{formatMoney(otherCreditsIn, currency)}</span>
+            </p>
+            <p>
+              Money out <span className="font-semibold text-foreground">{formatMoney(moneyOut, currency)}</span>
+            </p>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-2">
+          <CashFlowChart
+            expenses={expenses}
+            incomes={incomes}
+            salaryHistory={salaryHistory}
+            profile={profile}
+            currency={currency}
+          />
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
