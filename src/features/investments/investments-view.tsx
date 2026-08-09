@@ -69,7 +69,7 @@ export function InvestmentsView() {
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-px overflow-hidden rounded-2xl bg-border card-shadow sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Portfolio value"
           value={formatMoney(totalValue, currency, true)}

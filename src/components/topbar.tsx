@@ -3,8 +3,10 @@
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/lib/useAuth";
 import { cn } from "@/lib/utils";
-import { AnimatePresence, motion } from "framer-motion";
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { ArrowLeft, Bell, Check, Search } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { GlobalSearch } from "./global-search";
@@ -75,161 +77,151 @@ export function TopBar({
         <kbd className="hidden md:inline rounded bg-surface px-1.5 py-0.5 text-[10px]">⌘K</kbd>
       </Button>
 
-      <div className="relative">
-        <Button
-          variant="secondary"
-          size="icon"
-          onClick={() => {
-            setOpenMenu(false);
-            setOpenNotif((value) => !value);
-          }}
-          aria-label="Notifications"
-        >
-          <Bell className="h-4 w-4" />
-          {unread > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
-              {unread}
-            </span>
-          )}
-        </Button>
-
-        <AnimatePresence>
-          {openNotif && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setOpenNotif(false)} />
-              <motion.div
-                initial={{ opacity: 0, y: -8, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                className="fixed inset-x-3 top-[4.5rem] z-20 rounded-lg border border-border bg-surface card-shadow sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80"
+      <PopoverPrimitive.Root
+        open={openNotif}
+        onOpenChange={(nextOpen) => {
+          setOpenNotif(nextOpen);
+          if (nextOpen) setOpenMenu(false);
+        }}
+      >
+        <PopoverPrimitive.Trigger asChild>
+          <Button variant="secondary" size="icon" aria-label="Notifications">
+            <Bell className="h-4 w-4" />
+            {unread > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
+                {unread}
+              </span>
+            )}
+          </Button>
+        </PopoverPrimitive.Trigger>
+        <PopoverPrimitive.Portal>
+          <PopoverPrimitive.Content
+            data-slot="popover-content"
+            align="end"
+            sideOffset={8}
+            collisionPadding={12}
+            className="z-50 w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl bg-surface text-foreground card-shadow outline-none sm:w-80"
+          >
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <p className="text-sm font-semibold">Notifications</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={markAllRead}
+                className="h-auto min-h-0 p-0 text-primary hover:bg-transparent hover:underline"
               >
-                <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                  <p className="text-sm font-semibold">Notifications</p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={markAllRead}
-                    className="h-auto p-0 text-primary hover:bg-transparent hover:underline"
-                  >
-                    Mark all read
-                  </Button>
-                </div>
-                <div className="max-h-80 overflow-y-auto no-scrollbar">
-                  {notifications.length === 0 && (
-                    <p className="px-4 py-8 text-center text-xs text-muted">
-                      You&apos;re all caught up ✨
-                    </p>
+                Mark all read
+              </Button>
+            </div>
+            <div className="max-h-80 overflow-y-auto no-scrollbar">
+              {notifications.length === 0 && (
+                <p className="px-4 py-8 text-center text-xs text-muted">You&apos;re all caught up</p>
+              )}
+              {notifications.map((notification) => (
+                <Button
+                  key={notification.id}
+                  variant="ghost"
+                  onClick={() => {
+                    markRead(notification.id);
+                    if (notification.href) {
+                      setOpenNotif(false);
+                      router.push(notification.href);
+                    }
+                  }}
+                  className={cn(
+                    "h-auto w-full items-start justify-start rounded-none border-b border-border px-4 py-3 text-left",
+                    !notification.read && "bg-primary/5",
                   )}
-                  {notifications.map((n) => (
-                    <Button
-                      key={n.id}
-                      variant="ghost"
-                      onClick={() => {
-                        markRead(n.id);
-                        if (n.href) {
-                          setOpenNotif(false);
-                          router.push(n.href);
-                        }
-                      }}
-                      className={cn(
-                        "h-auto w-full items-start justify-start rounded-none border-b border-border px-4 py-3 text-left",
-                        !n.read && "bg-primary/5",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "mt-1.5 h-2 w-2 shrink-0 rounded-full",
-                          n.read ? "bg-transparent" : "bg-primary",
-                        )}
-                      />
-                      <span className="min-w-0">
-                        <span className="block text-xs font-medium">{n.title}</span>
-                        <span className="mt-0.5 block text-[11px] text-muted">{n.body}</span>
-                      </span>
-                      {n.read && <Check className="ml-auto h-3.5 w-3.5 text-muted" />}
-                    </Button>
-                  ))}
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-      </div>
+                >
+                  <span
+                    className={cn(
+                      "mt-1.5 h-2 w-2 shrink-0 rounded-full",
+                      notification.read ? "bg-transparent" : "bg-primary",
+                    )}
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-xs font-medium">{notification.title}</span>
+                    <span className="mt-0.5 block text-[11px] text-muted">{notification.body}</span>
+                  </span>
+                  {notification.read && <Check className="ml-auto h-3.5 w-3.5 text-muted" />}
+                </Button>
+              ))}
+            </div>
+          </PopoverPrimitive.Content>
+        </PopoverPrimitive.Portal>
+      </PopoverPrimitive.Root>
 
       <div className="hidden sm:block">
         <ThemeToggle />
       </div>
 
-      <div className="relative">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            setOpenNotif(false);
-            setOpenMenu((value) => !value);
-          }}
-          className="bg-gradient-to-br from-primary to-primary/60 text-sm font-bold text-white hover:opacity-90"
-          aria-label="Account menu"
-        >
-          {initials}
-        </Button>
-
-        <AnimatePresence>
-          {openMenu && (
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              className="absolute right-0 z-20 mt-2 w-44 rounded-2xl border border-border bg-surface card-shadow"
-            >
-              <div className="px-4 py-3">
-                <div className="text-sm font-medium">{user.name || user.email}</div>
-                <div className="mt-1 text-xs text-muted">{user.email}</div>
-              </div>
-              <div className="border-t border-border px-2 py-2">
-                <div className="sm:hidden">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setOpenMenu(false);
-                      setOpenSearch(true);
-                    }}
-                    className="w-full justify-start"
-                  >
-                    <Search className="h-4 w-4" /> Search
-                  </Button>
-                  <ThemeToggle menu />
-                </div>
-                {user.email && (
-                  <a
-                    href="/settings"
-                    className="block px-3 py-2 text-sm hover:bg-surface-2 rounded"
-                  >
-                    Settings
-                  </a>
-                )}
-                {user.email && user.isAdmin && (
-                  <a href="/admin" className="block px-3 py-2 text-sm hover:bg-surface-2 rounded">
-                    Admin
-                  </a>
-                )}
+      <DropdownMenuPrimitive.Root
+        open={openMenu}
+        onOpenChange={(nextOpen) => {
+          setOpenMenu(nextOpen);
+          if (nextOpen) setOpenNotif(false);
+        }}
+      >
+        <DropdownMenuPrimitive.Trigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="bg-linear-to-br from-primary to-primary/60 text-sm font-bold text-white hover:opacity-90"
+            aria-label="Account menu"
+          >
+            {initials}
+          </Button>
+        </DropdownMenuPrimitive.Trigger>
+        <DropdownMenuPrimitive.Portal>
+          <DropdownMenuPrimitive.Content
+            data-slot="dropdown-menu-content"
+            align="end"
+            sideOffset={8}
+            collisionPadding={12}
+            className="z-50 min-w-48 rounded-2xl bg-surface p-1.5 text-foreground card-shadow outline-none"
+          >
+            <DropdownMenuPrimitive.Label className="px-3 py-2">
+              <div className="text-sm font-medium">{user.name || user.email}</div>
+              <div className="mt-1 text-xs font-normal text-muted">{user.email}</div>
+            </DropdownMenuPrimitive.Label>
+            <DropdownMenuPrimitive.Separator className="-mx-1 my-1 h-px bg-border" />
+            <div className="sm:hidden">
+              <DropdownMenuPrimitive.Item asChild>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    setOpenMenu(false);
-                    logout();
-                  }}
-                  className="w-full justify-start"
+                  onClick={() => setOpenSearch(true)}
+                  className="w-full justify-start outline-none"
                 >
-                  Sign out
+                  <Search className="h-4 w-4" /> Search
                 </Button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+              </DropdownMenuPrimitive.Item>
+              <DropdownMenuPrimitive.Item asChild>
+                <ThemeToggle menu />
+              </DropdownMenuPrimitive.Item>
+            </div>
+            {user.email && (
+              <DropdownMenuPrimitive.Item asChild>
+                <Link href="/settings" className="flex cursor-pointer rounded-sm px-3 py-2 text-sm outline-none focus:bg-surface-2">
+                  Settings
+                </Link>
+              </DropdownMenuPrimitive.Item>
+            )}
+            {user.email && user.isAdmin && (
+              <DropdownMenuPrimitive.Item asChild>
+                <Link href="/admin" className="flex cursor-pointer rounded-sm px-3 py-2 text-sm outline-none focus:bg-surface-2">
+                  Admin
+                </Link>
+              </DropdownMenuPrimitive.Item>
+            )}
+            <DropdownMenuPrimitive.Item asChild>
+              <Button variant="ghost" size="sm" onClick={logout} className="w-full justify-start outline-none">
+                Sign out
+              </Button>
+            </DropdownMenuPrimitive.Item>
+          </DropdownMenuPrimitive.Content>
+        </DropdownMenuPrimitive.Portal>
+      </DropdownMenuPrimitive.Root>
 
       <GlobalSearch open={openSearch} onClose={() => setOpenSearch(false)} />
     </header>

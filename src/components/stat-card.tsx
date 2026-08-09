@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
-import { Card } from "./ui/card";
 
 export function StatCard({
   label,
@@ -28,13 +27,9 @@ export function StatCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay, ease: [0.22, 1, 0.36, 1] }}
+      className="min-w-0 bg-surface p-5"
     >
-      <Card className="relative overflow-hidden p-5">
-        <div
-          className="absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-20 blur-xl"
-          style={{ background: accent }}
-        />
-        <div className="relative flex items-start justify-between">
+      <div className="flex items-start justify-between">
           <div
             className="flex h-10 w-10 items-center justify-center rounded-xl"
             style={{
@@ -61,11 +56,10 @@ export function StatCard({
               {Math.abs(trend)}%
             </span>
           )}
-        </div>
+      </div>
         <p className="mt-4 text-xs font-medium text-muted">{label}</p>
         <p className="mt-1 text-2xl font-bold tracking-tight">{value}</p>
         {hint && <p className="mt-1 text-[11px] text-muted">{hint}</p>}
-      </Card>
     </motion.div>
   );
 }

@@ -31,10 +31,6 @@ export function SafeToSpendHero({
 
   return (
     <Card glass className="relative overflow-hidden p-6 sm:p-8">
-      <div
-        className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full opacity-30 blur-3xl"
-        style={{ background: color }}
-      />
       <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-muted">
@@ -49,7 +45,7 @@ export function SafeToSpendHero({
           >
             {formatMoney(summary.safeToSpendToday, currency)}
           </motion.p>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <span
               className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
               style={{

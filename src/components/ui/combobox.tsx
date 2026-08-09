@@ -52,7 +52,7 @@ export function Combobox({
         <PopoverPrimitive.Content
           align="start"
           sideOffset={6}
-          className="z-[70] w-[var(--radix-popover-trigger-width)] overflow-hidden rounded-xl border border-border bg-surface shadow-md"
+          className="z-70 w-(--radix-popover-trigger-width) overflow-hidden rounded-2xl bg-surface shadow-lg"
         >
           <Command className="w-full" loop>
             <div className="flex items-center gap-2 border-b border-border px-3">
@@ -74,7 +74,7 @@ export function Combobox({
                     onValueChange(option.value);
                     setOpen(false);
                   }}
-                  className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-sm outline-none data-[selected=true]:bg-surface-2"
+                  className="flex cursor-pointer items-center gap-2 rounded-xl px-2.5 py-2 text-sm outline-none data-[selected=true]:bg-surface-2"
                 >
                   <Check
                     className={cn(

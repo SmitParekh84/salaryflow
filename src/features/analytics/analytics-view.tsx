@@ -42,7 +42,7 @@ export function AnalyticsView() {
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-px overflow-hidden rounded-2xl bg-border card-shadow sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Cycle income"
           value={formatMoney(summary.income, currency, true)}

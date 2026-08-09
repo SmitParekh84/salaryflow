@@ -1,4 +1,7 @@
+"use client";
+
 import { cn } from "@/lib/utils";
+import * as ProgressPrimitive from "@radix-ui/react-progress";
 
 export function Progress({
   value,
@@ -9,20 +12,25 @@ export function Progress({
   className?: string;
   color?: string;
 }) {
+  const normalizedValue = Math.max(0, Math.min(100, value));
+
   return (
-    <div
+    <ProgressPrimitive.Root
+      data-slot="progress"
+      value={normalizedValue}
       className={cn(
-        "h-2 w-full overflow-hidden rounded-full bg-surface-2",
-        className
+        "relative h-2 w-full overflow-hidden rounded-full bg-surface-2",
+        className,
       )}
     >
-      <div
-        className="h-full rounded-full transition-all duration-500 ease-out"
+      <ProgressPrimitive.Indicator
+        data-slot="progress-indicator"
+        className="h-full w-full flex-1 rounded-full transition-transform duration-500 ease-out"
         style={{
-          width: `${Math.max(0, Math.min(100, value))}%`,
           background: color,
+          transform: `translateX(-${100 - normalizedValue}%)`,
         }}
       />
-    </div>
+    </ProgressPrimitive.Root>
   );
 }
