@@ -11,15 +11,15 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 import ClientAuthWrapper from "@/components/client-auth-wrapper";
 
 export const metadata: Metadata = {
-  title: "SalaryFlow — Spend with clarity",
+  title: "Spendly — Spend with clarity",
   description:
     "A salary-cycle money app that tells you exactly how much you can safely spend today, every day until your next salary.",
-  applicationName: "SalaryFlow",
+  applicationName: "Spendly",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "SalaryFlow",
+    title: "Spendly",
   },
   icons: {
     icon: [

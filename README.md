@@ -1,4 +1,4 @@
-# SalaryFlow 💸
+# Spendly 💸
 
 A premium, salary-cycle-driven money app that answers one question every day:
 **how much can I safely spend today?**
@@ -96,7 +96,7 @@ SMTP_PORT=587        # Usually 587, or 465 with SMTP_SECURE=true
 SMTP_SECURE=false
 SMTP_USER=...
 SMTP_PASS=...
-SMTP_FROM="SalaryFlow <no-reply@your-domain.com>"
+SMTP_FROM="Spendly <no-reply@your-domain.com>"
 ```
 
 Registration and password-reset codes require SMTP. The API returns a clear
@@ -129,8 +129,8 @@ The service worker registers only in production (`npm run build && npm run start
 ## 🐳 Docker
 
 ```bash
-docker build -t salaryflow .
-docker run -p 3000:3000 --env-file .env.local salaryflow
+docker build -t spendly .
+docker run -p 3000:3000 --env-file .env.local spendly
 ```
 
 ---

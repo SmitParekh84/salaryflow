@@ -69,7 +69,7 @@ export function OnboardingView() {
 
   const steps = [
     {
-      title: "Welcome to SalaryFlow",
+      title: "Welcome to Spendly",
       subtitle: "Let's set up your salary cycle in under a minute.",
       valid: name.trim().length > 0,
       content: (
@@ -265,7 +265,7 @@ export function OnboardingView() {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
             <Wallet className="h-5 w-5" />
           </div>
-          <span className="text-base font-bold">SalaryFlow</span>
+          <span className="text-base font-bold">Spendly</span>
         </div>
 
         <div className="mb-6 flex gap-1.5">

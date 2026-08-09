@@ -35,6 +35,22 @@ import type {
 import { completeTransferWrite } from "./transfer-writes";
 import { uid } from "./utils";
 
+const STORE_KEY = "spendly-store";
+const LEGACY_STORE_KEY = "salaryflow-store";
+
+export function migrateLegacyBrandStorage(
+  storage: Pick<Storage, "getItem" | "setItem" | "removeItem">,
+) {
+  if (storage.getItem(STORE_KEY)) return false;
+  const legacyState = storage.getItem(LEGACY_STORE_KEY);
+  if (!legacyState) return false;
+  storage.setItem(STORE_KEY, legacyState);
+  storage.removeItem(LEGACY_STORE_KEY);
+  return true;
+}
+
+if (typeof window !== "undefined") migrateLegacyBrandStorage(window.localStorage);
+
 interface FinanceState {
   user: UserProfile;
   profile: SalaryProfile;
@@ -830,7 +846,7 @@ export const useFinanceStore = create<FinanceState>()(
 
       loadSeed: () =>
         set({
-          user: { name: "Alex Morgan", email: "alex@salaryflow.app", onboarded: true },
+          user: { name: "Alex Morgan", email: "alex@spendly.app", onboarded: true },
           profile: seedProfile,
           expenses: seedExpenses(),
           incomes: seedIncomes(),
@@ -865,7 +881,7 @@ export const useFinanceStore = create<FinanceState>()(
         }),
     }),
     {
-      name: "salaryflow-store",
+      name: STORE_KEY,
       version: 3,
       migrate: (persistedState) => {
         const state = persistedState as Partial<FinanceState>;

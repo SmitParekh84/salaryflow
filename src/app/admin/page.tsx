@@ -177,7 +177,7 @@ export default function AdminPage() {
               <ShieldCheck className="h-5 w-5" />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">SalaryFlow Admin</p>
+              <p className="truncate text-sm font-semibold">Spendly Admin</p>
               <p className="text-xs text-muted">Access and account operations</p>
             </div>
           </div>

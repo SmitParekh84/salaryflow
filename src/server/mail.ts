@@ -41,18 +41,18 @@ function getMailConfig() {
 function createOtpEmail({ code, purpose, expiresInMinutes }: OtpEmailOptions) {
   const isRegistration = purpose === "register";
   const title = isRegistration
-    ? "Verify your SalaryFlow account"
-    : "Reset your SalaryFlow password";
+    ? "Verify your Spendly account"
+    : "Reset your Spendly password";
   const preheader = isRegistration
-    ? "Use this code to finish creating your SalaryFlow account."
-    : "Use this code to reset your SalaryFlow password.";
+    ? "Use this code to finish creating your Spendly account."
+    : "Use this code to reset your Spendly password.";
   const action = isRegistration ? "finish creating your account" : "reset your password";
   const safeCode = escapeHtml(code);
 
   return {
     subject: isRegistration
-      ? `${code} is your SalaryFlow verification code`
-      : `${code} is your SalaryFlow reset code`,
+      ? `${code} is your Spendly verification code`
+      : `${code} is your Spendly reset code`,
     text: [
       title,
       "",
@@ -62,7 +62,7 @@ function createOtpEmail({ code, purpose, expiresInMinutes }: OtpEmailOptions) {
       `This code expires in ${expiresInMinutes} minutes.`,
       "If you did not request this code, you can safely ignore this email.",
       "",
-      "SalaryFlow",
+      "Spendly",
     ].join("\n"),
     html: `<!doctype html>
 <html lang="en">
@@ -82,7 +82,7 @@ function createOtpEmail({ code, purpose, expiresInMinutes }: OtpEmailOptions) {
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                   <tr>
                     <td align="center" width="36" height="36" style="width:36px;height:36px;border-radius:8px;background:${EMAIL_COLORS.brand};color:${EMAIL_COLORS.brandOn};font-size:17px;font-weight:700;">S</td>
-                    <td style="padding-left:10px;font-size:16px;font-weight:700;color:${EMAIL_COLORS.foreground};">SalaryFlow</td>
+                    <td style="padding-left:10px;font-size:16px;font-weight:700;color:${EMAIL_COLORS.foreground};">Spendly</td>
                   </tr>
                 </table>
               </td>
@@ -96,7 +96,7 @@ function createOtpEmail({ code, purpose, expiresInMinutes }: OtpEmailOptions) {
               </td>
             </tr>
           </table>
-          <p style="margin:18px 0 0;font-size:12px;line-height:1.5;color:${EMAIL_COLORS.subtle};">SalaryFlow account security</p>
+          <p style="margin:18px 0 0;font-size:12px;line-height:1.5;color:${EMAIL_COLORS.subtle};">Spendly account security</p>
         </td>
       </tr>
     </table>

@@ -5,7 +5,7 @@
 
 ## Problem
 
-A goal in SalaryFlow is a number that goes up when the user presses "add". Nothing
+A goal in Spendly is a number that goes up when the user presses "add". Nothing
 connects it to real money. The app cannot answer the question the user actually
 has: *"how much of the money in my bank is already promised to something?"*
 

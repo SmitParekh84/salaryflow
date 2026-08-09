@@ -184,11 +184,11 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
       goals: state.goals,
       investments: state.investments,
     };
-    download("salaryflow-backup.json", JSON.stringify(data, null, 2), "application/json");
+    download("spendly-backup.json", JSON.stringify(data, null, 2), "application/json");
   };
 
   const exportCsv = () => {
-    download("salaryflow-expenses.csv", exportExpensesCsv(expenses), "text/csv");
+    download("spendly-expenses.csv", exportExpensesCsv(expenses), "text/csv");
   };
 
   const hiddenAccounts = accounts.filter((account) => account.hiddenFromAccounts);
@@ -214,7 +214,7 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
         <div className="mb-4 px-1 lg:mb-3">
           <h2 className="text-lg font-semibold lg:text-sm">Settings and activity</h2>
           <p className="mt-1 text-xs leading-relaxed text-muted">
-            Personalize how SalaryFlow works for you.
+            Personalize how Spendly works for you.
           </p>
         </div>
         <nav
@@ -274,7 +274,7 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
           {section === "profile" && (
             <SettingsPane
               title="User profile"
-              description="Keep the name and email associated with your SalaryFlow account up to date."
+              description="Keep the name and email associated with your Spendly account up to date."
             >
               <form
                 className="space-y-4"
@@ -693,7 +693,7 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
               <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-sm font-semibold">Account access</h3>
-                  <p className="mt-1 text-xs text-muted">Sign out of SalaryFlow on this device.</p>
+                  <p className="mt-1 text-xs text-muted">Sign out of Spendly on this device.</p>
                 </div>
                 <Button variant="secondary" size="sm" onClick={() => void logout()}>
                   <LogOut className="h-4 w-4" /> Sign out

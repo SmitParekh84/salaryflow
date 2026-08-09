@@ -1,11 +1,11 @@
-# SalaryFlow — Build Plan
+# Spendly — Build Plan
 
 Premium salary-cycle PWA. Next.js 16 (App Router, Turbopack), React 19, TS, Tailwind v4,
 Zustand (persisted), Framer Motion, Recharts, next-themes, RHF+Zod, Lucide.
 
 ## UI system decision
 
-Use **shadcn/ui** as the source-owned component system and keep SalaryFlow's existing color,
+Use **shadcn/ui** as the source-owned component system and keep Spendly's existing color,
 spacing, typography, and radius tokens. Add components selectively through the shadcn CLI; do
 not replace the app with a stock shadcn theme or add a second full design system.
 
@@ -30,7 +30,7 @@ not replace the app with a stock shadcn theme or add a second full design system
 
 ### Incremental migration order
 
-Status: this remains an incremental backlog, not a prerequisite for the shipped product. SalaryFlow
+Status: this remains an incremental backlog, not a prerequisite for the shipped product. Spendly
 currently uses source-owned shared components, with Radix-backed `Dialog`, `AlertDialog`, menus,
 popover, progress, select, and checkbox behavior where implemented. The remaining migration work is
 to standardize `Switch`, `Tooltip`, `Sonner`, `Command`, and remaining native control call sites.
@@ -65,7 +65,7 @@ Safe To Spend = remaining balance / remaining days until salary. Color-coded gre
 Use Gemini only through authenticated Next.js server routes. Store `GEMINI_API_KEY` in local and
 Vercel environment variables; never expose it through `NEXT_PUBLIC_*`, client code, logs, or the
 database. The existing reference API at `smitparekh-api` demonstrates REST calls, model fallback,
-rate-limit cooldowns, and bounded inputs. SalaryFlow should reuse those patterns, but use the
+rate-limit cooldowns, and bounded inputs. Spendly should reuse those patterns, but use the
 correctly spelled environment variable and finance-specific validation.
 
 ### Recommended AI features

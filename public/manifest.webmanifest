@@ -1,6 +1,6 @@
 {
-  "name": "SalaryFlow — Spend with clarity",
-  "short_name": "SalaryFlow",
+  "name": "Spendly — Spend with clarity",
+  "short_name": "Spendly",
   "description": "Salary-cycle money app that shows exactly how much you can safely spend today.",
   "start_url": "/dashboard",
   "scope": "/",

@@ -10,7 +10,7 @@ const MARK_SIZES = {
 type BrandSize = keyof typeof MARK_SIZES;
 
 /**
- * The SalaryFlow app icon. Single definition so the dashboard, auth pages and
+ * The Spendly app icon. Single definition so the dashboard, auth pages and
  * landing page can never drift apart.
  */
 export function BrandMark({
@@ -57,7 +57,7 @@ export function Brand({
             size === "lg" ? "text-[0.95rem]" : "text-sm",
           )}
         >
-          SalaryFlow
+          Spendly
         </span>
         {tagline && (
           <span className="mt-0.5 block truncate text-[10px] leading-tight text-muted">

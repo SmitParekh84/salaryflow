@@ -94,7 +94,7 @@ export function LandingHero() {
             transition={{ duration: 0.6, delay: 0.12 }}
             className="mx-auto mt-6 max-w-xl text-pretty text-base text-muted sm:text-lg"
           >
-            SalaryFlow divides what&apos;s left by the days until your next salary,
+            Spendly divides what&apos;s left by the days until your next salary,
             so every day you get one clear number. Zero finance knowledge required.
           </motion.p>
 
@@ -161,7 +161,7 @@ export function LandingHero() {
       </main>
 
       <footer className="border-t border-border py-8 text-center text-xs text-muted">
-        SalaryFlow — built with Next.js 16. Installable everywhere.
+        Spendly — built with Next.js 16. Installable everywhere.
       </footer>
     </div>
   );

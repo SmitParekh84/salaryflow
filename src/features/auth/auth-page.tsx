@@ -177,7 +177,7 @@ function AuthContent({ mode }: { mode: AuthMode }) {
     mode === "signin"
       ? "Your latest salary cycle will be ready after a secure sync."
       : signupStep === "identity"
-        ? "Start with the details you will use for your SalaryFlow account."
+        ? "Start with the details you will use for your Spendly account."
         : signupStep === "password"
           ? "Create a strong password to protect your financial records."
           : `Enter the six-digit code sent to ${email.trim().toLowerCase()}.`;
@@ -417,7 +417,7 @@ function SignInForm({
         {!loading && <ArrowRight className="h-4 w-4" />}
       </Button>
       <p className="text-center text-sm text-muted">
-        New to SalaryFlow?{" "}
+        New to Spendly?{" "}
         <Link href="/register" className="font-medium text-primary">
           Sign up
         </Link>

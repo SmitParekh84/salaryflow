@@ -1,4 +1,4 @@
-const CACHE = "salaryflow-v1";
+const CACHE = "spendly-v1";
 const OFFLINE_URL = "/offline";
 const PRECACHE = ["/", "/dashboard", "/offline", "/manifest.webmanifest"];
 
@@ -57,7 +57,7 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("push", (event) => {
   const data = event.data ? event.data.json() : {};
-  const title = data.title || "SalaryFlow";
+  const title = data.title || "Spendly";
   event.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || "You have a new update.",

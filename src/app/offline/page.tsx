@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const metadata = { title: "Offline — SalaryFlow" };
+export const metadata = { title: "Offline — Spendly" };
 
 export default function Offline() {
   return (
@@ -8,7 +8,7 @@ export default function Offline() {
       <div className="text-5xl">📡</div>
       <h1 className="text-xl font-bold">You&apos;re offline</h1>
       <p className="max-w-sm text-sm text-muted">
-        SalaryFlow works offline, but this page needs a connection. Your data is
+        Spendly works offline, but this page needs a connection. Your data is
         safe and will sync when you&apos;re back online.
       </p>
       <Link

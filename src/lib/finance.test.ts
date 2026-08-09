@@ -25,7 +25,7 @@ import {
 import { buildFundingPlan } from "./funding-plan";
 import { migrateGoalOpeningBalances } from "./goal-migration";
 import { goalContributionStep, monthsToGoal, projectGoal, whatIfDelta } from "./goal-projection";
-import { useFinanceStore } from "./store";
+import { migrateLegacyBrandStorage, useFinanceStore } from "./store";
 import { completeTransferWrite } from "./transfer-writes";
 import type {
   AccountTransfer,
@@ -52,6 +52,22 @@ const profile: SalaryProfile = {
   emergencyFundGoal: 100_000,
   investmentAmount: 0,
 };
+
+describe("Spendly brand storage migration", () => {
+  it("moves persisted finance data to the new key exactly once", () => {
+    const values = new Map([["salaryflow-store", '{"state":{"expenses":[]},"version":3}']]);
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+      removeItem: (key: string) => values.delete(key),
+    };
+
+    expect(migrateLegacyBrandStorage(storage)).toBe(true);
+    expect(values.get("spendly-store")).toBe('{"state":{"expenses":[]},"version":3}');
+    expect(values.has("salaryflow-store")).toBe(false);
+    expect(migrateLegacyBrandStorage(storage)).toBe(false);
+  });
+});
 
 describe("India financial years", () => {
   it("switches to the new year on April 1", () => {
