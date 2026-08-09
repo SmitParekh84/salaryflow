@@ -69,6 +69,12 @@ export function buildFundingPlan({
     accounts.find(
       (account) => account.status === "active" && account.defaultFor?.includes("subscriptions"),
     );
+  const savingsAccount = accounts.find(
+    (account) => account.status === "active" && account.defaultFor?.includes("savings"),
+  );
+  const investmentBills = bills.filter(
+    (bill) => bill.frequency === "monthly" && bill.category === "Investment",
+  );
   const items: FundingPlanItem[] = [];
 
   for (const card of creditCards.filter((card) => card.status === "active")) {
@@ -86,7 +92,7 @@ export function buildFundingPlan({
     });
   }
 
-  for (const investment of investments) {
+  for (const investment of investmentBills.length > 0 ? [] : investments) {
     if (!investment.monthly) continue;
     items.push({
       id: `investment-${investment.id}`,
@@ -108,10 +114,9 @@ export function buildFundingPlan({
       0;
     const savingsTarget = (monthlyIncome * savingsPercentage) / 100;
     const investmentTarget = (monthlyIncome * investmentPercentage) / 100;
-    const monthlyInvestments = investments.reduce(
-      (sum, investment) => sum + (investment.monthly ?? 0),
-      0,
-    );
+    const monthlyInvestments =
+      investments.reduce((sum, investment) => sum + (investment.monthly ?? 0), 0) ||
+      investmentBills.reduce((sum, bill) => sum + bill.amount, 0);
     const investmentTopUp = Math.max(0, investmentTarget - monthlyInvestments);
     if (investmentTopUp > 0) {
       items.push({
@@ -131,7 +136,7 @@ export function buildFundingPlan({
         kind: "savings",
         label: `${budgetRule.name} savings reserve`,
         amount: savingsTarget,
-        destinationAccountId: reserveAccount?.id,
+        destinationAccountId: savingsAccount?.id ?? reserveAccount?.id,
         timing: `${savingsPercentage}% cash savings target`,
         paidAmount: Math.min(savedThisCycle, savingsTarget),
         remainingAmount: Math.max(0, savingsTarget - savedThisCycle),
@@ -140,9 +145,11 @@ export function buildFundingPlan({
   }
 
   for (const bill of bills) {
-    if (bill.frequency !== "monthly" || bill.category === "Investment") continue;
+    if (bill.frequency !== "monthly") continue;
     const kind: FundingPlanKind =
-      bill.category === "Rent"
+      bill.category === "Investment"
+        ? "investment"
+        : bill.category === "Rent"
         ? "rent"
         : bill.category === "Subscriptions"
           ? "subscription"
@@ -172,7 +179,7 @@ export function buildFundingPlan({
       billId: bill.id,
       billingMonth: cycle.billingMonth,
       paidAmount: cycle.paidAmount,
-      remainingAmount: cycle.isPaid ? 0 : cycle.amount,
+      remainingAmount: cycle.remainingAmount,
     });
   }
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { CategoryIcon } from "@/components/category-icon";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -47,7 +47,7 @@ export function BillsView() {
 
   const totalDue = bills.reduce((sum, bill) => {
     const cycle = billCycle(bill, expenses);
-    return cycle.isPaid ? sum : sum + cycle.amount;
+    return sum + cycle.remainingAmount;
   }, 0);
 
   const openAdd = () => {
@@ -104,7 +104,7 @@ export function BillsView() {
     if (cycle.isPaid) return;
     const account = accounts.find((candidate) => candidate.id === bill.accountId);
     addExpense({
-      amount: cycle.amount,
+      amount: cycle.remainingAmount,
       category: bill.category,
       merchant: bill.name,
       paymentMethod: "UPI",
@@ -178,6 +178,11 @@ export function BillsView() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold">{formatMoney(cycle.amount, currency)}</p>
+                  {cycle.recordedAmount > 0 && !cycle.isPaid && (
+                    <p className="text-xs text-muted">
+                      {formatMoney(cycle.remainingAmount, currency)} remaining
+                    </p>
+                  )}
                   <div className="mt-1 flex items-center justify-end gap-1">
                     {!cycle.isPaid && (
                       <button

@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { CategoryIcon } from "@/components/category-icon";
+import { Button } from "@/components/ui/button";
 import { CATEGORY_META } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";

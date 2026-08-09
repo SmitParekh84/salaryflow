@@ -54,5 +54,7 @@ export function CategoryIcon({
   className?: string;
 }) {
   const Icon = CATEGORY_ICONS[category];
-  return <Icon className={cn("h-4 w-4", className)} style={{ color: CATEGORY_META[category].color }} />;
+  return (
+    <Icon className={cn("h-4 w-4", className)} style={{ color: CATEGORY_META[category].color }} />
+  );
 }

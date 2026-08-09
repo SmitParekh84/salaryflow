@@ -10,15 +10,21 @@ import { creditCardUsage } from "@/lib/credit-cards";
 import { useFinanceStore } from "@/lib/store";
 import type {
   AccountPurpose,
+  AccountTransferMode,
   BankAccount,
   BankAccountType,
   CreditCard as CreditCardType,
 } from "@/lib/types";
-import { formatDate, formatMoney } from "@/lib/utils";
+import { formatDate, formatMoney, localDateInputValue } from "@/lib/utils";
 import {
   ArrowRight,
+  ArrowRightLeft,
   Building2,
+  CalendarClock,
+  Check,
   CreditCard,
+  Eye,
+  EyeOff,
   Landmark,
   Pencil,
   Plus,
@@ -39,6 +45,7 @@ const ACCOUNT_PURPOSES: { value: AccountPurpose; label: string }[] = [
   { value: "subscriptions", label: "Bills & subscriptions" },
   { value: "investments", label: "SIPs & investments" },
   { value: "obligations", label: "Salary-day reserves" },
+  { value: "savings", label: "Cash savings" },
 ];
 
 const EMPTY_CARD_FORM = {
@@ -46,6 +53,14 @@ const EMPTY_CARD_FORM = {
   bankName: "",
   creditLimit: 0,
   statementDay: 1,
+};
+
+const EMPTY_TRANSFER_FORM = {
+  sourceAccountId: "",
+  destinationAccountId: "",
+  amount: 0,
+  date: localDateInputValue(),
+  note: "",
 };
 
 export function AccountsView() {
@@ -61,6 +76,9 @@ export function AccountsView() {
   const addCreditCard = useFinanceStore((state) => state.addCreditCard);
   const updateCreditCard = useFinanceStore((state) => state.updateCreditCard);
   const deleteCreditCard = useFinanceStore((state) => state.deleteCreditCard);
+  const accountTransfers = useFinanceStore((state) => state.accountTransfers);
+  const addAccountTransfer = useFinanceStore((state) => state.addAccountTransfer);
+  const completeAccountTransfer = useFinanceStore((state) => state.completeAccountTransfer);
 
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -68,8 +86,12 @@ export function AccountsView() {
   const [cardOpen, setCardOpen] = useState(false);
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [cardForm, setCardForm] = useState(EMPTY_CARD_FORM);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [transferForm, setTransferForm] = useState(EMPTY_TRANSFER_FORM);
+  const [transferError, setTransferError] = useState("");
 
-  const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0);
+  const visibleAccounts = accounts.filter((account) => !account.hiddenFromAccounts);
+  const totalBalance = visibleAccounts.reduce((sum, account) => sum + account.balance, 0);
   const closingAccounts = accounts.filter((account) => account.status === "closing");
 
   function openAdd() {
@@ -161,16 +183,62 @@ export function AccountsView() {
     await syncWithServer();
   }
 
+  function openTransfer() {
+    const active = accounts.filter((account) => account.status === "active");
+    setTransferForm({
+      ...EMPTY_TRANSFER_FORM,
+      sourceAccountId: active[0]?.id ?? "",
+      destinationAccountId: active[1]?.id ?? "",
+    });
+    setTransferError("");
+    setTransferOpen(true);
+  }
+
+  function saveTransfer(mode: AccountTransferMode) {
+    const success = addAccountTransfer(
+      {
+        ...transferForm,
+        amount: Number(transferForm.amount),
+        date: new Date(`${transferForm.date}T12:00:00`).toISOString(),
+        note: transferForm.note.trim() || undefined,
+      },
+      mode,
+    );
+    if (!success) {
+      setTransferError("Choose two different accounts and check the source balance.");
+      return;
+    }
+    setTransferOpen(false);
+  }
+
+  async function toggleBalanceMask(account: BankAccount) {
+    updateAccount(account.id, { maskBalance: !account.maskBalance });
+    await syncWithServer();
+  }
+
+  async function hideAccount(account: BankAccount) {
+    updateAccount(account.id, { hiddenFromAccounts: true });
+    setOpen(false);
+    await syncWithServer();
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm text-muted">{accounts.length} linked accounts</p>
+          <p className="text-sm text-muted">{visibleAccounts.length} linked accounts</p>
           <p className="mt-1 text-2xl font-bold">{formatMoney(totalBalance, currency)}</p>
         </div>
-        <Button size="sm" onClick={openAdd}>
-          <Plus className="h-4 w-4" /> Add account
-        </Button>
+        <div className="flex gap-2">
+          {accounts.length >= 2 && (
+            <Button size="sm" variant="secondary" onClick={openTransfer}>
+              <ArrowRightLeft className="h-4 w-4" /> Transfer
+            </Button>
+          )}
+          <Button size="sm" onClick={openAdd}>
+            <Plus className="h-4 w-4" /> Add account
+          </Button>
+        </div>
       </div>
 
       {closingAccounts.map((account) => {
@@ -194,7 +262,7 @@ export function AccountsView() {
         );
       })}
 
-      {accounts.length === 0 ? (
+      {visibleAccounts.length === 0 ? (
         <EmptyState
           icon={WalletCards}
           title="No bank accounts"
@@ -207,7 +275,7 @@ export function AccountsView() {
         />
       ) : (
         <div className="divide-y divide-border border-y border-border">
-          {accounts.map((account) => (
+          {visibleAccounts.map((account) => (
             <div key={account.id} className="flex items-center gap-3 py-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <Landmark className="h-5 w-5" />
@@ -231,9 +299,26 @@ export function AccountsView() {
                   </p>
                 )}
               </div>
-              <p className="text-sm font-bold tabular-nums">
-                {formatMoney(account.balance, currency)}
-              </p>
+              <div className="flex items-center gap-1">
+                <p className="min-w-20 text-right text-sm font-bold tabular-nums">
+                  {account.maskBalance ? "••••••" : formatMoney(account.balance, currency)}
+                </p>
+                <button
+                  onClick={() => void toggleBalanceMask(account)}
+                  className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-foreground"
+                  aria-label={
+                    account.maskBalance
+                      ? `Show ${account.bankName} balance`
+                      : `Hide ${account.bankName} balance`
+                  }
+                >
+                  {account.maskBalance ? (
+                    <Eye className="h-4 w-4" />
+                  ) : (
+                    <EyeOff className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
               <button
                 onClick={() => openEdit(account)}
                 className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-foreground"
@@ -260,6 +345,64 @@ export function AccountsView() {
           your own banks do not change income.
         </p>
       </Card>
+
+      {accountTransfers.length > 0 && (
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-base font-semibold">Bank transfers</h2>
+            <p className="text-xs text-muted">
+              Moving money between your accounts does not change income or expenses.
+            </p>
+          </div>
+          <div className="divide-y divide-border border-y border-border">
+            {accountTransfers.map((transfer) => {
+              const source = accounts.find((account) => account.id === transfer.sourceAccountId);
+              const destination = accounts.find(
+                (account) => account.id === transfer.destinationAccountId,
+              );
+              const countsAsSavings = destination?.defaultFor?.includes("savings");
+              return (
+                <div key={transfer.id} className="flex flex-wrap items-center gap-3 py-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    {transfer.status === "completed" ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <CalendarClock className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">
+                      {source?.bankName ?? "Unknown account"} to{" "}
+                      {destination?.bankName ?? "Unknown account"}
+                    </p>
+                    <p className="text-xs text-muted">
+                      {formatDate(transfer.date)} ·{" "}
+                      {transfer.status === "completed" ? "Transferred" : "Scheduled"}
+                      {transfer.status === "completed" && countsAsSavings
+                        ? " · Counts as cash savings"
+                        : ""}
+                      {transfer.status === "completed" && transfer.balancesApplied === false
+                        ? " · Balances already reflected"
+                        : ""}
+                      {transfer.note ? ` · ${transfer.note}` : ""}
+                    </p>
+                  </div>
+                  <p className="text-sm font-bold">{formatMoney(transfer.amount, currency)}</p>
+                  {transfer.status === "scheduled" && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => void completeAccountTransfer(transfer.id)}
+                    >
+                      Mark transferred
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
@@ -412,12 +555,128 @@ export function AccountsView() {
               />
             </div>
           </div>
+          {editingId && (
+            <div className="rounded-xl border border-border bg-surface-2 p-3">
+              <p className="text-sm font-medium">Account privacy</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted">
+                Hiding the account removes it and its balance from Accounts totals. Existing
+                expenses and self-transfers keep working. Restore it later from Settings.
+              </p>
+              <Button
+                className="mt-3"
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  const account = accounts.find((item) => item.id === editingId);
+                  if (account) void hideAccount(account);
+                }}
+              >
+                <EyeOff className="h-4 w-4" /> Hide account from Accounts
+              </Button>
+            </div>
+          )}
           <div className="flex gap-3 pt-1">
             <Button variant="secondary" className="flex-1" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button className="flex-1" onClick={() => void save()}>
               Save account
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={transferOpen}
+        onClose={() => setTransferOpen(false)}
+        title="Transfer between banks"
+      >
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label>From</Label>
+              <Select
+                value={transferForm.sourceAccountId}
+                onChange={(event) =>
+                  setTransferForm({ ...transferForm, sourceAccountId: event.target.value })
+                }
+              >
+                {accounts
+                  .filter((account) => account.status === "active")
+                  .map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.bankName}
+                      {account.hiddenFromAccounts ? " (hidden)" : ""}
+                    </option>
+                  ))}
+              </Select>
+            </div>
+            <div>
+              <Label>To</Label>
+              <Select
+                value={transferForm.destinationAccountId}
+                onChange={(event) =>
+                  setTransferForm({ ...transferForm, destinationAccountId: event.target.value })
+                }
+              >
+                {accounts
+                  .filter((account) => account.status === "active")
+                  .map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.bankName}
+                      {account.hiddenFromAccounts ? " (hidden)" : ""}
+                    </option>
+                  ))}
+              </Select>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label>Amount</Label>
+              <Input
+                type="number"
+                min={1}
+                value={transferForm.amount || ""}
+                onChange={(event) =>
+                  setTransferForm({ ...transferForm, amount: Number(event.target.value) })
+                }
+              />
+            </div>
+            <div>
+              <Label>Transfer date</Label>
+              <Input
+                type="date"
+                value={transferForm.date}
+                onChange={(event) => setTransferForm({ ...transferForm, date: event.target.value })}
+              />
+            </div>
+          </div>
+          <div>
+            <Label>Note (optional)</Label>
+            <Input
+              value={transferForm.note}
+              onChange={(event) => setTransferForm({ ...transferForm, note: event.target.value })}
+              placeholder="e.g. October salary savings"
+            />
+          </div>
+          {transferError && <p className="text-sm text-danger">{transferError}</p>}
+          <div className="flex gap-3 pt-1">
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={() => saveTransfer("scheduled")}
+            >
+              Schedule
+            </Button>
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={() => saveTransfer("already-transferred")}
+            >
+              Already transferred
+            </Button>
+            <Button className="flex-1" onClick={() => saveTransfer("transfer-now")}>
+              Transfer now
             </Button>
           </div>
         </div>

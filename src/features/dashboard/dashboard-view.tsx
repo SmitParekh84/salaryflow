@@ -1,7 +1,7 @@
 "use client";
 
-import { StatCard } from "@/components/stat-card";
 import { CategoryIcon } from "@/components/category-icon";
+import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -49,7 +49,12 @@ export function DashboardView() {
   const currency = profile.currency;
   const topGoal = goals[0];
   const nextBills = upcomingBills(bills, expenses).slice(0, 3);
-  const emergency = goals.find((g) => g.type === "Emergency Fund");
+  const emergencyGoal = goals.find((goal) => goal.type === "Emergency Fund");
+  const savingsAccount = accounts.find((account) => account.defaultFor?.includes("savings"));
+  const emergency =
+    emergencyGoal && savingsAccount
+      ? { ...emergencyGoal, saved: savingsAccount.balance }
+      : emergencyGoal;
   const fundingPlan = buildFundingPlan({
     accounts,
     bills,
@@ -96,19 +101,17 @@ export function DashboardView() {
           value={formatMoney(summary.totalExpenses, currency, true)}
           icon={Receipt}
           accent="#f97316"
-          hint={`Fixed ${formatMoney(summary.fixedExpenses, currency, true)}`}
+          hint={`Includes card purchases · Fixed ${formatMoney(summary.fixedExpenses, currency, true)}`}
           delay={0.05}
         />
         <StatCard
-          label="Cash savings target"
-          value={formatMoney(summary.savingsTarget, currency, true)}
+          label="Cash saved this cycle"
+          value={formatMoney(summary.savedThisCycle, currency, true)}
           icon={PiggyBank}
           accent="#22c55e"
-          hint={
-            summary.budgetRuleName
-              ? `${formatMoney(summary.investmentTarget, currency, true)} investment target`
-              : undefined
-          }
+          hint={`Target ${formatMoney(summary.savingsTarget, currency, true)} · ${
+            summary.savingsEvidence === "account" ? "net savings-account activity" : "goal deposits"
+          }`}
           delay={0.1}
         />
         <StatCard
@@ -166,12 +169,18 @@ export function DashboardView() {
           <Progress value={summary.budgetRuleScore} className="mt-4" />
           {summary.budgetProgress && (
             <div className="mt-5 grid gap-4 border-t border-border pt-4 sm:grid-cols-2 xl:grid-cols-4">
-              {([
-                ["needs", "Needs", "Spent"],
-                ["wants", "Wants", "Spent"],
-                ["savings", "Cash savings", "Saved"],
-                ["investments", "Investments", "Monthly SIPs"],
-              ] as const).map(([kind, label, usedLabel]) => {
+              {(
+                [
+                  ["needs", "Needs", "Spent"],
+                  ["wants", "Wants", "Spent"],
+                  [
+                    "savings",
+                    "Cash savings",
+                    summary.savingsEvidence === "account" ? "Net moved in" : "Goal deposits",
+                  ],
+                  ["investments", "Investments", "Invested"],
+                ] as const
+              ).map(([kind, label, usedLabel]) => {
                 const progress = summary.budgetProgress?.[kind];
                 const remaining = progress?.remaining ?? 0;
                 return (
@@ -186,8 +195,11 @@ export function DashboardView() {
                       {formatMoney(progress?.used ?? 0, currency)}
                     </p>
                     <p className="text-[11px] text-muted">{usedLabel} this cycle</p>
-                    <p className={`mt-1 text-xs font-medium ${remaining < 0 ? "text-danger" : "text-success"}`}>
-                      {formatMoney(Math.abs(remaining), currency)} {remaining < 0 ? "over" : "remaining"}
+                    <p
+                      className={`mt-1 text-xs font-medium ${remaining < 0 ? "text-danger" : "text-success"}`}
+                    >
+                      {formatMoney(Math.abs(remaining), currency)}{" "}
+                      {remaining < 0 ? "over" : "remaining"}
                     </p>
                   </div>
                 );

@@ -94,6 +94,8 @@ export function FundingPlanView() {
         category:
           payingItem.kind === "rent"
             ? "Rent"
+            : payingItem.kind === "investment"
+              ? "Investment"
             : payingItem.kind === "utility"
               ? "Utilities"
               : payingItem.kind === "subscription"

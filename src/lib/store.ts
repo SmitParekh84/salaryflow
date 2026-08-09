@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { normalizeBudgetRule } from "./budget-rules";
 import {
   seedBills,
   seedExpenses,
@@ -11,6 +12,8 @@ import {
   seedProfile,
 } from "./seed";
 import type {
+  AccountTransfer,
+  AccountTransferMode,
   AppNotification,
   BankAccount,
   Bill,
@@ -27,7 +30,6 @@ import type {
   UserProfile,
 } from "./types";
 import { uid } from "./utils";
-import { normalizeBudgetRule } from "./budget-rules";
 
 interface FinanceState {
   user: UserProfile;
@@ -38,6 +40,7 @@ interface FinanceState {
   goals: Goal[];
   investments: Investment[];
   accounts: BankAccount[];
+  accountTransfers: AccountTransfer[];
   creditCards: CreditCard[];
   budgetRules: BudgetRule[];
   recycleBin: RecycleBinItem[];
@@ -80,6 +83,11 @@ interface FinanceState {
   addAccount: (account: Omit<BankAccount, "id">) => void;
   updateAccount: (id: string, patch: Partial<BankAccount>) => void;
   deleteAccount: (id: string) => void;
+  addAccountTransfer: (
+    transfer: Omit<AccountTransfer, "id" | "status" | "completedAt">,
+    mode?: AccountTransferMode,
+  ) => boolean;
+  completeAccountTransfer: (id: string) => boolean;
 
   // credit cards
   addCreditCard: (card: Omit<CreditCard, "id">) => void;
@@ -192,6 +200,7 @@ export const useFinanceStore = create<FinanceState>()(
       goals: [],
       investments: [],
       accounts: [],
+      accountTransfers: [],
       creditCards: [],
       budgetRules: [],
       recycleBin: [],
@@ -325,6 +334,70 @@ export const useFinanceStore = create<FinanceState>()(
         }));
         void get().syncWithServer();
       },
+      addAccountTransfer: (transfer, mode = "scheduled") => {
+        if (transfer.sourceAccountId === transfer.destinationAccountId || transfer.amount <= 0) {
+          return false;
+        }
+        const source = get().accounts.find((account) => account.id === transfer.sourceAccountId);
+        const destination = get().accounts.find(
+          (account) => account.id === transfer.destinationAccountId,
+        );
+        const adjustsBalances = mode === "transfer-now";
+        if (!source || !destination || (adjustsBalances && source.balance < transfer.amount)) {
+          return false;
+        }
+        const record: AccountTransfer = {
+          ...transfer,
+          id: uid("transfer"),
+          status: mode === "scheduled" ? "scheduled" : "completed",
+          completedAt: mode === "scheduled" ? undefined : new Date().toISOString(),
+          balancesApplied: adjustsBalances,
+        };
+        set((state) => ({
+          accountTransfers: [record, ...state.accountTransfers],
+          accounts: adjustsBalances
+            ? state.accounts.map((account) =>
+                account.id === transfer.sourceAccountId
+                  ? { ...account, balance: account.balance - transfer.amount }
+                  : account.id === transfer.destinationAccountId
+                    ? { ...account, balance: account.balance + transfer.amount }
+                    : account,
+              )
+            : state.accounts,
+        }));
+        void get().syncWithServer();
+        return true;
+      },
+      completeAccountTransfer: (id) => {
+        const transfer = get().accountTransfers.find((item) => item.id === id);
+        if (!transfer || transfer.status === "completed") return false;
+        const source = get().accounts.find((account) => account.id === transfer.sourceAccountId);
+        const destination = get().accounts.find(
+          (account) => account.id === transfer.destinationAccountId,
+        );
+        if (!source || !destination || source.balance < transfer.amount) return false;
+        set((state) => ({
+          accountTransfers: state.accountTransfers.map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  status: "completed",
+                  completedAt: new Date().toISOString(),
+                  balancesApplied: true,
+                }
+              : item,
+          ),
+          accounts: state.accounts.map((account) =>
+            account.id === transfer.sourceAccountId
+              ? { ...account, balance: account.balance - transfer.amount }
+              : account.id === transfer.destinationAccountId
+                ? { ...account, balance: account.balance + transfer.amount }
+                : account,
+          ),
+        }));
+        void get().syncWithServer();
+        return true;
+      },
 
       addCreditCard: (card) =>
         set((s) => ({ creditCards: [...s.creditCards, { ...card, id: uid("card") }] })),
@@ -451,7 +524,9 @@ export const useFinanceStore = create<FinanceState>()(
           });
           if (!res.ok) return;
           const j = await res.json();
-          set((s) => ({ salaryHistory: [j.data, ...s.salaryHistory] }));
+          set((s) => ({
+            salaryHistory: [j.data, ...s.salaryHistory.filter((entry) => entry._id !== j.data._id)],
+          }));
         } catch {}
       },
       updateSalaryEntry: async (id, patch) => {
@@ -517,6 +592,7 @@ export const useFinanceStore = create<FinanceState>()(
               goals: state.goals,
               investments: state.investments,
               accounts: state.accounts,
+              accountTransfers: state.accountTransfers,
               creditCards: state.creditCards,
               budgetRules: state.budgetRules,
               recycleBin: state.recycleBin,
@@ -535,6 +611,10 @@ export const useFinanceStore = create<FinanceState>()(
               goals: normalizeServerItems<Goal>(d.goals, state.goals),
               investments: normalizeServerItems<Investment>(d.investments, state.investments),
               accounts: normalizeServerItems<BankAccount>(d.accounts, state.accounts),
+              accountTransfers: normalizeServerItems<AccountTransfer>(
+                d.accountTransfers,
+                state.accountTransfers,
+              ),
               creditCards: normalizeServerItems<CreditCard>(d.creditCards, state.creditCards),
               budgetRules: normalizeBudgetRules(d.budgetRules, state.budgetRules),
               recycleBin: normalizeServerItems<RecycleBinItem>(d.recycleBin, state.recycleBin),
@@ -563,6 +643,7 @@ export const useFinanceStore = create<FinanceState>()(
             goals: normalizeServerItems<Goal>(data.goals, []),
             investments: normalizeServerItems<Investment>(data.investments, []),
             accounts: normalizeServerItems<BankAccount>(data.accounts, []),
+            accountTransfers: normalizeServerItems<AccountTransfer>(data.accountTransfers, []),
             creditCards: normalizeServerItems<CreditCard>(data.creditCards, []),
             budgetRules: normalizeBudgetRules(data.budgetRules, []),
             recycleBin: normalizeServerItems<RecycleBinItem>(data.recycleBin, []),
@@ -582,6 +663,7 @@ export const useFinanceStore = create<FinanceState>()(
           goals: seedGoals(),
           investments: seedInvestments(),
           accounts: [],
+          accountTransfers: [],
           creditCards: [],
           budgetRules: [],
           recycleBin: [],
@@ -599,6 +681,7 @@ export const useFinanceStore = create<FinanceState>()(
           goals: [],
           investments: [],
           accounts: [],
+          accountTransfers: [],
           creditCards: [],
           budgetRules: [],
           recycleBin: [],
@@ -620,6 +703,7 @@ export const useFinanceStore = create<FinanceState>()(
           goals: normalizeServerItems<Goal>(state.goals, []),
           investments: normalizeServerItems<Investment>(state.investments, []),
           accounts: normalizeServerItems<BankAccount>(state.accounts, []),
+          accountTransfers: normalizeServerItems<AccountTransfer>(state.accountTransfers, []),
           creditCards: normalizeServerItems<CreditCard>(state.creditCards, []),
           budgetRules: normalizeBudgetRules(state.budgetRules, []),
           recycleBin: normalizeServerItems<RecycleBinItem>(state.recycleBin, []),

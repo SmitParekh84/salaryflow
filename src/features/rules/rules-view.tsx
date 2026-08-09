@@ -21,11 +21,10 @@ const BUCKETS: { kind: BudgetBucketKind; label: string }[] = [
   { kind: "investments", label: "Investments" },
 ];
 
-const USED_LABELS: Record<BudgetBucketKind, string> = {
+const USED_LABELS: Record<Exclude<BudgetBucketKind, "savings">, string> = {
   needs: "Spent this cycle",
   wants: "Spent this cycle",
-  savings: "Saved this cycle",
-  investments: "Monthly SIPs",
+  investments: "Invested this cycle",
 };
 
 export function RulesView() {
@@ -46,7 +45,8 @@ export function RulesView() {
     investments: 15,
   });
   const activeRule = rules.find((rule) => rule.active);
-  const total = percentages.needs + percentages.wants + percentages.savings;
+  const total =
+    percentages.needs + percentages.wants + percentages.savings + percentages.investments;
 
   async function applyTemplate(templateKey: string) {
     const existing = rules.find((rule) => rule.templateKey === templateKey);
@@ -135,7 +135,13 @@ export function RulesView() {
                       <span>{formatMoney(progress?.target ?? 0, currency)}</span>
                     </p>
                     <p className="flex justify-between gap-2 text-muted">
-                      <span>{USED_LABELS[allocation.kind]}</span>
+                      <span>
+                        {allocation.kind === "savings"
+                          ? summary.savingsEvidence === "account"
+                            ? "Net moved to savings"
+                            : "Goal deposits"
+                          : USED_LABELS[allocation.kind]}
+                      </span>
                       <span>{formatMoney(progress?.used ?? 0, currency)}</span>
                     </p>
                     <p

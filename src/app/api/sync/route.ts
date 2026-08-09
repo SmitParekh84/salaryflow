@@ -1,6 +1,7 @@
 import { verifyJwt } from "@/server/auth";
 import { connectDB } from "@/server/db";
 import {
+  AccountTransferModel,
   BankAccountModel,
   BillModel,
   BudgetRuleModel,
@@ -40,6 +41,7 @@ async function getServerState(userId: string) {
     goals,
     investments,
     accounts,
+    accountTransfers,
     creditCards,
     budgetRules,
     recycleBin,
@@ -51,6 +53,7 @@ async function getServerState(userId: string) {
     GoalModel.find({ userId }).lean(),
     InvestmentModel.find({ userId }).lean(),
     BankAccountModel.find({ userId }).lean(),
+    AccountTransferModel.find({ userId }).sort({ date: -1 }).lean(),
     CreditCardModel.find({ userId }).lean(),
     BudgetRuleModel.find({ userId }).lean(),
     RecycleBinModel.find({ userId }).sort({ deletedAt: -1 }).lean(),
@@ -64,6 +67,7 @@ async function getServerState(userId: string) {
     goals,
     investments,
     accounts,
+    accountTransfers,
     creditCards,
     budgetRules,
     recycleBin,
@@ -103,6 +107,7 @@ export async function POST(req: Request) {
     { model: GoalModel, items: body.goals || [] },
     { model: InvestmentModel, items: body.investments || [] },
     { model: BankAccountModel, items: body.accounts || [] },
+    { model: AccountTransferModel, items: body.accountTransfers || [] },
     { model: CreditCardModel, items: body.creditCards || [] },
     { model: BudgetRuleModel, items: body.budgetRules || [] },
     { model: RecycleBinModel, items: body.recycleBin || [] },

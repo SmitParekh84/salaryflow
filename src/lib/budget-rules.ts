@@ -9,6 +9,18 @@ export interface BudgetRuleTemplate {
 
 export const BUDGET_RULE_TEMPLATES: BudgetRuleTemplate[] = [
   {
+    key: "emergency-builder-50-15-20-15",
+    name: "Emergency builder 50 / 15 / 20 / 15",
+    description:
+      "Prioritizes a cash emergency fund while preserving your current monthly SIP pace.",
+    allocations: [
+      { kind: "needs", label: "Needs", percentage: 50 },
+      { kind: "wants", label: "Wants", percentage: 15 },
+      { kind: "savings", label: "Emergency savings", percentage: 20 },
+      { kind: "investments", label: "Investments", percentage: 15 },
+    ],
+  },
+  {
     key: "wealth-builder-50-20-15-15",
     name: "Wealth builder 50 / 20 / 15 / 15",
     description:
@@ -56,7 +68,8 @@ export const BUDGET_RULE_TEMPLATES: BudgetRuleTemplate[] = [
   {
     key: "debt-focus-70-10-15-5",
     name: "Debt focus 70 / 10 / 15 / 5",
-    description: "Keeps investing alive while directing more income to needs, debt, and cash safety.",
+    description:
+      "Keeps investing alive while directing more income to needs, debt, and cash safety.",
     allocations: [
       { kind: "needs", label: "Needs & debt", percentage: 70 },
       { kind: "wants", label: "Wants", percentage: 10 },

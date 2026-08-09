@@ -11,30 +11,60 @@ import { GOAL_TYPES } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { Goal, GoalType } from "@/lib/types";
 import { formatMoney } from "@/lib/utils";
-import { Bike, CircleCheck, Plus, Smartphone, Target, Trash2 } from "lucide-react";
+import { Bike, CircleCheck, Landmark, Pencil, Plus, Smartphone, Target, Trash2 } from "lucide-react";
 import { useState } from "react";
+
+const EMPTY_FORM = {
+  name: "",
+  type: "Custom" as GoalType,
+  target: 0,
+  saved: 0,
+  monthlyContribution: 0,
+};
 
 export function GoalsView() {
   const goals = useFinanceStore((s) => s.goals);
+  const accounts = useFinanceStore((s) => s.accounts);
   const currency = useFinanceStore((s) => s.profile.currency);
   const addGoal = useFinanceStore((s) => s.addGoal);
+  const updateGoal = useFinanceStore((s) => s.updateGoal);
   const deleteGoal = useFinanceStore((s) => s.deleteGoal);
   const contributeGoal = useFinanceStore((s) => s.contributeGoal);
   const syncWithServer = useFinanceStore((s) => s.syncWithServer);
 
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    type: "Custom" as GoalType,
-    target: 0,
-    saved: 0,
-    monthlyContribution: 0,
-  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const savingsAccount = accounts.find((account) => account.defaultFor?.includes("savings"));
+
+  const openNew = () => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setOpen(true);
+  };
+
+  const openEdit = (goal: Goal) => {
+    setEditingId(goal.id);
+    setForm({
+      name: goal.name,
+      type: goal.type,
+      target: goal.target,
+      saved: goal.saved,
+      monthlyContribution: goal.monthlyContribution,
+    });
+    setOpen(true);
+  };
 
   const save = async () => {
     if (!form.name || form.target <= 0) return;
-    addGoal(form);
-    setForm({ name: "", type: "Custom", target: 0, saved: 0, monthlyContribution: 0 });
+    const goal = {
+      ...form,
+      saved: form.type === "Emergency Fund" && savingsAccount ? 0 : form.saved,
+    };
+    if (editingId) updateGoal(editingId, goal);
+    else addGoal(goal);
+    setForm(EMPTY_FORM);
+    setEditingId(null);
     setOpen(false);
     await syncWithServer();
   };
@@ -48,7 +78,7 @@ export function GoalsView() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted">{goals.length} active goals</p>
-        <Button size="sm" onClick={() => setOpen(true)}>
+        <Button size="sm" onClick={openNew}>
           <Plus className="h-4 w-4" /> New goal
         </Button>
       </div>
@@ -59,7 +89,7 @@ export function GoalsView() {
           title="No goals yet"
           description="Set a savings goal and we'll estimate when you'll reach it."
           action={
-            <Button size="sm" onClick={() => setOpen(true)}>
+            <Button size="sm" onClick={openNew}>
               <Plus className="h-4 w-4" /> New goal
             </Button>
           }
@@ -69,8 +99,14 @@ export function GoalsView() {
           {goals.map((g) => (
             <GoalCard
               key={g.id}
-              goal={g}
+              goal={
+                g.type === "Emergency Fund" && savingsAccount
+                  ? { ...g, saved: savingsAccount.balance }
+                  : g
+              }
               currency={currency}
+              trackedAccountName={g.type === "Emergency Fund" ? savingsAccount?.bankName : undefined}
+              onEdit={() => openEdit(g)}
               onDelete={() => deleteGoal(g.id)}
               onContribute={(amount) => void contribute(g.id, amount)}
             />
@@ -78,7 +114,11 @@ export function GoalsView() {
         </div>
       )}
 
-      <Modal open={open} onClose={() => setOpen(false)} title="New savings goal">
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={editingId ? "Edit savings goal" : "New savings goal"}
+      >
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -116,8 +156,12 @@ export function GoalsView() {
               <Input
                 type="number"
                 value={form.saved || ""}
+                disabled={form.type === "Emergency Fund" && Boolean(savingsAccount)}
                 onChange={(e) => setForm({ ...form, saved: Number(e.target.value) })}
               />
+              {form.type === "Emergency Fund" && savingsAccount && (
+                <p className="mt-1 text-xs text-muted">Tracked from {savingsAccount.bankName}</p>
+              )}
             </div>
           </div>
           <div>
@@ -125,9 +169,7 @@ export function GoalsView() {
             <Input
               type="number"
               value={form.monthlyContribution || ""}
-              onChange={(e) =>
-                setForm({ ...form, monthlyContribution: Number(e.target.value) })
-              }
+              onChange={(e) => setForm({ ...form, monthlyContribution: Number(e.target.value) })}
             />
           </div>
           <div className="flex gap-3 pt-1">
@@ -135,7 +177,7 @@ export function GoalsView() {
               Cancel
             </Button>
             <Button className="flex-1" onClick={() => void save()}>
-              Create goal
+              {editingId ? "Save goal" : "Create goal"}
             </Button>
           </div>
         </div>
@@ -147,11 +189,15 @@ export function GoalsView() {
 function GoalCard({
   goal,
   currency,
+  trackedAccountName,
+  onEdit,
   onDelete,
   onContribute,
 }: {
   goal: Goal;
   currency: string;
+  trackedAccountName?: string;
+  onEdit: () => void;
   onDelete: () => void;
   onContribute: (amount: number) => void;
 }) {
@@ -171,28 +217,30 @@ function GoalCard({
               <p className="text-xs text-muted">{goal.type}</p>
             </div>
           </div>
-          <button
-            onClick={onDelete}
-            className="rounded-lg p-1.5 text-danger hover:bg-danger/10"
-            aria-label="Delete goal"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={onEdit}
+              className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-foreground"
+              aria-label={`Edit ${goal.name}`}
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button
+              onClick={onDelete}
+              className="rounded-lg p-1.5 text-danger hover:bg-danger/10"
+              aria-label={`Delete ${goal.name}`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <div className="flex items-end justify-between">
-          <span className="text-2xl font-bold">
-            {formatMoney(goal.saved, currency, true)}
-          </span>
-          <span className="text-xs text-muted">
-            of {formatMoney(goal.target, currency, true)}
-          </span>
+          <span className="text-2xl font-bold">{formatMoney(goal.saved, currency, true)}</span>
+          <span className="text-xs text-muted">of {formatMoney(goal.target, currency, true)}</span>
         </div>
 
-        <Progress
-          value={pct}
-          color={done ? "var(--success)" : "var(--primary)"}
-        />
+        <Progress value={pct} color={done ? "var(--success)" : "var(--primary)"} />
 
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted">
@@ -200,14 +248,20 @@ function GoalCard({
               <span className="flex items-center gap-1 text-success">
                 <CircleCheck className="h-3.5 w-3.5" /> Achieved
               </span>
-            ) : (
+            ) : trackedAccountName ? (
+              <span className="flex items-center gap-1">
+                <Landmark className="h-3.5 w-3.5" /> Tracked from {trackedAccountName}
+              </span>
+            ) : goal.monthlyContribution > 0 ? (
               `ETA ${projectedGoalDate(goal) ?? "—"}`
+            ) : (
+              "Monthly funding paused"
             )}
           </span>
           <span className="font-medium">{Math.round(pct)}%</span>
         </div>
 
-        {!done && (
+        {!done && !trackedAccountName && (
           <div className="flex gap-2 pt-1">
             {[500, 1000, 5000].map((amt) => (
               <Button

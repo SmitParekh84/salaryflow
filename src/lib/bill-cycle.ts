@@ -46,15 +46,18 @@ export function billCycle(bill: Bill, expenses: Expense[], now = new Date()) {
   );
   const hasLinkedHistory = expenses.some((expense) => expense.billId === bill.id);
   const paidAmount = linkedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const isPaid = paidAmount > 0 || (!hasLinkedHistory && bill.paid);
   const amount = bill.category === "Utilities" && paidAmount > 0 ? paidAmount : bill.amount;
+  const isPaid = paidAmount >= amount || (!hasLinkedHistory && bill.paid);
+  const remainingAmount = isPaid ? 0 : Math.max(0, amount - paidAmount);
 
   return {
     amount,
     billingMonth,
     billedMonth,
     occurrenceDate,
-    paidAmount: isPaid ? paidAmount || amount : 0,
+    paidAmount: paidAmount || (!hasLinkedHistory && bill.paid ? amount : 0),
+    recordedAmount: paidAmount,
+    remainingAmount,
     isPaid,
     overdue: !isPaid && occurrenceDate < new Date(now.getFullYear(), now.getMonth(), now.getDate()),
   };

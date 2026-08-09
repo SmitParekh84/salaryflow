@@ -149,7 +149,12 @@ export interface UserProfile {
 
 export type BankAccountType = "Savings" | "Salary" | "Current" | "Other";
 export type BankAccountStatus = "active" | "closing";
-export type AccountPurpose = "everyday" | "subscriptions" | "investments" | "obligations";
+export type AccountPurpose =
+  | "everyday"
+  | "subscriptions"
+  | "investments"
+  | "obligations"
+  | "savings";
 
 export interface BankAccount {
   id: string;
@@ -159,6 +164,23 @@ export interface BankAccount {
   status: BankAccountStatus;
   plannedTransferTo?: string;
   defaultFor?: AccountPurpose[];
+  maskBalance?: boolean;
+  hiddenFromAccounts?: boolean;
+}
+
+export type AccountTransferStatus = "scheduled" | "completed";
+export type AccountTransferMode = "scheduled" | "transfer-now" | "already-transferred";
+
+export interface AccountTransfer {
+  id: string;
+  sourceAccountId: string;
+  destinationAccountId: string;
+  amount: number;
+  date: string;
+  note?: string;
+  status: AccountTransferStatus;
+  completedAt?: string;
+  balancesApplied?: boolean;
 }
 
 export type CreditCardStatus = "active" | "closed";
@@ -215,6 +237,9 @@ export interface SalaryHistoryEntry {
   source?: string;
   confirmed?: boolean;
   note?: string;
+  baseAmount?: number;
+  varianceAmount?: number;
+  varianceKind?: "allowance" | "deduction" | "none";
 }
 
 export interface AppNotification {

@@ -41,8 +41,7 @@ export function AnalyticsView() {
     }));
   }, [expenses, salary]);
 
-  const avgDaily =
-    summary.daysElapsed > 0 ? summary.totalExpenses / summary.daysElapsed : 0;
+  const avgDaily = summary.totalExpenses / Math.max(1, summary.daysElapsed + 1);
 
   return (
     <div className="space-y-5">

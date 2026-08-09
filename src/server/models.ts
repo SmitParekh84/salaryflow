@@ -126,8 +126,28 @@ const BankAccountSchema = new Schema(
     status: { type: String, enum: ["active", "closing"], default: "active" },
     plannedTransferTo: String,
     defaultFor: [
-      { type: String, enum: ["everyday", "subscriptions", "investments", "obligations"] },
+      {
+        type: String,
+        enum: ["everyday", "subscriptions", "investments", "obligations", "savings"],
+      },
     ],
+    maskBalance: { type: Boolean, default: false },
+    hiddenFromAccounts: { type: Boolean, default: false },
+  },
+  { timestamps: true },
+);
+
+const AccountTransferSchema = new Schema(
+  {
+    userId: { type: String, required: true, index: true },
+    sourceAccountId: { type: String, required: true },
+    destinationAccountId: { type: String, required: true },
+    amount: { type: Number, required: true, min: 0.01 },
+    date: { type: Date, required: true },
+    note: String,
+    status: { type: String, enum: ["scheduled", "completed"], default: "scheduled" },
+    completedAt: Date,
+    balancesApplied: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
@@ -205,6 +225,7 @@ export type BillDoc = InferSchemaType<typeof BillSchema>;
 export type GoalDoc = InferSchemaType<typeof GoalSchema>;
 export type InvestmentDoc = InferSchemaType<typeof InvestmentSchema>;
 export type BankAccountDoc = InferSchemaType<typeof BankAccountSchema>;
+export type AccountTransferDoc = InferSchemaType<typeof AccountTransferSchema>;
 export type CreditCardDoc = InferSchemaType<typeof CreditCardSchema>;
 export type BudgetRuleDoc = InferSchemaType<typeof BudgetRuleSchema>;
 export type RecycleBinDoc = InferSchemaType<typeof RecycleBinSchema>;
@@ -218,6 +239,8 @@ export const BillModel = models.Bill || model("Bill", BillSchema);
 export const GoalModel = models.Goal || model("Goal", GoalSchema);
 export const InvestmentModel = models.Investment || model("Investment", InvestmentSchema);
 export const BankAccountModel = models.BankAccount || model("BankAccount", BankAccountSchema);
+export const AccountTransferModel =
+  models.AccountTransfer || model("AccountTransfer", AccountTransferSchema);
 export const CreditCardModel = models.CreditCard || model("CreditCard", CreditCardSchema);
 export const BudgetRuleModel = models.BudgetRule || model("BudgetRule", BudgetRuleSchema);
 export const RecycleBinModel = models.RecycleBin || model("RecycleBin", RecycleBinSchema);
@@ -251,6 +274,9 @@ const SalaryHistorySchema = new Schema(
     source: { type: String, default: "salary" },
     confirmed: { type: Boolean, default: false },
     note: String,
+    baseAmount: Number,
+    varianceAmount: Number,
+    varianceKind: { type: String, enum: ["allowance", "deduction", "none"], default: "none" },
   },
   { timestamps: true },
 );

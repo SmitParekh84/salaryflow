@@ -1,7 +1,11 @@
 import { billCycle } from "./bill-cycle";
 import { evaluateBudgetRule } from "./budget-rules";
+import { parseFinancialDate } from "./utils";
 import type {
+  AccountTransfer,
+  BankAccount,
   Bill,
+  BudgetBucketKind,
   BudgetRule,
   Expense,
   Goal,
@@ -9,40 +13,63 @@ import type {
   Investment,
   SalaryProfile,
   SpendStatus,
-  BudgetBucketKind,
 } from "./types";
 
 /** Days in the current salary cycle and days remaining until next salary. */
 export function cycleInfo(profile: SalaryProfile, now = new Date()) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const day = today.getDate();
-  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
 
   let cycleLength: number;
   let dayInCycle: number;
+  let cycleStart: Date;
+  let nextSalary: Date;
 
   switch (profile.cycle) {
     case "weekly":
       cycleLength = 7;
       dayInCycle = (((day - profile.salaryDay) % 7) + 7) % 7;
+      cycleStart = new Date(today);
+      cycleStart.setDate(today.getDate() - dayInCycle);
+      nextSalary = new Date(cycleStart);
+      nextSalary.setDate(cycleStart.getDate() + cycleLength);
       break;
     case "biweekly":
       cycleLength = 14;
       dayInCycle = (((day - profile.salaryDay) % 14) + 14) % 14;
+      cycleStart = new Date(today);
+      cycleStart.setDate(today.getDate() - dayInCycle);
+      nextSalary = new Date(cycleStart);
+      nextSalary.setDate(cycleStart.getDate() + cycleLength);
       break;
     default: {
-      cycleLength = daysInMonth;
-      const salaryDay = Math.min(profile.salaryDay, daysInMonth);
-      dayInCycle = day >= salaryDay ? day - salaryDay : daysInMonth - salaryDay + day;
+      const salaryDate = (year: number, month: number) =>
+        new Date(
+          year,
+          month,
+          Math.min(profile.salaryDay, new Date(year, month + 1, 0).getDate()),
+        );
+      const thisMonthSalary = salaryDate(today.getFullYear(), today.getMonth());
+      cycleStart =
+        today >= thisMonthSalary
+          ? thisMonthSalary
+          : salaryDate(today.getFullYear(), today.getMonth() - 1);
+      nextSalary = salaryDate(cycleStart.getFullYear(), cycleStart.getMonth() + 1);
+      dayInCycle = calendarDayDifference(cycleStart, today);
+      cycleLength = calendarDayDifference(cycleStart, nextSalary);
     }
   }
 
   const daysElapsed = dayInCycle;
   const daysRemaining = Math.max(1, cycleLength - dayInCycle);
-  const nextSalary = new Date(today);
-  nextSalary.setDate(today.getDate() + daysRemaining);
 
-  return { cycleLength, daysElapsed, daysRemaining, nextSalary };
+  return { cycleLength, daysElapsed, daysRemaining, cycleStart, nextSalary };
+}
+
+function calendarDayDifference(start: Date, end: Date): number {
+  const startDay = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+  const endDay = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+  return Math.round((endDay - startDay) / 86_400_000);
 }
 
 export function isInCurrentCycle(
@@ -50,12 +77,9 @@ export function isInCurrentCycle(
   profile: SalaryProfile,
   now = new Date(),
 ): boolean {
-  const { daysElapsed } = cycleInfo(profile, now);
-  const start = new Date(now);
-  start.setDate(start.getDate() - daysElapsed);
-  start.setHours(0, 0, 0, 0);
-  const d = new Date(isoDate);
-  return d >= start && d <= now;
+  const { cycleStart } = cycleInfo(profile, now);
+  const date = parseFinancialDate(isoDate);
+  return date >= cycleStart && date <= now;
 }
 
 export interface FinanceSummary {
@@ -68,6 +92,7 @@ export interface FinanceSummary {
   savingsTarget: number;
   plannedSavings: number;
   savedThisCycle: number;
+  savingsEvidence: "account" | "goals";
   investmentTarget: number;
   plannedInvestments: number;
   spendingBudget: number;
@@ -88,10 +113,7 @@ export interface FinanceSummary {
   budgetRuleName?: string;
   budgetRuleScore?: number;
   budgetActual?: Record<BudgetBucketKind, number>;
-  budgetProgress?: Record<
-    BudgetBucketKind,
-    { target: number; used: number; remaining: number }
-  >;
+  budgetProgress?: Record<BudgetBucketKind, { target: number; used: number; remaining: number }>;
 }
 
 const FIXED: Record<string, boolean> = {
@@ -110,11 +132,14 @@ export function computeSummary(
   goals: Goal[],
   salaryHistory: { amount: number; date: string; confirmed?: boolean; source?: string }[] = [],
   budgetRule?: BudgetRule,
+  accounts: BankAccount[] = [],
+  accountTransfers: AccountTransfer[] = [],
   now = new Date(),
 ): FinanceSummary {
   const { daysRemaining, daysElapsed, cycleLength, nextSalary } = cycleInfo(profile, now);
 
   const cycleExpenses = expenses.filter((e) => isInCurrentCycle(e.date, profile, now));
+  const spendingCycleExpenses = cycleExpenses.filter((expense) => expense.category !== "Investment");
   const extraIncome = incomes
     .filter((i) => isInCurrentCycle(i.date, profile, now))
     .reduce((s, i) => s + i.amount, 0);
@@ -127,19 +152,54 @@ export function computeSummary(
   const usedConfirmedSalary = confirmedSalarySum > 0;
   const baseIncome = usedConfirmedSalary ? confirmedSalarySum : profile.amount;
   const income = baseIncome + extraIncome;
-  const fixedExpenses = cycleExpenses
+  const fixedExpenses = spendingCycleExpenses
     .filter((e) => FIXED[e.category])
     .reduce((s, e) => s + e.amount, 0);
-  const variableExpenses = cycleExpenses
+  const variableExpenses = spendingCycleExpenses
     .filter((e) => !FIXED[e.category])
     .reduce((s, e) => s + e.amount, 0);
   const totalExpenses = fixedExpenses + variableExpenses;
 
-  const investedThisCycle = investments.reduce((s, i) => s + (i.monthly ?? 0), 0);
-  const savedThisCycle = goals
+  const investedThisCycle = cycleExpenses
+    .filter((expense) => expense.category === "Investment")
+    .reduce((sum, expense) => sum + expense.amount, 0);
+  const goalContributionsThisCycle = goals
     .flatMap((goal) => goal.contributions ?? [])
     .filter((contribution) => isInCurrentCycle(contribution.date, profile, now))
     .reduce((sum, contribution) => sum + contribution.amount, 0);
+  const savingsAccountIds = new Set(
+    accounts
+      .filter((account) => account.defaultFor?.includes("savings"))
+      .map((account) => account.id),
+  );
+  const completedCycleTransfers = accountTransfers.filter(
+    (transfer) =>
+      transfer.status === "completed" && isInCurrentCycle(transfer.date, profile, now),
+  );
+  const savingsAccountCashFlow =
+    completedCycleTransfers.reduce((sum, transfer) => {
+      const incoming = savingsAccountIds.has(transfer.destinationAccountId)
+        ? transfer.amount
+        : 0;
+      const outgoing = savingsAccountIds.has(transfer.sourceAccountId) ? transfer.amount : 0;
+      return sum + incoming - outgoing;
+    }, 0) +
+    incomes
+      .filter(
+        (income) =>
+          income.accountId &&
+          savingsAccountIds.has(income.accountId) &&
+          isInCurrentCycle(income.date, profile, now),
+      )
+      .reduce((sum, income) => sum + income.amount, 0) -
+    cycleExpenses
+      .filter((expense) => expense.accountId && savingsAccountIds.has(expense.accountId))
+      .reduce((sum, expense) => sum + expense.amount, 0);
+  const savingsEvidence = savingsAccountIds.size > 0 ? "account" : "goals";
+  const savedThisCycle = Math.max(
+    0,
+    savingsEvidence === "account" ? savingsAccountCashFlow : goalContributionsThisCycle,
+  );
 
   const allocationPercentage = (kind: BudgetBucketKind) =>
     budgetRule?.allocations.find((allocation) => allocation.kind === kind)?.percentage ?? 0;
@@ -160,7 +220,7 @@ export function computeSummary(
   const safeToSpendPerDay = Math.max(0, remaining / daysRemaining);
 
   const todayKey = new Date(now).toDateString();
-  const spentToday = cycleExpenses
+  const spentToday = spendingCycleExpenses
     .filter((e) => new Date(e.date).toDateString() === todayKey)
     .reduce((s, e) => s + e.amount, 0);
   const safeToSpendToday = Math.max(0, safeToSpendPerDay - spentToday);
@@ -169,7 +229,7 @@ export function computeSummary(
   if (spentToday > safeToSpendPerDay * 1.15) status = "red";
   else if (spentToday > safeToSpendPerDay * 0.85) status = "yellow";
 
-  const savings = Math.max(0, income - totalExpenses - investedThisCycle);
+  const savings = savedThisCycle + investedThisCycle;
   const savingsRate = income > 0 ? (savings / income) * 100 : 0;
 
   const baseHealthScore = financialHealthScore({
@@ -205,6 +265,7 @@ export function computeSummary(
     savingsTarget,
     plannedSavings,
     savedThisCycle,
+    savingsEvidence,
     investmentTarget,
     plannedInvestments,
     spendingBudget,

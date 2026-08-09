@@ -6,7 +6,7 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { CURRENCIES } from "@/lib/constants";
 import { download, exportExpensesCsv } from "@/lib/export";
 import { useFinanceStore } from "@/lib/store";
-import { Download, FileJson, LogOut, Moon, Sun, Trash2, User } from "lucide-react";
+import { Download, Eye, FileJson, LogOut, Moon, Sun, Trash2, User } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -17,6 +17,9 @@ export function SettingsView() {
   const profile = useFinanceStore((s) => s.profile);
   const activeBudgetRule = useFinanceStore((s) => s.budgetRules.find((rule) => rule.active));
   const expenses = useFinanceStore((s) => s.expenses);
+  const accounts = useFinanceStore((s) => s.accounts);
+  const updateAccount = useFinanceStore((s) => s.updateAccount);
+  const syncWithServer = useFinanceStore((s) => s.syncWithServer);
   const updateUser = useFinanceStore((s) => s.updateUser);
   const updateProfile = useFinanceStore((s) => s.updateProfile);
   const resetAll = useFinanceStore((s) => s.resetAll);
@@ -26,11 +29,18 @@ export function SettingsView() {
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [saved, setSaved] = useState(false);
+  const [preferencesSaved, setPreferencesSaved] = useState(false);
 
   const saveProfile = () => {
     updateUser({ name, email });
     setSaved(true);
     setTimeout(() => setSaved(false), 1600);
+  };
+
+  const savePreferences = async () => {
+    await syncWithServer();
+    setPreferencesSaved(true);
+    setTimeout(() => setPreferencesSaved(false), 1600);
   };
 
   const exportJson = () => {
@@ -56,6 +66,13 @@ export function SettingsView() {
     router.replace("/");
   };
 
+  const hiddenAccounts = accounts.filter((account) => account.hiddenFromAccounts);
+
+  const restoreAccount = async (id: string) => {
+    updateAccount(id, { hiddenFromAccounts: false });
+    await syncWithServer();
+  };
+
   return (
     <div className="space-y-5">
       <Card>
@@ -79,6 +96,31 @@ export function SettingsView() {
           </Button>
         </CardContent>
       </Card>
+
+      {hiddenAccounts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Hidden bank accounts</CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y divide-border">
+            {hiddenAccounts.map((account) => (
+              <div key={account.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{account.bankName}</p>
+                  <p className="text-xs text-muted">Excluded from the Accounts page and total</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => void restoreAccount(account.id)}
+                >
+                  <Eye className="h-4 w-4" /> Unhide
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -146,6 +188,9 @@ export function SettingsView() {
               />
             </div>
           </div>
+          <Button size="sm" onClick={() => void savePreferences()}>
+            {preferencesSaved ? "Saved" : "Save preferences"}
+          </Button>
         </CardContent>
       </Card>
 

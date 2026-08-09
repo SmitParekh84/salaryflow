@@ -1,166 +1,179 @@
 "use client";
 
-import { localDateInputValue, newestFirst, parseFinancialDate } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input, Label } from "@/components/ui/input";
+import { useFinanceStore } from "@/lib/store";
+import { formatMoney, localDateInputValue, newestFirst, parseFinancialDate } from "@/lib/utils";
 import { format } from "date-fns";
+import { CalendarDays, Check, Clock3, Minus, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-type Item = {
-  _id: string;
-  amount: number;
-  date: string;
-  confirmed?: boolean;
-  source?: string;
-  note?: string;
-};
-
 export default function SalaryHistoryPage() {
-  const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [amount, setAmount] = useState<number | string>("");
-  const [date, setDate] = useState<string>(localDateInputValue());
+  const profile = useFinanceStore((state) => state.profile);
+  const entries = useFinanceStore((state) => state.salaryHistory);
+  const loadSalaryHistory = useFinanceStore((state) => state.loadSalaryHistory);
+  const addSalaryEntry = useFinanceStore((state) => state.addSalaryEntry);
+  const updateSalaryEntry = useFinanceStore((state) => state.updateSalaryEntry);
+  const deleteSalaryEntry = useFinanceStore((state) => state.deleteSalaryEntry);
+  const [month, setMonth] = useState(localDateInputValue().slice(0, 7));
+  const [amountInput, setAmountInput] = useState("");
   const [note, setNote] = useState("");
+  const [credited, setCredited] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const fetchItems = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/salary/history", { credentials: "include" });
-      const j = await res.json();
-      setItems(newestFirst(j.data || []));
-    } catch {
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    let active = true;
-    fetch("/api/salary/history", { credentials: "include" })
-      .then((response) => response.json())
-      .then((result) => {
-        if (active) setItems(newestFirst(result.data || []));
-      })
-      .catch(() => {
-        if (active) setItems([]);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+    void loadSalaryHistory();
+  }, [loadSalaryHistory]);
 
-  const add = async () => {
+  const amount = amountInput === "" ? profile.amount || 31431 : Number(amountInput);
+  const variance = amount - profile.amount;
+  const selectedDate = `${month}-${String(profile.salaryDay).padStart(2, "0")}`;
+
+  async function saveSalary() {
+    if (!month || amount <= 0) return;
     setSaving(true);
-    try {
-      const numeric = Number(amount);
-      const res = await fetch("/api/salary/history", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ amount: numeric, date: date, note }),
-      });
-      if (res.ok) {
-        await fetchItems();
-        setAmount("");
-        setNote("");
-      }
-    } catch {}
+    await addSalaryEntry({
+      amount,
+      date: selectedDate,
+      source: "salary",
+      note: note.trim() || undefined,
+      confirmed: credited,
+    });
     setSaving(false);
-  };
-
-  const toggleConfirm = async (id: string, curr: boolean) => {
-    try {
-      await fetch(`/api/salary/history?id=${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ confirmed: !curr }),
-      });
-      await fetchItems();
-    } catch {}
-  };
-
-  const remove = async (id: string) => {
-    if (!confirm("Remove this entry?")) return;
-    try {
-      await fetch(`/api/salary/history?id=${id}`, { method: "DELETE", credentials: "include" });
-      await fetchItems();
-    } catch {}
-  };
+    setNote("");
+  }
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold mb-4">Salary history</h1>
-      <p className="text-sm text-muted mb-4">
-        Log actual salary credits (overtime, deductions, bonuses) and confirm when payroll posts.
+    <div className="space-y-5">
+      <p className="text-sm text-muted">
+        Record one salary credit per month. Your normal salary is{" "}
+        {formatMoney(profile.amount, profile.currency)}.
       </p>
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
-        <input
-          className="p-2 border rounded"
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="Amount"
-        />
-        <input
-          className="p-2 border rounded"
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
-        <input
-          className="p-2 border rounded"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Note (optional)"
-        />
-      </div>
-      <div className="mb-6">
-        <button
-          onClick={add}
-          disabled={saving || !amount}
-          className="rounded bg-primary px-4 py-2 text-white"
-        >
-          Add entry
-        </button>
-      </div>
-
-      {loading && <div>Loading…</div>}
-      {!loading && items.length === 0 && (
-        <div className="text-sm text-muted">No salary entries yet.</div>
-      )}
-
-      <div className="mt-4 space-y-3">
-        {items.map((it) => (
-          <div key={it._id} className="flex items-center justify-between rounded border p-3">
-            <div>
-              <div className="text-sm font-medium">{it.source || "Salary"}</div>
-              <div className="text-lg font-semibold">{it.amount.toLocaleString()}</div>
-              <div className="text-xs text-muted">
-                {format(parseFinancialDate(it.date), "dd LLL yyyy")} {it.note ? `— ${it.note}` : ""}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => toggleConfirm(it._id, !!it.confirmed)}
-                className={`px-3 py-1 rounded text-sm ${it.confirmed ? "bg-green-600 text-white" : "bg-surface-2"}`}
-              >
-                {it.confirmed ? "Confirmed" : "Confirm"}
-              </button>
-              <button
-                onClick={() => remove(it._id)}
-                className="px-3 py-1 rounded bg-red-600 text-white text-sm"
-              >
-                Delete
-              </button>
-            </div>
+      <Card className="p-5 shadow-none">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <Label htmlFor="salary-month">Salary month</Label>
+            <Input
+              id="salary-month"
+              type="month"
+              value={month}
+              onChange={(event) => setMonth(event.target.value)}
+            />
           </div>
-        ))}
-      </div>
+          <div>
+            <Label htmlFor="salary-amount">Amount credited</Label>
+            <Input
+              id="salary-amount"
+              type="number"
+              min={1}
+              value={amountInput || amount}
+              onChange={(event) => setAmountInput(event.target.value)}
+            />
+          </div>
+          <div className="lg:col-span-2">
+            <Label htmlFor="salary-note">
+              {variance < 0 ? "Why was it lower? (optional)" : "Note (optional)"}
+            </Label>
+            <Input
+              id="salary-note"
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              placeholder={variance < 0 ? "e.g. Took unpaid leave" : "e.g. Overtime allowance"}
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[var(--primary)]"
+                checked={credited}
+                onChange={(event) => setCredited(event.target.checked)}
+              />
+              Salary credited
+            </label>
+            {variance > 0 && (
+              <Badge color="var(--success)">
+                +{formatMoney(variance, profile.currency)} allowance / overtime
+              </Badge>
+            )}
+            {variance < 0 && (
+              <Badge color="var(--warning)">
+                {formatMoney(Math.abs(variance), profile.currency)} below normal
+              </Badge>
+            )}
+          </div>
+          <Button disabled={saving || !month || amount <= 0} onClick={() => void saveSalary()}>
+            {saving ? "Saving..." : "Save month"}
+          </Button>
+        </div>
+      </Card>
+
+      {entries.length === 0 ? (
+        <Card className="p-8 text-center shadow-none">
+          <CalendarDays className="mx-auto h-6 w-6 text-muted" />
+          <p className="mt-2 text-sm font-medium">No salary months recorded</p>
+        </Card>
+      ) : (
+        <div className="divide-y divide-border border-y border-border">
+          {newestFirst(entries).map((entry) => {
+            const difference =
+              entry.varianceAmount ?? entry.amount - (entry.baseAmount ?? profile.amount);
+            return (
+              <div key={entry._id ?? entry.date} className="flex flex-wrap items-center gap-3 py-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  {entry.confirmed ? <Check className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">
+                    {format(parseFinancialDate(entry.date), "LLLL yyyy")}
+                  </p>
+                  <p className="text-xs text-muted">
+                    Base {formatMoney(entry.baseAmount ?? profile.amount, profile.currency)}
+                    {entry.note ? ` · ${entry.note}` : ""}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold">{formatMoney(entry.amount, profile.currency)}</p>
+                  {difference > 0 && (
+                    <p className="flex items-center justify-end gap-1 text-xs text-success">
+                      <Plus className="h-3 w-3" /> {formatMoney(difference, profile.currency)} extra
+                    </p>
+                  )}
+                  {difference < 0 && (
+                    <p className="flex items-center justify-end gap-1 text-xs text-warning">
+                      <Minus className="h-3 w-3" />{" "}
+                      {formatMoney(Math.abs(difference), profile.currency)} lower
+                    </p>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() =>
+                    entry._id && void updateSalaryEntry(entry._id, { confirmed: !entry.confirmed })
+                  }
+                >
+                  {entry.confirmed ? "Credited" : "Mark credited"}
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label={`Delete ${format(parseFinancialDate(entry.date), "LLLL yyyy")} salary`}
+                  onClick={() => entry._id && void deleteSalaryEntry(entry._id)}
+                >
+                  <Trash2 className="h-4 w-4 text-danger" />
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
