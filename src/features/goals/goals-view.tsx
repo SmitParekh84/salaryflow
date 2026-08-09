@@ -164,9 +164,7 @@ export function GoalsView() {
               <Input
                 type="number"
                 value={form.monthlyContribution || ""}
-                onChange={(e) =>
-                  setForm({ ...form, monthlyContribution: Number(e.target.value) })
-                }
+                onChange={(e) => setForm({ ...form, monthlyContribution: Number(e.target.value) })}
               />
             </div>
           </div>

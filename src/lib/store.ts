@@ -561,7 +561,10 @@ export const useFinanceStore = create<FinanceState>()(
               return { ok: false, reason: "The linked payment account no longer exists." };
             }
             if (account.balance < expense.amount) {
-              return { ok: false, reason: `Only ${account.balance} remains in ${account.bankName}.` };
+              return {
+                ok: false,
+                reason: `Only ${account.balance} remains in ${account.bankName}.`,
+              };
             }
           }
         }

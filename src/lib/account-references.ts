@@ -55,9 +55,7 @@ function recycledItemReferencesAccount(item: RecycleBinItem, accountId: string):
   }
   if (item.entityType !== "goal") return false;
   const goal = item.data as unknown as Goal;
-  return Boolean(
-    goal.contributions?.some((contribution) => contribution.accountId === accountId),
-  );
+  return Boolean(goal.contributions?.some((contribution) => contribution.accountId === accountId));
 }
 
 export function goalRestoreBlocker(

@@ -24,12 +24,7 @@ import {
 } from "./financial-year";
 import { buildFundingPlan } from "./funding-plan";
 import { migrateGoalOpeningBalances } from "./goal-migration";
-import {
-  goalContributionStep,
-  monthsToGoal,
-  projectGoal,
-  whatIfDelta,
-} from "./goal-projection";
+import { goalContributionStep, monthsToGoal, projectGoal, whatIfDelta } from "./goal-projection";
 import { useFinanceStore } from "./store";
 import type {
   AccountTransfer,
@@ -290,6 +285,27 @@ describe("account deletion references", () => {
 
     expect(reason).toContain("recycled records");
   });
+
+  it.each(["expense", "bill", "investment"] as const)(
+    "blocks deletion when a recycled %s still references the account",
+    (entityType) => {
+      const reason = accountDeletionBlocker("save-a", {
+        ...emptyRecords,
+        recycleBin: [
+          {
+            id: `trash-${entityType}`,
+            entityType,
+            entityId: entityType,
+            label: `Recycled ${entityType}`,
+            deletedAt: "2026-08-10T12:00:00.000Z",
+            data: { id: entityType, accountId: "save-a" },
+          },
+        ],
+      });
+
+      expect(reason).toContain("recycled records");
+    },
+  );
 });
 
 describe("goal restoration", () => {
@@ -396,6 +412,62 @@ describe("shared expense balance reversal", () => {
 
     expect((await useFinanceStore.getState().restoreRecycleItem(recycleId)).ok).toBe(false);
     expect(useFinanceStore.getState().accounts[0].balance).toBe(9_000);
+  });
+
+  it("restores the old account and deducts the new account exactly once when moved", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+    const sharedExpense: Expense = {
+      id: "moved-shared-expense",
+      amount: 1_000,
+      category: "Food",
+      merchant: "Shared dinner",
+      paymentMethod: "UPI",
+      date: "2026-08-10T12:00:00.000Z",
+      accountId: "account-a",
+      balanceApplied: true,
+      shared: {
+        totalAmount: 1_500,
+        friendName: "Friend",
+        userPaid: 1_000,
+        friendPaid: 500,
+      },
+    };
+
+    useFinanceStore.setState({
+      accounts: [
+        {
+          id: "account-a",
+          bankName: "Account A",
+          accountType: "Salary",
+          balance: 9_000,
+          status: "active",
+        },
+        {
+          id: "account-b",
+          bankName: "Account B",
+          accountType: "Savings",
+          balance: 5_000,
+          status: "active",
+        },
+      ],
+      expenses: [sharedExpense],
+      recycleBin: [],
+    });
+
+    const patch = {
+      accountId: "account-b",
+      amount: 1_200,
+      shared: { ...sharedExpense.shared!, userPaid: 1_200, friendPaid: 300 },
+    };
+    expect(useFinanceStore.getState().updateExpense(sharedExpense.id, patch)).toBe(true);
+    expect(useFinanceStore.getState().accounts.map((account) => account.balance)).toEqual([
+      10_000, 3_800,
+    ]);
+
+    expect(useFinanceStore.getState().updateExpense(sharedExpense.id, patch)).toBe(true);
+    expect(useFinanceStore.getState().accounts.map((account) => account.balance)).toEqual([
+      10_000, 3_800,
+    ]);
   });
 });
 
@@ -1235,9 +1307,7 @@ describe("allocation split merges repeated goals", () => {
       target: 5_000,
       saved: 0,
       monthlyContribution: 500,
-      contributions: [
-        { id: "existing", amount: 4_800, date: "2026-08-01", accountId: "union" },
-      ],
+      contributions: [{ id: "existing", amount: 4_800, date: "2026-08-01", accountId: "union" }],
     };
 
     const result = applyAllocation(

@@ -71,10 +71,7 @@ export function AllocationSheet({
     const others = Object.entries(draft)
       .filter(([id]) => id !== goalId)
       .reduce((sum, [, value]) => sum + (value || 0), 0);
-    const clamped = Math.max(
-      0,
-      Math.min(Math.round(next) || 0, available - others, goalRemaining),
-    );
+    const clamped = Math.max(0, Math.min(Math.round(next) || 0, available - others, goalRemaining));
     setDraft((current) => ({ ...current, [goalId]: clamped }));
     setError(null);
   }
