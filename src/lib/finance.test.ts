@@ -1477,7 +1477,10 @@ describe("transfer goal reservations", () => {
       new Date(),
     );
 
-    expect(result).toEqual({ ok: false, reason: "The reserved amount cannot exceed the transfer." });
+    expect(result).toEqual({
+      ok: false,
+      reason: "The reserved amount cannot exceed the transfer.",
+    });
   });
 
   it("requires the transfer destination to match the goal's linked bank", () => {

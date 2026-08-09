@@ -62,7 +62,7 @@ function recycledItemReferencesAccount(item: RecycleBinItem, accountId: string):
   const goal = item.data as unknown as Goal;
   return Boolean(
     goal.balanceAccountId === accountId ||
-      goal.preferredAccountId === accountId ||
+    goal.preferredAccountId === accountId ||
     goal.contributions?.some((contribution) => contribution.accountId === accountId),
   );
 }

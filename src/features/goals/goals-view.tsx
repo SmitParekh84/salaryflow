@@ -160,18 +160,19 @@ export function GoalsView() {
             <Label htmlFor="goal-bank">Bank for new goal money</Label>
             {editingId && goals.find((goal) => goal.id === editingId)?.balanceAccountId ? (
               <div className="rounded-xl bg-surface-2 px-3 py-2.5 text-sm">
-                This goal tracks the complete balance of {accounts.find((account) =>
-                  account.id === goals.find((goal) => goal.id === editingId)?.balanceAccountId
-                )?.bankName ?? "its linked account"}.
+                This goal tracks the complete balance of{" "}
+                {accounts.find(
+                  (account) =>
+                    account.id === goals.find((goal) => goal.id === editingId)?.balanceAccountId,
+                )?.bankName ?? "its linked account"}
+                .
               </div>
             ) : (
               <>
                 <Select
                   id="goal-bank"
                   value={form.preferredAccountId}
-                  onChange={(event) =>
-                    setForm({ ...form, preferredAccountId: event.target.value })
-                  }
+                  onChange={(event) => setForm({ ...form, preferredAccountId: event.target.value })}
                 >
                   <option value="">Choose when adding money</option>
                   {accounts
@@ -323,9 +324,10 @@ function GoalCard({
         {!goal.balanceAccountId && goal.preferredAccountId && (
           <p className="flex items-center gap-1.5 text-xs text-muted">
             <Landmark className="h-3.5 w-3.5 shrink-0" />
-            New goal money goes to {accounts.find((account) =>
-              account.id === goal.preferredAccountId
-            )?.bankName ?? "linked account"}; existing balance is not counted
+            New goal money goes to{" "}
+            {accounts.find((account) => account.id === goal.preferredAccountId)?.bankName ??
+              "linked account"}
+            ; existing balance is not counted
           </p>
         )}
 

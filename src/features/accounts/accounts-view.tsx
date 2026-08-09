@@ -751,9 +751,7 @@ export function AccountsView() {
                   setTransferForm({
                     ...transferForm,
                     amount,
-                    goalAmount: transferForm.goalId
-                      ? Math.min(transferForm.goalAmount, amount)
-                      : 0,
+                    goalAmount: transferForm.goalId ? Math.min(transferForm.goalAmount, amount) : 0,
                   });
                 }}
               />

@@ -3,10 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { accountDeletionBlocker, goalRestoreBlocker } from "./account-references";
-import {
-  applyAllocation,
-  reassignGoalAccounts,
-} from "./allocation-writes";
+import { applyAllocation, reassignGoalAccounts } from "./allocation-writes";
 import { normalizeBudgetRule } from "./budget-rules";
 import { migrateGoalOpeningBalances } from "./goal-migration";
 import {

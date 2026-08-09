@@ -8,12 +8,7 @@ export type CompletedTransferResult =
 export function completeTransferWrite(
   transfer: Pick<
     AccountTransfer,
-    | "id"
-    | "sourceAccountId"
-    | "destinationAccountId"
-    | "amount"
-    | "goalId"
-    | "goalAmount"
+    "id" | "sourceAccountId" | "destinationAccountId" | "amount" | "goalId" | "goalAmount"
   >,
   accounts: BankAccount[],
   goals: Goal[],
