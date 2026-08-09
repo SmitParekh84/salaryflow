@@ -16,11 +16,21 @@ import type {
   BudgetRule,
   CreditCard,
   Expense,
+  Goal,
+  GoalContribution,
   Income,
   Investment,
   SalaryProfile,
 } from "./types";
 import { formatMoney } from "./utils";
+import {
+  accountAllocated,
+  accountFree,
+  goalAccountBreakdown,
+  goalSaved,
+  isOverAllocated,
+  unassignedSaved,
+} from "./allocations";
 
 const profile: SalaryProfile = {
   amount: 30_000,
@@ -468,5 +478,81 @@ describe("bills and funding plan", () => {
     expect(plan.items.find((item) => item.label.includes("top-up"))?.amount).toBe(2_500);
     expect(plan.items.find((item) => item.kind === "rent")?.remainingAmount).toBe(8_000);
     expect(plan.total).toBe(14_000);
+  });
+});
+
+describe("allocations", () => {
+  const goal = (id: string, contributions: GoalContribution[]): Goal => ({
+    id,
+    name: id,
+    type: "Custom",
+    target: 100000,
+    saved: 0,
+    monthlyContribution: 0,
+    contributions,
+  });
+
+  const account: BankAccount = {
+    id: "union",
+    bankName: "Union Bank",
+    accountType: "Savings",
+    balance: 10569,
+    status: "active",
+  };
+
+  it("sums contributions into a goal total", () => {
+    const bike = goal("bike", [
+      { id: "c1", amount: 6000, date: "2026-08-01T00:00:00.000Z" },
+      { id: "c2", amount: 4000, date: "2026-08-05T00:00:00.000Z" },
+    ]);
+    expect(goalSaved(bike)).toBe(10000);
+  });
+
+  it("treats a goal with no contributions as zero", () => {
+    expect(goalSaved(goal("empty", []))).toBe(0);
+  });
+
+  it("sums allocations across goals for one account", () => {
+    const goals = [
+      goal("bike", [{ id: "c1", amount: 10000, date: "2026-08-01", accountId: "union" }]),
+      goal("mobile", [{ id: "c2", amount: 489, date: "2026-08-01", accountId: "union" }]),
+      goal("other", [{ id: "c3", amount: 5000, date: "2026-08-01", accountId: "hdfc" }]),
+    ];
+    expect(accountAllocated(goals, "union")).toBe(10489);
+    expect(accountAllocated(goals, "hdfc")).toBe(5000);
+  });
+
+  it("computes the user scenario: 80 free after a 10489 split", () => {
+    const goals = [
+      goal("bike", [{ id: "c1", amount: 10000, date: "2026-08-01", accountId: "union" }]),
+      goal("mobile", [{ id: "c2", amount: 489, date: "2026-08-01", accountId: "union" }]),
+    ];
+    expect(accountFree(goals, account)).toBe(80);
+  });
+
+  it("excludes contributions with no account from account totals", () => {
+    const goals = [goal("bike", [{ id: "c1", amount: 5000, date: "2026-08-01" }])];
+    expect(accountAllocated(goals, "union")).toBe(0);
+    expect(unassignedSaved(goals[0])).toBe(5000);
+  });
+
+  it("detects an over-allocated account", () => {
+    const goals = [
+      goal("bike", [{ id: "c1", amount: 10000, date: "2026-08-01", accountId: "union" }]),
+    ];
+    expect(isOverAllocated(goals, account)).toBe(false);
+    expect(isOverAllocated(goals, { ...account, balance: 9000 })).toBe(true);
+  });
+
+  it("breaks a goal down by the accounts holding it", () => {
+    const bike = goal("bike", [
+      { id: "c1", amount: 6000, date: "2026-08-01", accountId: "union" },
+      { id: "c2", amount: 4000, date: "2026-08-02", accountId: "union" },
+      { id: "c3", amount: 500, date: "2026-08-03" },
+    ]);
+    expect(goalAccountBreakdown(bike)).toEqual([
+      { accountId: "union", amount: 10000 },
+      { accountId: undefined, amount: 500 },
+    ]);
   });
 });

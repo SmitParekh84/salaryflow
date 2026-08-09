@@ -140,6 +140,7 @@ export interface Goal {
   name: string;
   type: GoalType;
   target: number;
+  /** @deprecated Read totals with goalSaved() from src/lib/allocations.ts. */
   saved: number;
   deadline?: string;
   monthlyContribution: number;
@@ -150,6 +151,12 @@ export interface GoalContribution {
   id: string;
   amount: number;
   date: string;
+  /** Which bank account holds this money. Undefined = not yet linked. */
+  accountId?: string;
+  /** Set when this contribution was created by splitting an account transfer. */
+  transferId?: string;
+  /** Synthetic record created by migration. Excluded from cycle-scoped math. */
+  opening?: boolean;
 }
 
 export type InvestmentType =
