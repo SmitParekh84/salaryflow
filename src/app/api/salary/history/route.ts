@@ -1,6 +1,8 @@
-import { verifyJwt } from "@/server/auth";
+import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
+import { getCurrentUser } from "@/lib/server-auth";
 import { connectDB } from "@/server/db";
-import { SalaryHistoryModel, SalaryProfileModel, UserModel } from "@/server/models";
+import { SalaryHistoryModel, SalaryProfileModel } from "@/server/models";
+import { Types } from "mongoose";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -22,20 +24,8 @@ const updateSchema = z.object({
   confirmed: z.boolean().optional(),
 });
 
-async function getUserFromReq(req: Request) {
-  const cookie = req.headers.get("cookie") || "";
-  const match = cookie.match(/sf_session=([^;]+)/);
-  const token = match ? match[1] : null;
-  if (!token) return null;
-  const payload = verifyJwt(token);
-  if (!payload || typeof payload !== "object" || !("sub" in payload) || !payload.sub) return null;
-  await connectDB();
-  const user = await UserModel.findById(payload.sub).lean();
-  return user;
-}
-
-export async function GET(req: Request) {
-  const user = await getUserFromReq(req);
+export async function GET() {
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   await connectDB();
@@ -46,8 +36,10 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const user = await getUserFromReq(req);
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!isJsonRequest(req)) return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
 
   const body = await req.json().catch(() => null);
   const parsed = createSchema.safeParse(body);
@@ -80,12 +72,14 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
-  const user = await getUserFromReq(req);
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!isJsonRequest(req)) return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
 
   const url = new URL(req.url);
   const id = url.searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+  if (!id || !Types.ObjectId.isValid(id)) return NextResponse.json({ error: "Valid id required" }, { status: 400 });
   const body = await req.json().catch(() => null);
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid" }, { status: 422 });
@@ -102,12 +96,13 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const user = await getUserFromReq(req);
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const url = new URL(req.url);
   const id = url.searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+  if (!id || !Types.ObjectId.isValid(id)) return NextResponse.json({ error: "Valid id required" }, { status: 400 });
   await connectDB();
   const existing = await SalaryHistoryModel.findById(id).lean();
   if (!existing || existing.userId !== (user.email || String(user._id)))

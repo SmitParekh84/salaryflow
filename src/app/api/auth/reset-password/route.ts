@@ -1,38 +1,54 @@
+import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
+import { clearRateLimit, consumeRateLimit, getClientIp } from "@/lib/rate-limit";
+import { setSessionCookie } from "@/lib/session-cookie";
 import { NextResponse } from "next/server";
 import { connectDB } from "@/server/db";
 import { OtpModel, UserModel } from "@/server/models";
-import { hashPassword, signJwt } from "@/server/auth";
+import { hashOtp, hashPassword, signJwt } from "@/server/auth";
 import { z } from "zod";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const schema = z.object({ email: z.string().email(), otp: z.string().length(6), password: z.string().min(6) });
+const schema = z.object({
+  email: z.string().trim().email().max(254).transform((email) => email.toLowerCase()),
+  otp: z.string().regex(/^\d{6}$/),
+  password: z.string().min(12).max(128),
+});
 
 export async function POST(req: Request) {
+  if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!isJsonRequest(req)) return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid" }, { status: 422 });
 
+  const ipLimit = await consumeRateLimit({ scope: "reset-verify-ip", identifier: getClientIp(req), limit: 20, windowMs: 15 * 60 * 1000 });
+  const emailLimit = await consumeRateLimit({ scope: "reset-verify-email", identifier: parsed.data.email, limit: 5, windowMs: 15 * 60 * 1000 });
+  if (!ipLimit.allowed || !emailLimit.allowed) {
+    const retryAfter = Math.max(ipLimit.retryAfterSeconds, emailLimit.retryAfterSeconds);
+    return NextResponse.json({ error: "Too many verification attempts. Try again later." }, { status: 429, headers: { "Retry-After": String(retryAfter) } });
+  }
+
   await connectDB();
-  const otpRow = await OtpModel.findOne({ email: parsed.data.email, code: parsed.data.otp, used: false }).sort({ createdAt: -1 }).lean();
-  if (!otpRow) return NextResponse.json({ error: "Invalid OTP" }, { status: 400 });
-  if (new Date(otpRow.expiresAt) < new Date()) return NextResponse.json({ error: "OTP expired" }, { status: 400 });
+  const otpRow = await OtpModel.findOneAndUpdate(
+    { email: parsed.data.email, code: hashOtp(parsed.data.email, parsed.data.otp), used: false, expiresAt: { $gt: new Date() } },
+    { used: true },
+    { new: true, sort: { createdAt: -1 } },
+  ).lean();
+  if (!otpRow) return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 });
 
-  // mark used
-  await OtpModel.updateOne({ _id: otpRow._id }, { used: true }).catch(() => null);
-
-  const user = await UserModel.findOne({ email: parsed.data.email });
-  if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+  const user = await UserModel.findOne({ email: parsed.data.email }).select("+sessionVersion");
+  if (!user) return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 });
 
   const passwordHash = await hashPassword(parsed.data.password);
   user.passwordHash = passwordHash;
-  await user.save().catch(() => null);
+  user.sessionVersion = Number(user.sessionVersion ?? 0) + 1;
+  await user.save();
 
-  // sign in after reset
-  const token = signJwt({ sub: String(user._id), email: user.email });
-  const cookie = `sf_session=${token}; Max-Age=${60 * 60 * 24 * 30}; HttpOnly; Path=/; SameSite=Lax`;
+  const token = signJwt({ sub: String(user._id), email: user.email, sv: user.sessionVersion }, "12h");
   const res = NextResponse.json({ data: { id: user._id, email: user.email, name: user.name } });
-  res.headers.set("Set-Cookie", cookie);
+  setSessionCookie(res, token);
+  await clearRateLimit("reset-verify-email", parsed.data.email);
   return res;
 }

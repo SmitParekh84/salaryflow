@@ -34,7 +34,7 @@ export default function RegisterPage() {
 
   function validateInputs() {
     if (!email) return "Email is required";
-    if (!password || password.length < 6) return "Password must be at least 6 characters";
+    if (!password || password.length < 12) return "Password must be at least 12 characters";
     if (password !== confirm) return "Passwords do not match";
     return null;
   }
@@ -122,6 +122,9 @@ export default function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               type="password"
+              minLength={12}
+              maxLength={128}
+              autoComplete="new-password"
             />
           </div>
           <div>
@@ -131,6 +134,9 @@ export default function RegisterPage() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               type="password"
+              minLength={12}
+              maxLength={128}
+              autoComplete="new-password"
             />
           </div>
 

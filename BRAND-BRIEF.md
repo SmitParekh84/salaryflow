@@ -216,18 +216,18 @@ and communicates the emotional result without overexplaining the calculation.
 These measure whether SalaryFlow is solving the user problem. Final targets
 should be set after a baseline cohort is available.
 
-| KPI | Definition | Why it matters |
-| --- | --- | --- |
-| Onboarding completion | Percentage of new users who add salary, payday, commitments, and reach the dashboard | The core answer requires a complete starting picture |
-| Time to first safe-to-spend value | Median time from registration to seeing a valid daily amount | Measures how quickly the brand promise becomes real |
-| Safe-to-spend view rate | Percentage of active users who view the daily amount on a given day or week | Indicates that the number is useful in daily decisions |
-| Expense capture rate | Percentage of active days with expenses recorded or synced | The guidance remains accurate only when spending is current |
-| Bill coverage | Percentage of active users with recurring commitments entered | Measures whether protected commitments are represented |
-| Payday success rate | Percentage of salary cycles completed without the available amount dropping below zero | Direct indicator of improved financial pacing |
-| End-of-cycle variance | Difference between projected and actual money remaining at payday | Tests the trustworthiness of the calculation |
-| 4-week and 12-week retention | Percentage of users returning after one and three salary cycles | Measures durable value beyond initial curiosity |
-| Weekly active usage | Users who check guidance or record activity at least once per week | Reflects ongoing product relevance |
-| User confidence score | Response to “I know what I can safely spend before payday” | Measures the emotional outcome the product promises |
+| KPI                               | Definition                                                                             | Why it matters                                              |
+| --------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Onboarding completion             | Percentage of new users who add salary, payday, commitments, and reach the dashboard   | The core answer requires a complete starting picture        |
+| Time to first safe-to-spend value | Median time from registration to seeing a valid daily amount                           | Measures how quickly the brand promise becomes real         |
+| Safe-to-spend view rate           | Percentage of active users who view the daily amount on a given day or week            | Indicates that the number is useful in daily decisions      |
+| Expense capture rate              | Percentage of active days with expenses recorded or synced                             | The guidance remains accurate only when spending is current |
+| Bill coverage                     | Percentage of active users with recurring commitments entered                          | Measures whether protected commitments are represented      |
+| Payday success rate               | Percentage of salary cycles completed without the available amount dropping below zero | Direct indicator of improved financial pacing               |
+| End-of-cycle variance             | Difference between projected and actual money remaining at payday                      | Tests the trustworthiness of the calculation                |
+| 4-week and 12-week retention      | Percentage of users returning after one and three salary cycles                        | Measures durable value beyond initial curiosity             |
+| Weekly active usage               | Users who check guidance or record activity at least once per week                     | Reflects ongoing product relevance                          |
+| User confidence score             | Response to “I know what I can safely spend before payday”                             | Measures the emotional outcome the product promises         |
 
 ## Suggested initial KPI targets
 
@@ -246,16 +246,16 @@ Use these as directional launch goals, then revise them against real behavior:
 
 These measure whether the identity communicates the intended position:
 
-| KPI | Method | Success signal |
-| --- | --- | --- |
-| Distinctiveness | Show the mark among finance-app competitors without names | Users can identify it again after a delayed recall test |
-| Concept comprehension | Ask what the symbol suggests before explaining it | Responses mention flow, pacing, cycle, clarity, or control |
-| Category fit | Ask which type of product the identity belongs to | Reads as personal finance without looking like a bank or trading app |
-| Trust | Rate the identity from untrustworthy to trustworthy | Strong trust without appearing corporate or severe |
-| Small-size recognition | Test the app icon at 16, 24, 32, and 48 pixels | Core form remains distinct and balanced at every size |
-| Monochrome resilience | Test in one color on light and dark backgrounds | Meaning and recognition do not depend on gradients |
-| Wordmark legibility | Test at mobile-header and notification sizes | Name remains immediately readable |
-| Emotional fit | Ask users to choose descriptive attributes | Clarity, calm, confidence, and modernity rank highest |
+| KPI                    | Method                                                    | Success signal                                                       |
+| ---------------------- | --------------------------------------------------------- | -------------------------------------------------------------------- |
+| Distinctiveness        | Show the mark among finance-app competitors without names | Users can identify it again after a delayed recall test              |
+| Concept comprehension  | Ask what the symbol suggests before explaining it         | Responses mention flow, pacing, cycle, clarity, or control           |
+| Category fit           | Ask which type of product the identity belongs to         | Reads as personal finance without looking like a bank or trading app |
+| Trust                  | Rate the identity from untrustworthy to trustworthy       | Strong trust without appearing corporate or severe                   |
+| Small-size recognition | Test the app icon at 16, 24, 32, and 48 pixels            | Core form remains distinct and balanced at every size                |
+| Monochrome resilience  | Test in one color on light and dark backgrounds           | Meaning and recognition do not depend on gradients                   |
+| Wordmark legibility    | Test at mobile-header and notification sizes              | Name remains immediately readable                                    |
+| Emotional fit          | Ask users to choose descriptive attributes                | Clarity, calm, confidence, and modernity rank highest                |
 
 ## Identity deliverables
 

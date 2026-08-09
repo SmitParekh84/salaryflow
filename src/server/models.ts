@@ -251,6 +251,7 @@ const UserSchema = new Schema(
     passwordHash: { type: String },
     emailVerified: { type: Boolean, default: false },
     isAdmin: { type: Boolean, default: false },
+    sessionVersion: { type: Number, default: 0, select: false },
   },
   { timestamps: true },
 );
@@ -284,6 +285,32 @@ export const BudgetRuleModel = models.BudgetRule || model("BudgetRule", BudgetRu
 export const RecycleBinModel = models.RecycleBin || model("RecycleBin", RecycleBinSchema);
 export const NotificationModel = models.Notification || model("Notification", NotificationSchema);
 export const UserModel = models.User || model("User", UserSchema);
+
+const RateLimitSchema = new Schema(
+  {
+    key: { type: String, required: true, unique: true, index: true },
+    count: { type: Number, required: true, default: 0 },
+    resetAt: { type: Date, required: true },
+  },
+  { timestamps: true },
+);
+
+RateLimitSchema.index({ resetAt: 1 }, { expireAfterSeconds: 0 });
+
+export type RateLimitDoc = InferSchemaType<typeof RateLimitSchema>;
+export const RateLimitModel = models.RateLimit || model("RateLimit", RateLimitSchema);
+
+const AdminAuditSchema = new Schema(
+  {
+    adminId: { type: String, required: true, index: true },
+    targetUserId: { type: String, required: true, index: true },
+    action: { type: String, enum: ["promote", "demote", "delete"], required: true },
+  },
+  { timestamps: true },
+);
+
+export type AdminAuditDoc = InferSchemaType<typeof AdminAuditSchema>;
+export const AdminAuditModel = models.AdminAudit || model("AdminAudit", AdminAuditSchema);
 
 const SharedExpenseInviteSchema = new Schema(
   {

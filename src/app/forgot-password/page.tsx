@@ -101,7 +101,12 @@ export default function ForgotPasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 type="password"
+                minLength={12}
+                maxLength={128}
+                autoComplete="new-password"
+                required
               />
+              <p className="mt-2 text-xs text-muted">Use at least 12 characters.</p>
             </div>
             {error && <div className="text-sm text-red-600">{error}</div>}
             <div>

@@ -1,23 +1,45 @@
+import { getCurrentUser } from "@/lib/server-auth";
 import { NextResponse } from "next/server";
 import { connectDB } from "@/server/db";
 import { UserModel } from "@/server/models";
-import { verifyJwt } from "@/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request) {
-  const cookie = req.headers.get("cookie") || "";
-  const match = cookie.match(/sf_session=([^;]+)/);
-  const token = match ? match[1] : null;
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const payload = verifyJwt(token) as any;
-  if (!payload?.sub) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function GET() {
+  const requester = await getCurrentUser();
+  if (!requester) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!requester.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  await connectDB();
-  const requester = await UserModel.findById(payload.sub).lean();
-  if (!requester || !requester.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  try {
+    await connectDB();
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const [users, totalUsers, adminUsers, verifiedUsers, recentUsers] = await Promise.all([
+      UserModel.find({})
+        .select("email name isAdmin emailVerified createdAt")
+        .sort({ createdAt: -1 })
+        .lean(),
+      UserModel.countDocuments({}),
+      UserModel.countDocuments({ isAdmin: true }),
+      UserModel.countDocuments({ emailVerified: true }),
+      UserModel.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+    ]);
 
-  const users = await UserModel.find({}, { passwordHash: 0 }).lean();
-  return NextResponse.json({ data: users });
+    return NextResponse.json({
+      data: {
+        currentUserId: String(requester._id),
+        stats: { totalUsers, adminUsers, verifiedUsers, recentUsers },
+        users: users.map((user) => ({
+          id: String(user._id),
+          email: user.email,
+          name: user.name || null,
+          isAdmin: Boolean(user.isAdmin),
+          emailVerified: Boolean(user.emailVerified),
+          createdAt: user.createdAt,
+        })),
+      },
+    });
+  } catch {
+    return NextResponse.json({ error: "Unable to load administration data" }, { status: 500 });
+  }
 }

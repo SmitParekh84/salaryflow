@@ -1,6 +1,7 @@
-import { verifyJwt } from "@/server/auth";
-import { connectDB } from "@/server/db";
-import { BankAccountModel, UserModel } from "@/server/models";
+import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
+import { getCurrentUser } from "@/lib/server-auth";
+import { BankAccountModel } from "@/server/models";
+import { Types } from "mongoose";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -15,21 +16,8 @@ const accountSchema = z.object({
   plannedTransferTo: z.string().trim().min(1).optional(),
 });
 
-async function getUser(req: Request) {
-  const token = req.headers.get("cookie")?.match(/sf_session=([^;]+)/)?.[1];
-  if (!token) return null;
-
-  const payload = verifyJwt(token);
-  if (!payload || typeof payload !== "object" || !("sub" in payload) || !payload.sub) {
-    return null;
-  }
-
-  await connectDB();
-  return UserModel.findById(payload.sub).lean();
-}
-
-export async function GET(req: Request) {
-  const user = await getUser(req);
+export async function GET() {
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const userId = user.email || String(user._id);
@@ -38,8 +26,10 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const user = await getUser(req);
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!isJsonRequest(req)) return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
 
   const body = await req.json().catch(() => null);
   const parsed = accountSchema.safeParse(body);
@@ -53,11 +43,13 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
-  const user = await getUser(req);
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!isJsonRequest(req)) return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
 
   const id = new URL(req.url).searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "Account id is required" }, { status: 400 });
+  if (!id || !Types.ObjectId.isValid(id)) return NextResponse.json({ error: "Valid account id is required" }, { status: 400 });
 
   const body = await req.json().catch(() => null);
   const parsed = accountSchema.partial().safeParse(body);
@@ -75,11 +67,12 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const user = await getUser(req);
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const id = new URL(req.url).searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "Account id is required" }, { status: 400 });
+  if (!id || !Types.ObjectId.isValid(id)) return NextResponse.json({ error: "Valid account id is required" }, { status: 400 });
 
   const userId = user.email || String(user._id);
   const removed = await BankAccountModel.findOneAndDelete({ _id: id, userId }).lean();

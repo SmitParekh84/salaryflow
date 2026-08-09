@@ -1,5 +1,5 @@
-import { verifyJwt } from "@/server/auth";
-import { connectDB } from "@/server/db";
+import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
+import { getCurrentUser } from "@/lib/server-auth";
 import {
   AccountTransferModel,
   BankAccountModel,
@@ -12,25 +12,11 @@ import {
   InvestmentModel,
   RecycleBinModel,
   SalaryProfileModel,
-  UserModel,
 } from "@/server/models";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-async function getUser(req: Request) {
-  const token = req.headers.get("cookie")?.match(/sf_session=([^;]+)/)?.[1];
-  if (!token) return null;
-
-  const payload = verifyJwt(token);
-  if (!payload || typeof payload !== "object" || !("sub" in payload) || !payload.sub) {
-    return null;
-  }
-
-  await connectDB();
-  return UserModel.findById(payload.sub).lean();
-}
 
 async function getServerState(userId: string) {
   const [
@@ -74,8 +60,8 @@ async function getServerState(userId: string) {
   };
 }
 
-export async function GET(req: Request) {
-  const user = await getUser(req);
+export async function GET() {
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const userId = user.email || String(user._id);
@@ -83,10 +69,12 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => null);
-  const user = await getUser(req);
-  if (!body || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!isJsonRequest(req)) return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
+  const body = await req.json().catch(() => null);
+  if (!body || typeof body !== "object") return NextResponse.json({ error: "Invalid sync payload" }, { status: 422 });
 
   const userId = user.email || String(user._id);
 

@@ -1,11 +1,17 @@
+import { isSameOriginRequest } from "@/lib/api-security";
 import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST() {
-  // set cookie to expired
-  const cookie = `sf_session=deleted; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`;
+export async function POST(req: Request) {
+  if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const res = NextResponse.json({ data: null });
-  res.headers.set("Set-Cookie", cookie);
+  res.cookies.set("sf_session", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: 0,
+  });
   return res;
 }

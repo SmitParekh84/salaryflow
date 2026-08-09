@@ -3,9 +3,10 @@
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { ArrowLeft, CheckCircle2, Eye, EyeOff, Mail } from "lucide-react";
+import Link from "next/link";
 import React, { useState } from "react";
 
-type AccountMode = "email" | "login" | "register";
+type AccountMode = "email" | "login";
 
 interface LoginStepProps {
   name: string;
@@ -15,7 +16,6 @@ interface LoginStepProps {
 export default function LoginStep({ name, onAuthenticated }: LoginStepProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [mode, setMode] = useState<AccountMode>("email");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,46 +24,17 @@ export default function LoginStep({ name, onAuthenticated }: LoginStepProps) {
   async function checkEmail(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setLoading(true);
-
-    try {
-      const normalizedEmail = email.trim().toLowerCase();
-      const response = await fetch("/api/auth/email-status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: normalizedEmail }),
-      });
-      const json = await response.json().catch(() => ({}));
-
-      if (!response.ok) throw new Error(json?.error || "Unable to check this email");
-
-      setEmail(normalizedEmail);
-      setMode(json?.data?.exists ? "login" : "register");
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Unable to check this email");
-    } finally {
-      setLoading(false);
-    }
+    setEmail(email.trim().toLowerCase());
+    setMode("login");
   }
 
   async function authenticate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (mode === "register" && password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    if (mode === "register" && password.length < 6) {
-      setError("Password must be at least 6 characters");
-      return;
-    }
-
     setLoading(true);
     try {
-      const endpoint = mode === "register" ? "/api/auth/register" : "/api/auth/login";
-      const response = await fetch(endpoint, {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -84,7 +55,6 @@ export default function LoginStep({ name, onAuthenticated }: LoginStepProps) {
   function changeEmail() {
     setMode("email");
     setPassword("");
-    setConfirmPassword("");
     setError(null);
   }
 
@@ -118,13 +88,14 @@ export default function LoginStep({ name, onAuthenticated }: LoginStepProps) {
           </p>
         )}
         <Button type="submit" className="w-full" disabled={loading || !email.trim()}>
-          {loading ? "Checking…" : "Continue"}
+          Continue to sign in
+        </Button>
+        <Button asChild type="button" variant="secondary" className="w-full">
+          <Link href="/register">Create a verified account</Link>
         </Button>
       </form>
     );
   }
-
-  const isRegistration = mode === "register";
 
   return (
     <form onSubmit={authenticate} className="space-y-4">
@@ -132,9 +103,7 @@ export default function LoginStep({ name, onAuthenticated }: LoginStepProps) {
         <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{email}</p>
-          <p className="text-xs text-muted">
-            {isRegistration ? "New account" : "Existing account"}
-          </p>
+          <p className="text-xs text-muted">Secure account sign in</p>
         </div>
         <Button
           type="button"
@@ -148,19 +117,17 @@ export default function LoginStep({ name, onAuthenticated }: LoginStepProps) {
       </div>
 
       <div>
-        <Label htmlFor="onboarding-password">
-          {isRegistration ? "Create password" : "Password"}
-        </Label>
+        <Label htmlFor="onboarding-password">Password</Label>
         <div className="relative">
           <Input
             id="onboarding-password"
             autoFocus
-            autoComplete={isRegistration ? "new-password" : "current-password"}
+            autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             type={showPassword ? "text" : "password"}
             className="pr-11"
-            minLength={isRegistration ? 6 : 1}
+            minLength={1}
             required
           />
           <Button
@@ -176,22 +143,6 @@ export default function LoginStep({ name, onAuthenticated }: LoginStepProps) {
         </div>
       </div>
 
-      {isRegistration && (
-        <div>
-          <Label htmlFor="onboarding-confirm-password">Confirm password</Label>
-          <Input
-            id="onboarding-confirm-password"
-            autoComplete="new-password"
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-            type={showPassword ? "text" : "password"}
-            minLength={6}
-            required
-          />
-          <p className="mt-2 text-xs text-muted">Use at least 6 characters.</p>
-        </div>
-      )}
-
       {error && (
         <p role="alert" className="text-sm text-danger">
           {error}
@@ -199,11 +150,7 @@ export default function LoginStep({ name, onAuthenticated }: LoginStepProps) {
       )}
 
       <Button type="submit" className="w-full" disabled={loading || !password}>
-        {loading
-          ? "Saving your setup…"
-          : isRegistration
-            ? "Create account & finish"
-            : "Sign in & finish"}
+        {loading ? "Signing in…" : "Sign in & finish"}
       </Button>
 
       <Button

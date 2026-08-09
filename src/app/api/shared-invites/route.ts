@@ -1,5 +1,5 @@
-import { verifyJwt } from "@/server/auth";
-import { connectDB } from "@/server/db";
+import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
+import { getCurrentUser } from "@/lib/server-auth";
 import { NotificationModel, SharedExpenseInviteModel, UserModel } from "@/server/models";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -16,17 +16,11 @@ const inviteSchema = z.object({
   friendPaid: z.number().nonnegative(),
 });
 
-async function authenticatedUser(request: Request) {
-  const token = request.headers.get("cookie")?.match(/sf_session=([^;]+)/)?.[1];
-  const payload = token ? verifyJwt(token) : null;
-  if (!payload || typeof payload !== "object" || !("sub" in payload) || !payload.sub) return null;
-  await connectDB();
-  return UserModel.findById(payload.sub).lean();
-}
-
 export async function POST(request: Request) {
-  const user = await authenticatedUser(request);
+  const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isSameOriginRequest(request)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!isJsonRequest(request)) return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
 
   const parsed = inviteSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {

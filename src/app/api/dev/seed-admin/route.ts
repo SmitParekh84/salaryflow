@@ -2,20 +2,43 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/server/db";
 import { UserModel } from "@/server/models";
 import { hashPassword } from "@/server/auth";
+import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  if (process.env.NODE_ENV === "production") return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  const seedToken = process.env.DEV_ADMIN_SEED_TOKEN;
+  if (
+    process.env.NODE_ENV === "production" ||
+    process.env.ENABLE_DEV_ADMIN_SEED !== "true" ||
+    !seedToken
+  ) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  if (!isSameOriginRequest(req)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  if (!isJsonRequest(req)) {
+    return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
+  }
+  if (req.headers.get("x-dev-seed-token") !== seedToken) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   await connectDB();
   const body = await req.json().catch(() => ({}));
-  const email = body.email || process.env.DEV_ADMIN_EMAIL || "admin@salaryflow.app";
-  const pass = body.password || process.env.DEV_ADMIN_PASSWORD || "admin123";
+  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  const pass = typeof body.password === "string" ? body.password : "";
+  if (!email || pass.length < 12) {
+    return NextResponse.json(
+      { error: "A valid email and password of at least 12 characters are required" },
+      { status: 400 },
+    );
+  }
 
   const existing = await UserModel.findOne({ email }).lean();
   if (existing) {
-    // ensure isAdmin
     await UserModel.findByIdAndUpdate(existing._id, { isAdmin: true });
     return NextResponse.json({ data: { message: "Admin ensured", email } });
   }
