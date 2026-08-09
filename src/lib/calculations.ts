@@ -118,6 +118,7 @@ const FIXED: Record<string, boolean> = {
   Insurance: true,
   Subscriptions: true,
   Utilities: true,
+  "Mobile & Internet": true,
 };
 
 export function computeSummary(

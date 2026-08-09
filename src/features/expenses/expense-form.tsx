@@ -1,15 +1,16 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { CATEGORIES, PAYMENT_METHODS } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
-import { dateInputToIso, localDateInputValue } from "@/lib/utils";
+import { dateInputToIso, localDateInputValue, parseFinancialDate } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 const schema = z
@@ -21,6 +22,8 @@ const schema = z
     note: z.string().optional(),
     date: z.string().min(1),
     recurring: z.boolean().optional(),
+    planNextPayment: z.boolean().optional(),
+    recurrenceDays: z.coerce.number().int().min(1).max(3650).optional(),
     accountId: z.string().optional(),
     sharedEnabled: z.boolean().optional(),
     totalAmount: z.coerce.number().nonnegative().optional(),
@@ -30,6 +33,13 @@ const schema = z
     inviteRequested: z.boolean().optional(),
   })
   .superRefine((values, context) => {
+    if (values.planNextPayment && !values.recurrenceDays) {
+      context.addIssue({
+        code: "custom",
+        path: ["recurrenceDays"],
+        message: "Enter the number of days until the next payment",
+      });
+    }
     if (!values.sharedEnabled) return;
     if (!values.friendName?.trim()) {
       context.addIssue({
@@ -64,6 +74,7 @@ export function ExpenseForm({
   sharedMode?: boolean;
 }) {
   const addExpense = useFinanceStore((s) => s.addExpense);
+  const addBill = useFinanceStore((s) => s.addBill);
   const updateExpense = useFinanceStore((s) => s.updateExpense);
   const accounts = useFinanceStore((s) => s.accounts);
   const creditCards = useFinanceStore((s) => s.creditCards);
@@ -83,12 +94,15 @@ export function ExpenseForm({
       paymentMethod: "UPI",
       date: localDateInputValue(),
       recurring: false,
+      planNextPayment: false,
+      recurrenceDays: 90,
       sharedEnabled: false,
     },
   });
 
   const sharedEnabled = useWatch({ control, name: "sharedEnabled" });
   const friendEmail = useWatch({ control, name: "friendEmail" });
+  const planNextPayment = useWatch({ control, name: "planNextPayment" });
   const isSharedForm = sharedMode || Boolean(editing?.shared);
 
   useEffect(() => {
@@ -103,6 +117,8 @@ export function ExpenseForm({
               note: editing.note ?? "",
               date: editing.date.slice(0, 10),
               recurring: editing.recurring ?? false,
+              planNextPayment: false,
+              recurrenceDays: 90,
               accountId: editing.accountId ?? "",
               sharedEnabled: isSharedForm,
               totalAmount: editing.shared?.totalAmount,
@@ -124,6 +140,8 @@ export function ExpenseForm({
                 note: "",
                 date: localDateInputValue(),
                 recurring: false,
+                planNextPayment: false,
+                recurrenceDays: 90,
                 accountId: defaultAccount?.id ?? "",
                 sharedEnabled: sharedMode,
                 totalAmount: undefined,
@@ -160,7 +178,24 @@ export function ExpenseForm({
         : undefined,
     };
     if (editing) updateExpense(editing.id, payload);
-    else addExpense(payload);
+    else {
+      addExpense(payload);
+      if (parsed.planNextPayment && parsed.recurrenceDays) {
+        const nextPayment = parseFinancialDate(parsed.date);
+        nextPayment.setDate(nextPayment.getDate() + parsed.recurrenceDays);
+        addBill({
+          name: `${parsed.merchant?.trim() || "Recurring payment"} · ${parsed.recurrenceDays}-day plan`,
+          amount: parsed.amount,
+          dueDay: nextPayment.getDate(),
+          dueDate: dateInputToIso(localDateInputValue(nextPayment)),
+          frequency: "interval",
+          intervalDays: parsed.recurrenceDays,
+          category: parsed.category as Expense["category"],
+          paid: false,
+          accountId: parsed.accountId || undefined,
+        });
+      }
+    }
     await syncWithServer();
     if (payload.shared?.inviteRequested && payload.shared.friendEmail) {
       await fetch("/api/shared-invites", {
@@ -238,13 +273,23 @@ export function ExpenseForm({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label>Category</Label>
-            <Select {...register("category")}>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </Select>
+            <Controller
+              control={control}
+              name="category"
+              render={({ field }) => (
+                <Combobox
+                  options={CATEGORIES.map((category) => ({
+                    label: category,
+                    value: category,
+                  }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Select category"
+                  searchPlaceholder="Search categories..."
+                  emptyText="No category found."
+                />
+              )}
+            />
           </div>
           <div>
             <Label>Payment</Label>
@@ -348,6 +393,52 @@ export function ExpenseForm({
           />
           Mark as recurring
         </label>
+
+        {!editing && (
+          <div className="rounded-xl border border-border bg-surface-2 p-4">
+            <Controller
+              control={control}
+              name="planNextPayment"
+              render={({ field }) => (
+                <label className="flex items-start gap-3 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(field.value)}
+                    onChange={(event) => field.onChange(event.target.checked)}
+                    className="mt-0.5 h-4 w-4 accent-[var(--primary)]"
+                  />
+                  <span>
+                    <span className="block font-medium">Plan the next payment</span>
+                    <span className="mt-0.5 block text-xs leading-relaxed text-muted">
+                      Adds a future bill and reserves part of the amount each salary cycle.
+                    </span>
+                  </span>
+                </label>
+              )}
+            />
+            {planNextPayment && (
+              <div className="mt-4">
+                <Label>Repeat after</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={3650}
+                    className="max-w-28"
+                    {...register("recurrenceDays")}
+                  />
+                  <span className="text-sm text-muted">days</span>
+                </div>
+                {errors.recurrenceDays && (
+                  <p className="mt-1 text-xs text-danger">{errors.recurrenceDays.message}</p>
+                )}
+                <p className="mt-2 text-xs text-muted">
+                  For a 90-day ₹899 recharge, Salary Plan reserves about ₹300 per salary cycle.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex gap-3 pt-1">
           <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>

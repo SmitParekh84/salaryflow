@@ -13,6 +13,16 @@ function sourceDate(bill: Bill, now: Date): Date {
 
 export function billOccurrenceDate(bill: Bill, now = new Date()): Date {
   const source = sourceDate(bill, now);
+  if (bill.frequency === "interval") {
+    const intervalDays = Math.max(1, bill.intervalDays ?? 90);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+    if (source >= today) return source;
+    const elapsedDays = Math.floor((today.getTime() - source.getTime()) / 86_400_000);
+    const elapsedIntervals = Math.floor(elapsedDays / intervalDays);
+    const occurrence = new Date(source);
+    occurrence.setDate(source.getDate() + elapsedIntervals * intervalDays);
+    return occurrence;
+  }
   if (bill.frequency === "yearly") {
     const day = Math.min(
       source.getDate(),
@@ -35,20 +45,36 @@ export function billOccurrenceDate(bill: Bill, now = new Date()): Date {
 }
 
 export function billCycle(bill: Bill, expenses: Expense[], now = new Date()) {
-  const occurrenceDate = billOccurrenceDate(bill, now);
-  const billedMonth =
+  let occurrenceDate = billOccurrenceDate(bill, now);
+  let billedMonth =
     bill.category === "Utilities"
       ? new Date(now.getFullYear(), now.getMonth() - 1, 1)
-      : new Date(now.getFullYear(), now.getMonth(), 1);
-  const billingMonth = monthKey(billedMonth);
-  const linkedExpenses = expenses.filter(
+      : bill.frequency === "interval"
+        ? new Date(occurrenceDate.getFullYear(), occurrenceDate.getMonth(), 1)
+        : new Date(now.getFullYear(), now.getMonth(), 1);
+  let billingMonth = monthKey(billedMonth);
+  let linkedExpenses = expenses.filter(
     (expense) => expense.billId === bill.id && expense.billingMonth === billingMonth,
   );
   const hasLinkedHistory = expenses.some((expense) => expense.billId === bill.id);
-  const paidAmount = linkedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  let paidAmount = linkedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
   const amount = bill.category === "Utilities" && paidAmount > 0 ? paidAmount : bill.amount;
-  const isPaid = paidAmount >= amount || (!hasLinkedHistory && bill.paid);
+  let isPaid = paidAmount >= amount || (!hasLinkedHistory && bill.paid);
+  if (bill.frequency === "interval" && isPaid) {
+    occurrenceDate = new Date(occurrenceDate);
+    occurrenceDate.setDate(occurrenceDate.getDate() + Math.max(1, bill.intervalDays ?? 90));
+    billedMonth = new Date(occurrenceDate.getFullYear(), occurrenceDate.getMonth(), 1);
+    billingMonth = monthKey(billedMonth);
+    linkedExpenses = expenses.filter(
+      (expense) => expense.billId === bill.id && expense.billingMonth === billingMonth,
+    );
+    paidAmount = linkedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+    isPaid = paidAmount >= bill.amount;
+  }
   const remainingAmount = isPaid ? 0 : Math.max(0, amount - paidAmount);
+  const isDueThisMonth =
+    occurrenceDate.getFullYear() === now.getFullYear() &&
+    occurrenceDate.getMonth() === now.getMonth();
 
   return {
     amount,
@@ -59,6 +85,13 @@ export function billCycle(bill: Bill, expenses: Expense[], now = new Date()) {
     recordedAmount: paidAmount,
     remainingAmount,
     isPaid,
+    isDueThisMonth,
     overdue: !isPaid && occurrenceDate < new Date(now.getFullYear(), now.getMonth(), now.getDate()),
   };
+}
+
+export function monthlyBillReserve(bill: Bill): number {
+  if (bill.frequency !== "interval") return bill.amount;
+  const salaryCycles = Math.max(1, Math.round((bill.intervalDays ?? 90) / 30));
+  return bill.amount / salaryCycles;
 }

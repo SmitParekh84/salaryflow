@@ -10,6 +10,7 @@ export const CATEGORY_META: Record<ExpenseCategory, { color: string }> = {
   EMI: { color: "#6366f1" },
   Rent: { color: "#f59e0b" },
   Utilities: { color: "#14b8a6" },
+  "Mobile & Internet": { color: "#0891b2" },
   Insurance: { color: "#3b82f6" },
   Medical: { color: "#e11d48" },
   Education: { color: "#8b5cf6" },
@@ -78,6 +79,18 @@ export const COUNTRIES = [
   "Germany",
   "Japan",
 ];
+
+export const COUNTRY_CURRENCIES: Record<string, string> = {
+  India: "INR",
+  "United States": "USD",
+  "United Kingdom": "GBP",
+  "United Arab Emirates": "AED",
+  Australia: "AUD",
+  Canada: "CAD",
+  Singapore: "SGD",
+  Germany: "EUR",
+  Japan: "JPY",
+};
 
 export const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard" },

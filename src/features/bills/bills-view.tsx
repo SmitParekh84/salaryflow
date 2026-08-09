@@ -4,13 +4,14 @@ import { CategoryIcon } from "@/components/category-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Combobox } from "@/components/ui/combobox";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import { billCycle, billOccurrenceDate } from "@/lib/bill-cycle";
+import { billCycle, billOccurrenceDate, monthlyBillReserve } from "@/lib/bill-cycle";
 import { CATEGORIES, CATEGORY_META } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
-import type { Bill } from "@/lib/types";
+import type { Bill, BillFrequency } from "@/lib/types";
 import { dateInputToIso, formatMoney, localDateInputValue, parseFinancialDate } from "@/lib/utils";
 import { CalendarClock, Check, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -34,6 +35,8 @@ export function BillsView() {
     dueDate: localDateInputValue(),
     category: "Utilities" as Bill["category"],
     accountId: "",
+    frequency: "monthly" as BillFrequency,
+    intervalDays: 90,
   });
 
   const sorted = useMemo(() => {
@@ -47,7 +50,7 @@ export function BillsView() {
 
   const totalDue = bills.reduce((sum, bill) => {
     const cycle = billCycle(bill, expenses);
-    return sum + cycle.remainingAmount;
+    return cycle.isDueThisMonth || cycle.overdue ? sum + cycle.remainingAmount : sum;
   }, 0);
 
   const openAdd = () => {
@@ -61,6 +64,8 @@ export function BillsView() {
       dueDate: localDateInputValue(),
       category: "Utilities",
       accountId: defaultAccount?.id ?? "",
+      frequency: "monthly",
+      intervalDays: 90,
     });
     setOpen(true);
   };
@@ -75,6 +80,8 @@ export function BillsView() {
         : localDateInputValue(billOccurrenceDate(bill)),
       category: bill.category,
       accountId: bill.accountId ?? "",
+      frequency: bill.frequency,
+      intervalDays: bill.intervalDays ?? 90,
     });
     setOpen(true);
   };
@@ -88,7 +95,8 @@ export function BillsView() {
       amount: form.amount,
       dueDay: selectedDate.getDate(),
       dueDate: dateInputToIso(form.dueDate),
-      frequency: "monthly" as const,
+      frequency: form.frequency,
+      intervalDays: form.frequency === "interval" ? form.intervalDays : undefined,
       category: form.category,
       paid: existing?.paid ?? false,
       accountId: form.accountId || undefined,
@@ -148,6 +156,8 @@ export function BillsView() {
               day: "numeric",
               month: "short",
             });
+            const isFutureInterval =
+              b.frequency === "interval" && !cycle.isDueThisMonth && !cycle.overdue;
             return (
               <Card key={b.id} className="flex items-center gap-3 p-4">
                 <div
@@ -164,10 +174,14 @@ export function BillsView() {
                     <span className="text-xs text-muted">
                       {b.category === "Utilities"
                         ? `${cycle.billedMonth.toLocaleDateString("en-US", { month: "long" })} bill · ${dateLabel}`
+                        : b.frequency === "interval"
+                          ? `Every ${b.intervalDays ?? 90} days · next ${dateLabel}`
                         : dateLabel}
                       {account ? ` · ${account.bankName}` : ""}
                     </span>
-                    {cycle.isPaid ? (
+                    {isFutureInterval ? (
+                      <Badge color="var(--primary)">Saving</Badge>
+                    ) : cycle.isPaid ? (
                       <Badge color="var(--success)">Paid</Badge>
                     ) : cycle.overdue ? (
                       <Badge color="var(--danger)">Overdue</Badge>
@@ -178,13 +192,18 @@ export function BillsView() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold">{formatMoney(cycle.amount, currency)}</p>
+                  {b.frequency === "interval" && (
+                    <p className="text-xs text-muted">
+                      {formatMoney(monthlyBillReserve(b), currency)} per salary cycle
+                    </p>
+                  )}
                   {cycle.recordedAmount > 0 && !cycle.isPaid && (
                     <p className="text-xs text-muted">
                       {formatMoney(cycle.remainingAmount, currency)} remaining
                     </p>
                   )}
                   <div className="mt-1 flex items-center justify-end gap-1">
-                    {!cycle.isPaid && (
+                    {!cycle.isPaid && !isFutureInterval && (
                       <button
                         onClick={() => void markPaid(b)}
                         className="rounded-lg p-1.5 text-muted transition-colors hover:bg-success/10 hover:text-success"
@@ -249,21 +268,56 @@ export function BillsView() {
                 value={form.dueDate}
                 onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
               />
-              <p className="mt-1 text-xs text-muted">Repeats monthly on this date.</p>
+              <p className="mt-1 text-xs text-muted">
+                {form.frequency === "interval"
+                  ? "This is the next payment date."
+                  : "The recurrence follows this date."}
+              </p>
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Repeats</Label>
+              <Select
+                value={form.frequency}
+                onChange={(event) =>
+                  setForm({ ...form, frequency: event.target.value as BillFrequency })
+                }
+              >
+                <option value="monthly">Monthly</option>
+                <option value="weekly">Weekly</option>
+                <option value="yearly">Yearly</option>
+                <option value="interval">Custom interval</option>
+              </Select>
+            </div>
+            {form.frequency === "interval" && (
+              <div>
+                <Label>Every</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={3650}
+                    value={form.intervalDays}
+                    onChange={(event) =>
+                      setForm({ ...form, intervalDays: Number(event.target.value) })
+                    }
+                  />
+                  <span className="text-sm text-muted">days</span>
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <Label>Category</Label>
-            <Select
+            <Combobox
+              options={CATEGORIES.map((category) => ({ label: category, value: category }))}
               value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value as Bill["category"] })}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </Select>
+              onValueChange={(value) =>
+                setForm({ ...form, category: value as Bill["category"] })
+              }
+              searchPlaceholder="Search categories..."
+            />
           </div>
           {accounts.length > 0 && (
             <div>

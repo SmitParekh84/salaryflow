@@ -10,6 +10,7 @@ export type ExpenseCategory =
   | "EMI"
   | "Rent"
   | "Utilities"
+  | "Mobile & Internet"
   | "Insurance"
   | "Medical"
   | "Education"
@@ -60,7 +61,7 @@ export interface Income {
   accountId?: string;
 }
 
-export type BillFrequency = "monthly" | "weekly" | "yearly";
+export type BillFrequency = "monthly" | "weekly" | "yearly" | "interval";
 
 export interface Bill {
   id: string;
@@ -69,6 +70,7 @@ export interface Bill {
   dueDay: number; // legacy fallback for records created before dueDate
   dueDate?: string; // selected occurrence; monthly bills reuse its day
   frequency: BillFrequency;
+  intervalDays?: number;
   category: ExpenseCategory;
   paid: boolean;
   maturityDate?: string; // optional ISO date when the bill/contract matures

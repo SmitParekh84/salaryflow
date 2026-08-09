@@ -25,19 +25,34 @@ export function currencySymbol(code: string): string {
   return CURRENCY_SYMBOLS[code] ?? code + " ";
 }
 
-export function formatMoney(amount: number, currency = "INR", compact = false): string {
-  const sym = currencySymbol(currency);
-  if (compact && Math.abs(amount) >= 1000) {
-    const formatted = new Intl.NumberFormat("en", {
-      notation: "compact",
-      maximumFractionDigits: 1,
-    }).format(amount);
-    return `${sym}${formatted}`;
+export function formatMoney(amount: number, currency = "INR", _compact = false): string {
+  void _compact;
+  const locale = CURRENCY_LOCALES[currency] ?? "en-US";
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      currencyDisplay: "narrowSymbol",
+      maximumFractionDigits: 0,
+    }).format(Math.round(amount));
+  } catch {
+    return `${currencySymbol(currency)}${new Intl.NumberFormat(locale, {
+      maximumFractionDigits: 0,
+    }).format(Math.round(amount))}`;
   }
-  return `${sym}${new Intl.NumberFormat("en-IN", {
-    maximumFractionDigits: 0,
-  }).format(Math.round(amount))}`;
 }
+
+const CURRENCY_LOCALES: Record<string, string> = {
+  INR: "en-IN",
+  USD: "en-US",
+  EUR: "de-DE",
+  GBP: "en-GB",
+  AED: "en-AE",
+  AUD: "en-AU",
+  CAD: "en-CA",
+  SGD: "en-SG",
+  JPY: "ja-JP",
+};
 
 export function formatDate(iso: string): string {
   return parseFinancialDate(iso).toLocaleDateString("en-US", {

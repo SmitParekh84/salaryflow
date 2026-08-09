@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
-import { CURRENCIES } from "@/lib/constants";
+import { COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
 import { download, exportExpensesCsv } from "@/lib/export";
 import { useFinanceStore } from "@/lib/store";
 import { Download, Eye, FileJson, LogOut, Moon, Sun, Trash2, User } from "lucide-react";
@@ -127,7 +127,7 @@ export function SettingsView() {
           <CardTitle>Salary & preferences</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <Label>Salary amount</Label>
               <Input
@@ -149,6 +149,25 @@ export function SettingsView() {
                   })
                 }
               />
+            </div>
+            <div>
+              <Label>Country</Label>
+              <Select
+                value={profile.country}
+                onChange={(event) => {
+                  const country = event.target.value;
+                  updateProfile({
+                    country,
+                    currency: COUNTRY_CURRENCIES[country] ?? profile.currency,
+                  });
+                }}
+              >
+                {COUNTRIES.map((country) => (
+                  <option key={country} value={country}>
+                    {country}
+                  </option>
+                ))}
+              </Select>
             </div>
             <div>
               <Label>Currency</Label>

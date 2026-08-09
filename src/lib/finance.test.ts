@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { billCycle } from "./bill-cycle";
+import { billCycle, billOccurrenceDate, monthlyBillReserve } from "./bill-cycle";
 import { computeSummary, cycleInfo, isInCurrentCycle } from "./calculations";
 import { creditCardUsage } from "./credit-cards";
 import { buildFundingPlan } from "./funding-plan";
+import { formatMoney } from "./utils";
 import type {
   AccountTransfer,
   BankAccount,
@@ -104,6 +105,17 @@ describe("salary cycles", () => {
 
     expect(isInCurrentCycle("2026-02-28", profile, now)).toBe(true);
     expect(isInCurrentCycle("2026-02-27", profile, now)).toBe(false);
+  });
+});
+
+describe("currency formatting", () => {
+  it("uses Indian lakh grouping for INR across compact and regular call sites", () => {
+    expect(formatMoney(100_000, "INR")).toBe("₹1,00,000");
+    expect(formatMoney(100_000, "INR", true)).toBe("₹1,00,000");
+  });
+
+  it("uses the currency locale grouping for non-Indian currencies", () => {
+    expect(formatMoney(100_000, "USD")).toBe("$100,000");
   });
 });
 
@@ -307,6 +319,41 @@ describe("bills and funding plan", () => {
     expect(cycle.paidAmount).toBe(3_000);
     expect(cycle.recordedAmount).toBe(3_000);
     expect(cycle.remainingAmount).toBe(5_000);
+  });
+
+  it("schedules a 90-day recharge and reserves one third each salary cycle", () => {
+    const recharge: Bill = {
+      id: "jio",
+      name: "Jio 90-day recharge",
+      amount: 899,
+      dueDay: 7,
+      dueDate: "2026-11-07",
+      frequency: "interval",
+      intervalDays: 90,
+      category: "Mobile & Internet",
+      paid: false,
+      accountId: "spend",
+    };
+
+    expect(billOccurrenceDate(recharge, new Date(2026, 7, 9, 12))).toEqual(
+      new Date(2026, 10, 7, 12),
+    );
+    expect(monthlyBillReserve(recharge)).toBeCloseTo(899 / 3);
+
+    const plan = buildFundingPlan({
+      accounts: savingsAccounts,
+      bills: [recharge],
+      creditCards: [],
+      expenses: [],
+      incomes: [],
+      investments: [],
+      monthlyIncome: 30_000,
+      now: new Date(2026, 7, 9, 12),
+    });
+    const reserve = plan.items.find((item) => item.id === "bill-reserve-jio");
+    expect(reserve?.amount).toBeCloseTo(899 / 3);
+    expect(reserve?.timing).toContain("Every 90 days");
+    expect(plan.total).toBeCloseTo(899 / 3);
   });
 
   it("reserves card outstanding, SIPs, unpaid bills, and only the remaining savings target", () => {

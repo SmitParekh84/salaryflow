@@ -1,4 +1,4 @@
-import { billCycle } from "./bill-cycle";
+import { billCycle, monthlyBillReserve } from "./bill-cycle";
 import { creditCardUsage } from "./credit-cards";
 import type {
   BankAccount,
@@ -145,6 +145,21 @@ export function buildFundingPlan({
   }
 
   for (const bill of bills) {
+    if (bill.frequency === "interval") {
+      const cycle = billCycle(bill, expenses, now);
+      const reserveAmount = monthlyBillReserve(bill);
+      items.push({
+        id: `bill-reserve-${bill.id}`,
+        kind: "bill",
+        label: `${bill.name} reserve`,
+        amount: reserveAmount,
+        destinationAccountId: bill.accountId ?? reserveAccount?.id,
+        timing: `${formatInterval(bill.intervalDays ?? 90)} · next due ${cycle.occurrenceDate.toLocaleDateString("en-US", { day: "numeric", month: "short" })}`,
+        paidAmount: 0,
+        remainingAmount: reserveAmount,
+      });
+      continue;
+    }
     if (bill.frequency !== "monthly") continue;
     const kind: FundingPlanKind =
       bill.category === "Investment"
@@ -207,4 +222,8 @@ export function buildFundingPlan({
     paidTotal: items.reduce((sum, item) => sum + item.paidAmount, 0),
     total: items.reduce((sum, item) => sum + item.remainingAmount, 0),
   };
+}
+
+function formatInterval(days: number): string {
+  return days === 90 ? "Every 90 days" : `Every ${days} days`;
 }

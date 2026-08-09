@@ -68,6 +68,7 @@ const BillSchema = new Schema(
     dueDay: { type: Number, default: 1 },
     dueDate: Date,
     frequency: { type: String, default: "monthly" },
+    intervalDays: { type: Number, min: 1 },
     category: { type: String, default: "Utilities" },
     paid: { type: Boolean, default: false },
     // optional maturity date for bills (e.g., fixed-term bills or subscriptions)

@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
-import { COUNTRIES, CURRENCIES } from "@/lib/constants";
+import { COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { SalaryCycle, SalaryProfile } from "@/lib/types";
 import { AnimatePresence, motion } from "framer-motion";
@@ -118,7 +118,13 @@ export function OnboardingView() {
             </div>
             <div>
               <Label>Country</Label>
-              <Select value={profile.country} onChange={(e) => patch({ country: e.target.value })}>
+              <Select
+                value={profile.country}
+                onChange={(event) => {
+                  const country = event.target.value;
+                  patch({ country, currency: COUNTRY_CURRENCIES[country] ?? profile.currency });
+                }}
+              >
                 {COUNTRIES.map((c) => (
                   <option key={c}>{c}</option>
                 ))}
