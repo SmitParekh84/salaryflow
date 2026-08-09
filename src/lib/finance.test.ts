@@ -31,6 +31,7 @@ import {
   isOverAllocated,
   unassignedSaved,
 } from "./allocations";
+import { migrateGoalOpeningBalances } from "./goal-migration";
 
 const profile: SalaryProfile = {
   amount: 30_000,
@@ -554,5 +555,58 @@ describe("allocations", () => {
       { accountId: "union", amount: 10000 },
       { accountId: undefined, amount: 500 },
     ]);
+  });
+});
+
+describe("goal opening-balance migration", () => {
+  const legacy: Goal = {
+    id: "bike",
+    name: "Bike",
+    type: "Bike",
+    target: 85000,
+    saved: 5000,
+    monthlyContribution: 2000,
+  };
+
+  it("backfills an opening contribution for legacy saved amounts", () => {
+    const [migrated] = migrateGoalOpeningBalances([legacy]);
+    expect(migrated.contributions).toHaveLength(1);
+    expect(migrated.contributions?.[0].amount).toBe(5000);
+    expect(migrated.contributions?.[0].opening).toBe(true);
+    expect(migrated.contributions?.[0].accountId).toBeUndefined();
+    expect(goalSaved(migrated)).toBe(5000);
+  });
+
+  it("is idempotent", () => {
+    const once = migrateGoalOpeningBalances([legacy]);
+    const twice = migrateGoalOpeningBalances(once);
+    expect(twice[0].contributions).toHaveLength(1);
+    expect(goalSaved(twice[0])).toBe(5000);
+  });
+
+  it("backfills only the difference when contributions partly cover saved", () => {
+    const partial: Goal = {
+      ...legacy,
+      contributions: [{ id: "c1", amount: 2000, date: "2026-07-01T00:00:00.000Z" }],
+    };
+    const [migrated] = migrateGoalOpeningBalances([partial]);
+    expect(migrated.contributions).toHaveLength(2);
+    expect(goalSaved(migrated)).toBe(5000);
+  });
+
+  it("leaves goals with no saved amount untouched", () => {
+    const [migrated] = migrateGoalOpeningBalances([{ ...legacy, saved: 0 }]);
+    expect(migrated.contributions ?? []).toHaveLength(0);
+  });
+
+  it("does not remove money when contributions exceed the stored saved value", () => {
+    const richer: Goal = {
+      ...legacy,
+      saved: 1000,
+      contributions: [{ id: "c1", amount: 4000, date: "2026-07-01T00:00:00.000Z" }],
+    };
+    const [migrated] = migrateGoalOpeningBalances([richer]);
+    expect(goalSaved(migrated)).toBe(4000);
+    expect(migrated.contributions).toHaveLength(1);
   });
 });
