@@ -148,6 +148,8 @@ export interface Goal {
   contributions?: GoalContribution[];
   /** When set, goal progress tracks this account's full live balance. */
   balanceAccountId?: string;
+  /** Preferred account for new allocations; existing balance is never claimed automatically. */
+  preferredAccountId?: string;
 }
 
 export interface GoalContribution {
@@ -239,6 +241,9 @@ export interface AccountTransfer {
   status: AccountTransferStatus;
   completedAt?: string;
   balancesApplied?: boolean;
+  /** Optional goal reservation applied in the destination account on completion. */
+  goalId?: string;
+  goalAmount?: number;
 }
 
 export type CreditCardStatus = "active" | "closed";

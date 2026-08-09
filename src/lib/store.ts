@@ -6,7 +6,6 @@ import { accountDeletionBlocker, goalRestoreBlocker } from "./account-references
 import {
   applyAllocation,
   reassignGoalAccounts,
-  shouldReassignClosingAllocations,
 } from "./allocation-writes";
 import { normalizeBudgetRule } from "./budget-rules";
 import { migrateGoalOpeningBalances } from "./goal-migration";
@@ -36,6 +35,7 @@ import type {
   SalaryProfile,
   UserProfile,
 } from "./types";
+import { completeTransferWrite } from "./transfer-writes";
 import { uid } from "./utils";
 
 interface FinanceState {
@@ -443,31 +443,30 @@ export const useFinanceStore = create<FinanceState>()(
         const destination = get().accounts.find(
           (account) => account.id === transfer.destinationAccountId,
         );
-        const adjustsBalances = mode === "transfer-now";
-        if (!source || !destination || (adjustsBalances && source.balance < transfer.amount)) {
-          return false;
-        }
+        if (!source || !destination) return false;
         const record: AccountTransfer = {
           ...transfer,
           id: uid("transfer"),
           status: mode === "scheduled" ? "scheduled" : "completed",
           completedAt: mode === "scheduled" ? undefined : new Date().toISOString(),
-          balancesApplied: adjustsBalances,
+          balancesApplied: mode === "transfer-now",
         };
-        set((state) => ({
-          accountTransfers: [record, ...state.accountTransfers],
-          accounts: adjustsBalances
-            ? state.accounts.map((account) =>
-                account.id === transfer.sourceAccountId
-                  ? { ...account, balance: account.balance - transfer.amount }
-                  : account.id === transfer.destinationAccountId
-                    ? { ...account, balance: account.balance + transfer.amount }
-                    : account,
-              )
-            : state.accounts,
-        }));
-        if (adjustsBalances && shouldReassignClosingAllocations(source, transfer.amount)) {
-          get().reassignAllocations(transfer.sourceAccountId, transfer.destinationAccountId);
+        if (mode === "scheduled") {
+          set((state) => ({ accountTransfers: [record, ...state.accountTransfers] }));
+        } else {
+          const result = completeTransferWrite(
+            record,
+            get().accounts,
+            get().goals,
+            mode === "already-transferred",
+            new Date(),
+          );
+          if (!result.ok) return false;
+          set((state) => ({
+            accountTransfers: [record, ...state.accountTransfers],
+            accounts: result.accounts,
+            goals: result.goals,
+          }));
         }
         void get().syncWithServer();
         return true;
@@ -475,11 +474,14 @@ export const useFinanceStore = create<FinanceState>()(
       completeAccountTransfer: (id) => {
         const transfer = get().accountTransfers.find((item) => item.id === id);
         if (!transfer || transfer.status === "completed") return false;
-        const source = get().accounts.find((account) => account.id === transfer.sourceAccountId);
-        const destination = get().accounts.find(
-          (account) => account.id === transfer.destinationAccountId,
+        const result = completeTransferWrite(
+          transfer,
+          get().accounts,
+          get().goals,
+          false,
+          new Date(),
         );
-        if (!source || !destination || source.balance < transfer.amount) return false;
+        if (!result.ok) return false;
         set((state) => ({
           accountTransfers: state.accountTransfers.map((item) =>
             item.id === id
@@ -491,20 +493,9 @@ export const useFinanceStore = create<FinanceState>()(
                 }
               : item,
           ),
-          accounts: state.accounts.map((account) =>
-            account.id === transfer.sourceAccountId
-              ? { ...account, balance: account.balance - transfer.amount }
-              : account.id === transfer.destinationAccountId
-                ? { ...account, balance: account.balance + transfer.amount }
-                : account,
-          ),
+          accounts: result.accounts,
+          goals: result.goals,
         }));
-        // Goal money follows the real money: when a closing account is emptied,
-        // its allocations repoint to the destination instead of pointing at a
-        // dead account. The balances above already moved by the same amount.
-        if (shouldReassignClosingAllocations(source, transfer.amount)) {
-          get().reassignAllocations(transfer.sourceAccountId, transfer.destinationAccountId);
-        }
         void get().syncWithServer();
         return true;
       },

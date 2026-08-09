@@ -103,6 +103,7 @@ const GoalSchema = new Schema(
     deadline: Date,
     monthlyContribution: { type: Number, default: 0 },
     balanceAccountId: String,
+    preferredAccountId: String,
     contributions: [
       new Schema(
         {
@@ -168,6 +169,8 @@ const AccountTransferSchema = new Schema(
     status: { type: String, enum: ["scheduled", "completed"], default: "scheduled" },
     completedAt: Date,
     balancesApplied: { type: Boolean, default: false },
+    goalId: String,
+    goalAmount: { type: Number, min: 0 },
   },
   { timestamps: true },
 );

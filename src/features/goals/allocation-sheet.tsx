@@ -53,7 +53,10 @@ export function AllocationSheet({
   const lockAccount = amount !== undefined;
   const selectableAccounts = accounts.filter((candidate) => candidate.status === "active");
   const fundableGoals = goals.filter(
-    (goal) => !goal.balanceAccountId && goalSaved(goal, accounts) < goal.target,
+    (goal) =>
+      !goal.balanceAccountId &&
+      (!goal.preferredAccountId || goal.preferredAccountId === selectedId) &&
+      goalSaved(goal, accounts) < goal.target,
   );
   const account = accounts.find((candidate) => candidate.id === selectedId);
   const freeNow = account ? accountFree(goals, account) : 0;

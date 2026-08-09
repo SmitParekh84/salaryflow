@@ -27,6 +27,7 @@ export function accountDeletionBlocker(
     records.goals.some(
       (goal) =>
         goal.balanceAccountId === accountId ||
+        goal.preferredAccountId === accountId ||
         goal.contributions?.some((item) => item.accountId === accountId),
     )
   ) {
@@ -61,6 +62,7 @@ function recycledItemReferencesAccount(item: RecycleBinItem, accountId: string):
   const goal = item.data as unknown as Goal;
   return Boolean(
     goal.balanceAccountId === accountId ||
+      goal.preferredAccountId === accountId ||
     goal.contributions?.some((contribution) => contribution.accountId === accountId),
   );
 }
@@ -70,6 +72,12 @@ export function goalRestoreBlocker(
   accounts: BankAccount[],
   liveGoals: Goal[],
 ): string | undefined {
+  if (
+    goal.preferredAccountId &&
+    !accounts.some((candidate) => candidate.id === goal.preferredAccountId)
+  ) {
+    return "This goal's preferred account no longer exists.";
+  }
   const restoringByAccount = new Map<string, number>();
   if (goal.balanceAccountId) {
     const account = accounts.find((candidate) => candidate.id === goal.balanceAccountId);

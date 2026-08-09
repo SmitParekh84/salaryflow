@@ -181,6 +181,12 @@ that goal are disabled. Deposits increase progress and withdrawals reduce it aut
 still does not count the balance as newly saved in the current cycle; only evidenced account cash
 flow affects `savedThisCycle`.
 
+An ordinary goal may also have a preferred account. This is routing metadata only: linking the
+account does not claim its existing balance. Goal progress increases only when the user explicitly
+allocates an amount already held there or reserves part of a completed transfer into that account.
+For a transfer reservation, only the selected goal amount is locked; the rest of the destination
+balance remains free.
+
 Rule adherence is directional:
 
 - Needs and Wants percentages are maximum spending limits. Spending below them is healthy and is not penalized.

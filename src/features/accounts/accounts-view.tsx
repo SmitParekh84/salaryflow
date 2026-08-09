@@ -8,7 +8,7 @@ import { Checkbox, Input, Label, Select } from "@/components/ui/input";
 import { Modal, ModalFooter } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
 import { AllocationSheet } from "@/features/goals/allocation-sheet";
-import { accountAllocated, accountFree, isOverAllocated } from "@/lib/allocations";
+import { accountAllocated, accountFree, goalSaved, isOverAllocated } from "@/lib/allocations";
 import { creditCardUsage } from "@/lib/credit-cards";
 import { useFinanceStore } from "@/lib/store";
 import type {
@@ -64,6 +64,8 @@ const EMPTY_TRANSFER_FORM = {
   amount: 0,
   date: localDateInputValue(),
   note: "",
+  goalId: "",
+  goalAmount: 0,
 };
 
 export function AccountsView() {
@@ -207,10 +209,16 @@ export function AccountsView() {
   }
 
   function saveTransfer(mode: AccountTransferMode) {
+    if (transferForm.goalAmount > transferForm.amount) {
+      setTransferError("The goal amount cannot be more than the transfer amount.");
+      return;
+    }
     const success = addAccountTransfer(
       {
         ...transferForm,
         amount: Number(transferForm.amount),
+        goalId: transferForm.goalId || undefined,
+        goalAmount: transferForm.goalId ? Number(transferForm.goalAmount) : undefined,
         date: new Date(`${transferForm.date}T12:00:00`).toISOString(),
         note: transferForm.note.trim() || undefined,
       },
@@ -705,9 +713,20 @@ export function AccountsView() {
               <Label>To</Label>
               <Select
                 value={transferForm.destinationAccountId}
-                onChange={(event) =>
-                  setTransferForm({ ...transferForm, destinationAccountId: event.target.value })
-                }
+                onChange={(event) => {
+                  const destinationAccountId = event.target.value;
+                  const selectedGoal = goals.find((goal) => goal.id === transferForm.goalId);
+                  const keepGoal =
+                    selectedGoal &&
+                    (!selectedGoal.preferredAccountId ||
+                      selectedGoal.preferredAccountId === destinationAccountId);
+                  setTransferForm({
+                    ...transferForm,
+                    destinationAccountId,
+                    goalId: keepGoal ? transferForm.goalId : "",
+                    goalAmount: keepGoal ? transferForm.goalAmount : 0,
+                  });
+                }}
               >
                 {accounts
                   .filter((account) => account.status === "active")
@@ -727,9 +746,16 @@ export function AccountsView() {
                 type="number"
                 min={1}
                 value={transferForm.amount || ""}
-                onChange={(event) =>
-                  setTransferForm({ ...transferForm, amount: Number(event.target.value) })
-                }
+                onChange={(event) => {
+                  const amount = Number(event.target.value);
+                  setTransferForm({
+                    ...transferForm,
+                    amount,
+                    goalAmount: transferForm.goalId
+                      ? Math.min(transferForm.goalAmount, amount)
+                      : 0,
+                  });
+                }}
               />
             </div>
             <div>
@@ -740,6 +766,60 @@ export function AccountsView() {
                 onChange={(event) => setTransferForm({ ...transferForm, date: event.target.value })}
               />
             </div>
+          </div>
+          <div className="rounded-xl bg-surface-2 p-3">
+            <Label htmlFor="transfer-goal">Reserve for a goal (optional)</Label>
+            <div className="mt-1 grid gap-3 sm:grid-cols-2">
+              <Select
+                id="transfer-goal"
+                value={transferForm.goalId}
+                onChange={(event) => {
+                  const goalId = event.target.value;
+                  setTransferForm({
+                    ...transferForm,
+                    goalId,
+                    goalAmount: goalId ? transferForm.amount : 0,
+                  });
+                  setTransferError("");
+                }}
+              >
+                <option value="">Do not reserve this transfer</option>
+                {goals
+                  .filter(
+                    (goal) =>
+                      !goal.balanceAccountId &&
+                      goalSaved(goal, accounts) < goal.target &&
+                      (!goal.preferredAccountId ||
+                        goal.preferredAccountId === transferForm.destinationAccountId),
+                  )
+                  .map((goal) => (
+                    <option key={goal.id} value={goal.id}>
+                      {goal.name}
+                    </option>
+                  ))}
+              </Select>
+              <div>
+                <Label htmlFor="transfer-goal-amount">Amount to reserve</Label>
+                <Input
+                  id="transfer-goal-amount"
+                  type="number"
+                  min={0}
+                  max={transferForm.amount || undefined}
+                  disabled={!transferForm.goalId}
+                  value={transferForm.goalAmount || ""}
+                  onChange={(event) =>
+                    setTransferForm({
+                      ...transferForm,
+                      goalAmount: Number(event.target.value),
+                    })
+                  }
+                />
+              </div>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-muted">
+              Only this reserved amount counts toward the goal. Money already in the destination
+              bank remains free unless you assigned it earlier.
+            </p>
           </div>
           <div>
             <Label>Note (optional)</Label>

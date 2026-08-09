@@ -26,6 +26,7 @@ import { buildFundingPlan } from "./funding-plan";
 import { migrateGoalOpeningBalances } from "./goal-migration";
 import { goalContributionStep, monthsToGoal, projectGoal, whatIfDelta } from "./goal-projection";
 import { useFinanceStore } from "./store";
+import { completeTransferWrite } from "./transfer-writes";
 import type {
   AccountTransfer,
   BankAccount,
@@ -1169,6 +1170,20 @@ describe("allocation writes", () => {
     });
   });
 
+  it("rejects an allocation from outside an ordinary goal's preferred bank", () => {
+    const linkedBike = { ...bike, preferredAccountId: "hdfc" };
+    const result = applyAllocation(
+      [linkedBike],
+      [union],
+      [{ goalId: "bike", amount: 100 }],
+      "union",
+      undefined,
+      when,
+    );
+
+    expect(result).toEqual({ ok: false, reason: "Bike is linked to another bank." });
+  });
+
   it("moves allocations to the destination when an account closes", () => {
     const funded = [
       {
@@ -1393,5 +1408,149 @@ describe("allocation split merges repeated goals", () => {
     );
 
     expect(result).toEqual({ ok: false, reason: "Phone only needs 200 more." });
+  });
+});
+
+describe("transfer goal reservations", () => {
+  const icici: BankAccount = {
+    id: "icici",
+    bankName: "ICICI Bank",
+    accountType: "Salary",
+    balance: 31_000,
+    status: "active",
+  };
+  const bob: BankAccount = {
+    id: "bob",
+    bankName: "Bank of Baroda",
+    accountType: "Savings",
+    balance: 5_000,
+    status: "active",
+  };
+  const bike: Goal = {
+    id: "bike",
+    name: "Bike fund",
+    type: "Bike",
+    target: 150_000,
+    saved: 0,
+    monthlyContribution: 0,
+    preferredAccountId: "bob",
+    contributions: [],
+  };
+
+  it("reserves only the selected transfer amount, not the existing destination balance", () => {
+    const result = completeTransferWrite(
+      {
+        id: "transfer-1",
+        sourceAccountId: "icici",
+        destinationAccountId: "bob",
+        amount: 1_000,
+        goalId: "bike",
+        goalAmount: 1_000,
+      },
+      [icici, bob],
+      [bike],
+      false,
+      new Date("2026-09-04T10:00:00.000Z"),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.accounts.find((account) => account.id === "bob")?.balance).toBe(6_000);
+    expect(goalSaved(result.goals[0], result.accounts)).toBe(1_000);
+    expect(accountAllocated(result.goals, "bob", result.accounts)).toBe(1_000);
+    expect(accountFree(result.goals, result.accounts[1])).toBe(5_000);
+  });
+
+  it("rejects a reservation larger than the transfer", () => {
+    const result = completeTransferWrite(
+      {
+        id: "transfer-1",
+        sourceAccountId: "icici",
+        destinationAccountId: "bob",
+        amount: 1_000,
+        goalId: "bike",
+        goalAmount: 1_500,
+      },
+      [icici, bob],
+      [bike],
+      false,
+      new Date(),
+    );
+
+    expect(result).toEqual({ ok: false, reason: "The reserved amount cannot exceed the transfer." });
+  });
+
+  it("requires the transfer destination to match the goal's linked bank", () => {
+    const result = completeTransferWrite(
+      {
+        id: "transfer-1",
+        sourceAccountId: "bob",
+        destinationAccountId: "icici",
+        amount: 1_000,
+        goalId: "bike",
+        goalAmount: 1_000,
+      },
+      [{ ...bob, balance: 6_000 }, icici],
+      [bike],
+      false,
+      new Date(),
+    );
+
+    expect(result.ok).toBe(false);
+  });
+
+  it("applies an immediate reservation through the finance store", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+    useFinanceStore.setState({ accounts: [icici, bob], goals: [bike], accountTransfers: [] });
+
+    const success = useFinanceStore.getState().addAccountTransfer(
+      {
+        sourceAccountId: "icici",
+        destinationAccountId: "bob",
+        amount: 1_000,
+        date: "2026-09-04T12:00:00.000Z",
+        goalId: "bike",
+        goalAmount: 1_000,
+      },
+      "transfer-now",
+    );
+
+    expect(success).toBe(true);
+    expect(useFinanceStore.getState().accounts.map((account) => account.balance)).toEqual([
+      30_000, 6_000,
+    ]);
+    expect(goalSaved(useFinanceStore.getState().goals[0])).toBe(1_000);
+    vi.unstubAllGlobals();
+  });
+
+  it("waits to reserve a scheduled transfer until completion", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+    useFinanceStore.setState({ accounts: [icici, bob], goals: [bike], accountTransfers: [] });
+
+    expect(
+      useFinanceStore.getState().addAccountTransfer(
+        {
+          sourceAccountId: "icici",
+          destinationAccountId: "bob",
+          amount: 1_000,
+          date: "2026-09-04T12:00:00.000Z",
+          goalId: "bike",
+          goalAmount: 600,
+        },
+        "scheduled",
+      ),
+    ).toBe(true);
+    expect(useFinanceStore.getState().accounts.map((account) => account.balance)).toEqual([
+      31_000, 5_000,
+    ]);
+    expect(goalSaved(useFinanceStore.getState().goals[0])).toBe(0);
+
+    const transferId = useFinanceStore.getState().accountTransfers[0].id;
+    expect(useFinanceStore.getState().completeAccountTransfer(transferId)).toBe(true);
+    expect(useFinanceStore.getState().accounts.map((account) => account.balance)).toEqual([
+      30_000, 6_000,
+    ]);
+    expect(goalSaved(useFinanceStore.getState().goals[0])).toBe(600);
+    vi.unstubAllGlobals();
   });
 });

@@ -43,6 +43,15 @@ export function applyAllocation(
     return { ok: false, reason: "That goal already tracks its linked account automatically." };
   }
 
+  const wrongPreferredAccount = positive.find((entry) => {
+    const goal = goals.find((candidate) => candidate.id === entry.goalId);
+    return goal?.preferredAccountId && goal.preferredAccountId !== accountId;
+  });
+  if (wrongPreferredAccount) {
+    const goal = goals.find((candidate) => candidate.id === wrongPreferredAccount.goalId)!;
+    return { ok: false, reason: `${goal.name} is linked to another bank.` };
+  }
+
   const requested = positive.reduce((sum, entry) => sum + entry.amount, 0);
   const free = account.balance - accountAllocated(goals, accountId, accounts);
   if (requested > free) {
@@ -91,6 +100,8 @@ export function reassignGoalAccounts(
   return goals.map((goal) => ({
     ...goal,
     balanceAccountId: goal.balanceAccountId === fromAccountId ? toAccountId : goal.balanceAccountId,
+    preferredAccountId:
+      goal.preferredAccountId === fromAccountId ? toAccountId : goal.preferredAccountId,
     contributions: (goal.contributions ?? []).map((entry) =>
       entry.accountId === fromAccountId ? { ...entry, accountId: toAccountId } : entry,
     ),

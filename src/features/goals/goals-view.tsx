@@ -31,6 +31,7 @@ const EMPTY_FORM = {
   type: "Custom" as GoalType,
   target: 0,
   monthlyContribution: 0,
+  preferredAccountId: "",
 };
 
 export function GoalsView() {
@@ -65,14 +66,19 @@ export function GoalsView() {
       type: goal.type,
       target: goal.target,
       monthlyContribution: goal.monthlyContribution,
+      preferredAccountId: goal.preferredAccountId ?? "",
     });
     setOpen(true);
   };
 
   const save = async () => {
     if (!form.name || form.target <= 0) return;
-    if (editingId) updateGoal(editingId, form);
-    else addGoal({ ...form, saved: 0 });
+    const goal = {
+      ...form,
+      preferredAccountId: form.preferredAccountId || undefined,
+    };
+    if (editingId) updateGoal(editingId, goal);
+    else addGoal({ ...goal, saved: 0 });
     setForm(EMPTY_FORM);
     setEditingId(null);
     setOpen(false);
@@ -149,6 +155,39 @@ export function GoalsView() {
                 ))}
               </Select>
             </div>
+          </div>
+          <div>
+            <Label htmlFor="goal-bank">Bank for new goal money</Label>
+            {editingId && goals.find((goal) => goal.id === editingId)?.balanceAccountId ? (
+              <div className="rounded-xl bg-surface-2 px-3 py-2.5 text-sm">
+                This goal tracks the complete balance of {accounts.find((account) =>
+                  account.id === goals.find((goal) => goal.id === editingId)?.balanceAccountId
+                )?.bankName ?? "its linked account"}.
+              </div>
+            ) : (
+              <>
+                <Select
+                  id="goal-bank"
+                  value={form.preferredAccountId}
+                  onChange={(event) =>
+                    setForm({ ...form, preferredAccountId: event.target.value })
+                  }
+                >
+                  <option value="">Choose when adding money</option>
+                  {accounts
+                    .filter((account) => account.status === "active")
+                    .map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.bankName}
+                      </option>
+                    ))}
+                </Select>
+                <p className="mt-1.5 text-xs leading-relaxed text-muted">
+                  Linking a bank does not count its current balance. Only money you explicitly
+                  reserve for this goal will appear as progress.
+                </p>
+              </>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -278,6 +317,15 @@ function GoalCard({
             {accounts.find((account) => account.id === goal.balanceAccountId)?.bankName ??
               "linked account"}{" "}
             balance
+          </p>
+        )}
+
+        {!goal.balanceAccountId && goal.preferredAccountId && (
+          <p className="flex items-center gap-1.5 text-xs text-muted">
+            <Landmark className="h-3.5 w-3.5 shrink-0" />
+            New goal money goes to {accounts.find((account) =>
+              account.id === goal.preferredAccountId
+            )?.bankName ?? "linked account"}; existing balance is not counted
           </p>
         )}
 
