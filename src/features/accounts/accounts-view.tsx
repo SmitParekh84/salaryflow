@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Checkbox, Input, Label, Select } from "@/components/ui/input";
 import { Modal, ModalFooter } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
+import { AllocationSheet } from "@/features/goals/allocation-sheet";
 import { accountAllocated, accountFree, isOverAllocated } from "@/lib/allocations";
 import { creditCardUsage } from "@/lib/credit-cards";
 import { useFinanceStore } from "@/lib/store";
@@ -68,6 +69,7 @@ const EMPTY_TRANSFER_FORM = {
 export function AccountsView() {
   const accounts = useFinanceStore((state) => state.accounts);
   const goals = useFinanceStore((state) => state.goals);
+  const [allocateAccountId, setAllocateAccountId] = useState<string | null>(null);
   const addAccount = useFinanceStore((state) => state.addAccount);
   const updateAccount = useFinanceStore((state) => state.updateAccount);
   const deleteAccount = useFinanceStore((state) => state.deleteAccount);
@@ -341,6 +343,16 @@ export function AccountsView() {
                       </span>
                     </div>
                   </div>
+                )}
+                {goals.length > 0 && accountFree(goals, account) > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setAllocateAccountId(account.id)}
+                    className="mt-2 h-auto min-h-0 px-0 text-xs text-primary hover:bg-transparent hover:underline"
+                  >
+                    Assign {formatMoney(accountFree(goals, account), currency)} to goals
+                  </Button>
                 )}
                 {account.defaultFor && account.defaultFor.length > 0 && (
                   <p className="mt-1 text-xs text-primary">
@@ -795,6 +807,15 @@ export function AccountsView() {
           </ModalFooter>
         </div>
       </Modal>
+
+      {allocateAccountId && (
+        <AllocationSheet
+          open={Boolean(allocateAccountId)}
+          onClose={() => setAllocateAccountId(null)}
+          accountId={allocateAccountId}
+          title="Assign this money to goals"
+        />
+      )}
     </div>
   );
 }

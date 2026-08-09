@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Input, Label } from "@/components/ui/input";
+import { Input, Label, Select } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { accountFree, goalSaved } from "@/lib/allocations";
 import { useFinanceStore } from "@/lib/store";
@@ -34,8 +34,25 @@ export function AllocationSheet({
   const currency = useFinanceStore((state) => state.profile.currency);
   const [draft, setDraft] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState(accountId);
 
-  const account = accounts.find((candidate) => candidate.id === accountId);
+  // Follow the caller when it points at a different account (e.g. a second
+  // account's "Assign" button opens the same mounted sheet). Adjusting during
+  // render is React's supported pattern for syncing state to a changed prop —
+  // an effect would render once with the stale account first.
+  const [syncedAccountId, setSyncedAccountId] = useState(accountId);
+  if (accountId !== syncedAccountId) {
+    setSyncedAccountId(accountId);
+    setSelectedId(accountId);
+    setDraft({});
+  }
+
+  // A transfer split is tied to the account the money actually landed in, and a
+  // fixed amount belongs to that account too. Only a free-balance allocation
+  // lets the user choose where the money comes from.
+  const lockAccount = amount !== undefined;
+  const selectableAccounts = accounts.filter((candidate) => candidate.status === "active");
+  const account = accounts.find((candidate) => candidate.id === selectedId);
   const freeNow = account ? accountFree(goals, account) : 0;
   const available = amount ?? freeNow;
   const assigned = useMemo(
@@ -66,7 +83,7 @@ export function AllocationSheet({
     const entries = Object.entries(draft)
       .map(([goalId, value]) => ({ goalId, amount: value || 0 }))
       .filter((entry) => entry.amount > 0);
-    const result = allocate(entries, accountId, transferId);
+    const result = allocate(entries, selectedId, transferId);
     if (!result.ok) {
       setError(result.reason ?? "Could not save this split.");
       return;
@@ -76,9 +93,33 @@ export function AllocationSheet({
 
   return (
     <Modal open={open} onClose={close} title={title ?? "What is this money for?"}>
-      <p className="text-sm text-muted">
-        {formatMoney(available, currency)} available in {account.bankName}
-      </p>
+      {lockAccount ? (
+        <p className="text-sm text-muted">
+          {formatMoney(available, currency)} available in {account.bankName}
+        </p>
+      ) : (
+        <div>
+          <Label htmlFor="allocate-account">Money comes from</Label>
+          <Select
+            id="allocate-account"
+            value={selectedId}
+            onChange={(event) => {
+              setSelectedId(event.target.value);
+              setDraft({});
+              setError(null);
+            }}
+          >
+            {selectableAccounts.map((candidate) => (
+              <option key={candidate.id} value={candidate.id}>
+                {candidate.bankName} — {formatMoney(accountFree(goals, candidate), currency)} free
+              </option>
+            ))}
+          </Select>
+          <p className="mt-1.5 text-xs text-muted">
+            {formatMoney(available, currency)} free to assign in {account.bankName}
+          </p>
+        </div>
+      )}
 
       <div className="mt-4 space-y-4">
         {goals.length === 0 && (
