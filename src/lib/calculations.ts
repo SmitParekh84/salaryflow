@@ -1,3 +1,4 @@
+import { goalSaved } from "./allocations";
 import { billCycle } from "./bill-cycle";
 import { budgetAllocationTarget, evaluateBudgetRule } from "./budget-rules";
 import type {
@@ -89,7 +90,6 @@ export interface FinanceSummary {
   savingsTarget: number;
   plannedSavings: number;
   savedThisCycle: number;
-  savingsEvidence: "account" | "goals";
   investmentTarget: number;
   plannedInvestments: number;
   spendingBudget: number;
@@ -167,10 +167,17 @@ export function computeSummary(
   const investedThisCycle = cycleExpenses
     .filter((expense) => expense.category === "Investment")
     .reduce((sum, expense) => sum + expense.amount, 0);
-  const goalContributionsThisCycle = goals
+  // `opening` records are migrated legacy balances stamped with today's date.
+  // They are real money, but they were not saved this cycle — counting them
+  // would distort Safe-to-Spend for every existing user on upgrade day.
+  const cycleContributions = goals
     .flatMap((goal) => goal.contributions ?? [])
-    .filter((contribution) => isInCurrentCycle(contribution.date, profile, now))
-    .reduce((sum, contribution) => sum + contribution.amount, 0);
+    .filter((contribution) => !contribution.opening)
+    .filter((contribution) => isInCurrentCycle(contribution.date, profile, now));
+  const goalContributionsThisCycle = cycleContributions.reduce(
+    (sum, contribution) => sum + contribution.amount,
+    0,
+  );
   const savingsAccountIds = new Set(
     accounts
       .filter((account) => account.defaultFor?.includes("savings"))
@@ -196,11 +203,13 @@ export function computeSummary(
     cycleExpenses
       .filter((expense) => expense.accountId && savingsAccountIds.has(expense.accountId))
       .reduce((sum, expense) => sum + expense.amount, 0);
-  const savingsEvidence = savingsAccountIds.size > 0 ? "account" : "goals";
-  const savedThisCycle = Math.max(
-    0,
-    savingsEvidence === "account" ? savingsAccountCashFlow : goalContributionsThisCycle,
-  );
+  // Contributions created by splitting a transfer are already inside
+  // savingsAccountCashFlow; subtracting them stops the same rupee counting twice.
+  const allocatedFromTransfers = cycleContributions
+    .filter((contribution) => contribution.transferId)
+    .reduce((sum, contribution) => sum + contribution.amount, 0);
+  const unallocatedSavingsFlow = Math.max(0, savingsAccountCashFlow - allocatedFromTransfers);
+  const savedThisCycle = Math.max(0, goalContributionsThisCycle + unallocatedSavingsFlow);
 
   const savingsTarget = budgetRule
     ? budgetAllocationTarget(budgetRule, "savings", baseIncome)
@@ -210,7 +219,10 @@ export function computeSummary(
     : investedThisCycle;
   const plannedSavings = Math.max(0, savingsTarget);
   const plannedInvestments = Math.max(0, investmentTarget - investedThisCycle);
-  const spendingBudget = Math.max(0, income - savingsTarget - investmentTarget);
+  // savingsTarget is a plan, goal contributions are actuals — take the larger so
+  // committed goal money leaves the spendable pool without being charged twice.
+  const savingsCommitted = Math.max(savingsTarget, goalContributionsThisCycle);
+  const spendingBudget = Math.max(0, income - savingsCommitted - investmentTarget);
   const needsBudget = budgetRule ? budgetAllocationTarget(budgetRule, "needs", baseIncome) : 0;
   const wantsBudget = budgetRule
     ? budgetAllocationTarget(budgetRule, "wants", baseIncome)
@@ -267,7 +279,6 @@ export function computeSummary(
     savingsTarget,
     plannedSavings,
     savedThisCycle,
-    savingsEvidence,
     investmentTarget,
     plannedInvestments,
     spendingBudget,
@@ -341,7 +352,7 @@ function financialHealthScore(p: {
 
 export function projectedGoalDate(goal: Goal): string | null {
   if (goal.monthlyContribution <= 0) return null;
-  const remaining = goal.target - goal.saved;
+  const remaining = goal.target - goalSaved(goal);
   if (remaining <= 0) return "Achieved";
   const months = Math.ceil(remaining / goal.monthlyContribution);
   const d = new Date();

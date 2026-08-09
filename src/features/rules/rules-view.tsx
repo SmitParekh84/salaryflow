@@ -149,9 +149,7 @@ export function RulesView() {
                     <p className="flex justify-between gap-2 text-muted">
                       <span>
                         {allocation.kind === "savings"
-                          ? summary.savingsEvidence === "account"
-                            ? "Net moved to savings"
-                            : "Goal deposits"
+                          ? "Saved this cycle"
                           : USED_LABELS[allocation.kind]}
                       </span>
                       <span>{formatMoney(progress?.used ?? 0, currency)}</span>

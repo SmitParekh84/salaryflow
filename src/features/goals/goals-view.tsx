@@ -6,10 +6,12 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Modal, ModalFooter } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
-import { projectedGoalDate } from "@/lib/calculations";
+import { AllocationSheet } from "@/features/goals/allocation-sheet";
+import { goalAccountBreakdown, goalSaved } from "@/lib/allocations";
+import { projectGoal, whatIfDelta } from "@/lib/goal-projection";
 import { GOAL_TYPES } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
-import type { Goal, GoalType } from "@/lib/types";
+import type { BankAccount, Goal, GoalType } from "@/lib/types";
 import { formatMoney } from "@/lib/utils";
 import {
   Bike,
@@ -27,7 +29,6 @@ const EMPTY_FORM = {
   name: "",
   type: "Custom" as GoalType,
   target: 0,
-  saved: 0,
   monthlyContribution: 0,
 };
 
@@ -38,13 +39,16 @@ export function GoalsView() {
   const addGoal = useFinanceStore((s) => s.addGoal);
   const updateGoal = useFinanceStore((s) => s.updateGoal);
   const deleteGoal = useFinanceStore((s) => s.deleteGoal);
-  const contributeGoal = useFinanceStore((s) => s.contributeGoal);
   const syncWithServer = useFinanceStore((s) => s.syncWithServer);
 
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
-  const savingsAccount = accounts.find((account) => account.defaultFor?.includes("savings"));
+  const [allocateOpen, setAllocateOpen] = useState(false);
+  const savingsAccount =
+    accounts.find(
+      (account) => account.status === "active" && account.defaultFor?.includes("savings"),
+    ) ?? accounts.find((account) => account.status === "active");
 
   const openNew = () => {
     setEditingId(null);
@@ -58,7 +62,6 @@ export function GoalsView() {
       name: goal.name,
       type: goal.type,
       target: goal.target,
-      saved: goal.saved,
       monthlyContribution: goal.monthlyContribution,
     });
     setOpen(true);
@@ -66,20 +69,11 @@ export function GoalsView() {
 
   const save = async () => {
     if (!form.name || form.target <= 0) return;
-    const goal = {
-      ...form,
-      saved: form.type === "Emergency Fund" && savingsAccount ? 0 : form.saved,
-    };
-    if (editingId) updateGoal(editingId, goal);
-    else addGoal(goal);
+    if (editingId) updateGoal(editingId, form);
+    else addGoal({ ...form, saved: 0 });
     setForm(EMPTY_FORM);
     setEditingId(null);
     setOpen(false);
-    await syncWithServer();
-  };
-
-  const contribute = async (id: string, amount: number) => {
-    contributeGoal(id, amount);
     await syncWithServer();
   };
 
@@ -87,9 +81,16 @@ export function GoalsView() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted">{goals.length} active goals</p>
-        <Button size="sm" onClick={openNew}>
-          <Plus className="h-4 w-4" /> New goal
-        </Button>
+        <div className="flex gap-2">
+          {savingsAccount && goals.length > 0 && (
+            <Button size="sm" variant="secondary" onClick={() => setAllocateOpen(true)}>
+              <Landmark className="h-4 w-4" /> Add money
+            </Button>
+          )}
+          <Button size="sm" onClick={openNew}>
+            <Plus className="h-4 w-4" /> New goal
+          </Button>
+        </div>
       </div>
 
       {goals.length === 0 ? (
@@ -108,18 +109,12 @@ export function GoalsView() {
           {goals.map((g) => (
             <GoalCard
               key={g.id}
-              goal={
-                g.type === "Emergency Fund" && savingsAccount
-                  ? { ...g, saved: savingsAccount.balance }
-                  : g
-              }
+              goal={g}
+              accounts={accounts}
               currency={currency}
-              trackedAccountName={
-                g.type === "Emergency Fund" ? savingsAccount?.bankName : undefined
-              }
+              onUpdateMonthly={(monthly) => updateGoal(g.id, { monthlyContribution: monthly })}
               onEdit={() => openEdit(g)}
               onDelete={() => deleteGoal(g.id)}
-              onContribute={(amount) => void contribute(g.id, amount)}
             />
           ))}
         </div>
@@ -163,25 +158,15 @@ export function GoalsView() {
               />
             </div>
             <div>
-              <Label>Already saved</Label>
+              <Label>Monthly contribution</Label>
               <Input
                 type="number"
-                value={form.saved || ""}
-                disabled={form.type === "Emergency Fund" && Boolean(savingsAccount)}
-                onChange={(e) => setForm({ ...form, saved: Number(e.target.value) })}
+                value={form.monthlyContribution || ""}
+                onChange={(e) =>
+                  setForm({ ...form, monthlyContribution: Number(e.target.value) })
+                }
               />
-              {form.type === "Emergency Fund" && savingsAccount && (
-                <p className="mt-1 text-xs text-muted">Tracked from {savingsAccount.bankName}</p>
-              )}
             </div>
-          </div>
-          <div>
-            <Label>Monthly contribution</Label>
-            <Input
-              type="number"
-              value={form.monthlyContribution || ""}
-              onChange={(e) => setForm({ ...form, monthlyContribution: Number(e.target.value) })}
-            />
           </div>
           <ModalFooter>
             <Button variant="secondary" onClick={() => setOpen(false)}>
@@ -191,27 +176,40 @@ export function GoalsView() {
           </ModalFooter>
         </div>
       </Modal>
+
+      {savingsAccount && (
+        <AllocationSheet
+          open={allocateOpen}
+          onClose={() => setAllocateOpen(false)}
+          accountId={savingsAccount.id}
+          title="Add money to your goals"
+        />
+      )}
     </div>
   );
 }
 
 function GoalCard({
   goal,
+  accounts,
   currency,
-  trackedAccountName,
   onEdit,
   onDelete,
-  onContribute,
+  onUpdateMonthly,
 }: {
   goal: Goal;
+  accounts: BankAccount[];
   currency: string;
-  trackedAccountName?: string;
   onEdit: () => void;
   onDelete: () => void;
-  onContribute: (amount: number) => void;
+  onUpdateMonthly: (monthly: number) => void;
 }) {
-  const pct = Math.min(100, (goal.saved / goal.target) * 100);
-  const done = goal.saved >= goal.target;
+  const [whatIf, setWhatIf] = useState<number | null>(null);
+  const saved = goalSaved(goal);
+  const pct = goal.target > 0 ? Math.min(100, (saved / goal.target) * 100) : 0;
+  const done = saved >= goal.target;
+  const projection = projectGoal(goal);
+  const proposal = whatIf === null ? null : whatIfDelta(goal, whatIf);
   const GoalIcon = goal.type === "Bike" ? Bike : goal.type === "Phone" ? Smartphone : Target;
   return (
     <Card>
@@ -249,7 +247,7 @@ function GoalCard({
         </div>
 
         <div className="flex items-end justify-between">
-          <span className="text-2xl font-bold">{formatMoney(goal.saved, currency, true)}</span>
+          <span className="text-2xl font-bold">{formatMoney(saved, currency, true)}</span>
           <span className="text-xs text-muted">of {formatMoney(goal.target, currency, true)}</span>
         </div>
 
@@ -257,8 +255,23 @@ function GoalCard({
           value={pct}
           color={done ? "var(--success)" : "var(--primary)"}
           label={`${goal.name} funding progress`}
-          valueText={`${formatMoney(goal.saved, currency)} of ${formatMoney(goal.target, currency)}`}
+          valueText={`${formatMoney(saved, currency)} of ${formatMoney(goal.target, currency)}`}
         />
+
+        {goalAccountBreakdown(goal).map((slice) => {
+          const account = accounts.find((candidate) => candidate.id === slice.accountId);
+          return (
+            <p
+              key={slice.accountId ?? "unassigned"}
+              className="flex items-center gap-1.5 text-xs text-muted"
+            >
+              <Landmark className="h-3.5 w-3.5 shrink-0" />
+              {account
+                ? `Held in ${account.bankName}: ${formatMoney(slice.amount, currency)}`
+                : `${formatMoney(slice.amount, currency)} not linked to an account`}
+            </p>
+          );
+        })}
 
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted">
@@ -266,32 +279,47 @@ function GoalCard({
               <span className="flex items-center gap-1 text-success">
                 <CircleCheck className="h-3.5 w-3.5" /> Achieved
               </span>
-            ) : trackedAccountName ? (
-              <span className="flex items-center gap-1">
-                <Landmark className="h-3.5 w-3.5" /> Tracked from {trackedAccountName}
-              </span>
-            ) : goal.monthlyContribution > 0 ? (
-              `ETA ${projectedGoalDate(goal) ?? "—"}`
+            ) : projection ? (
+              `At ${formatMoney(goal.monthlyContribution, currency, true)}/month → done ${projection.label}`
             ) : (
-              "Monthly funding paused"
+              "Set a monthly amount to see a finish date"
             )}
           </span>
           <span className="font-medium">{Math.round(pct)}%</span>
         </div>
 
-        {!done && !trackedAccountName && (
-          <div className="flex gap-2 pt-1">
-            {[500, 1000, 5000].map((amt) => (
-              <Button
-                key={amt}
-                size="sm"
-                variant="secondary"
-                className="flex-1"
-                onClick={() => onContribute(amt)}
-              >
-                +{formatMoney(amt, currency, true)}
-              </Button>
-            ))}
+        {!done && goal.monthlyContribution > 0 && (
+          <div className="pt-1">
+            <Label htmlFor={`whatif-${goal.id}`}>What if I save more?</Label>
+            <input
+              id={`whatif-${goal.id}`}
+              type="range"
+              min={goal.monthlyContribution}
+              max={goal.monthlyContribution * 3}
+              step={500}
+              value={whatIf ?? goal.monthlyContribution}
+              onChange={(event) => setWhatIf(Number(event.target.value))}
+              className="w-full accent-primary"
+            />
+            {proposal && proposal.monthsSooner > 0 && (
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <p className="text-xs text-muted">
+                  {formatMoney(whatIf ?? 0, currency, true)}/month → {proposal.label},{" "}
+                  {proposal.monthsSooner} months sooner
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    onUpdateMonthly(whatIf ?? goal.monthlyContribution);
+                    setWhatIf(null);
+                  }}
+                >
+                  Make this my plan
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

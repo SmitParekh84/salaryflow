@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Checkbox, Input, Label, Select } from "@/components/ui/input";
 import { Modal, ModalFooter } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
+import { accountAllocated, accountFree, isOverAllocated } from "@/lib/allocations";
 import { creditCardUsage } from "@/lib/credit-cards";
 import { useFinanceStore } from "@/lib/store";
 import type {
@@ -66,6 +67,7 @@ const EMPTY_TRANSFER_FORM = {
 
 export function AccountsView() {
   const accounts = useFinanceStore((state) => state.accounts);
+  const goals = useFinanceStore((state) => state.goals);
   const addAccount = useFinanceStore((state) => state.addAccount);
   const updateAccount = useFinanceStore((state) => state.updateAccount);
   const deleteAccount = useFinanceStore((state) => state.deleteAccount);
@@ -265,6 +267,13 @@ export function AccountsView() {
                     ? ` Projected ${target.bankName} balance: ${formatMoney(target.balance + account.balance, currency)}.`
                     : ""}
                 </p>
+                {accountAllocated(goals, account.id) > 0 && (
+                  <p className="mt-1 text-xs leading-relaxed text-muted">
+                    {formatMoney(accountAllocated(goals, account.id), currency)} of goal money is
+                    still here. Complete the transfer to{" "}
+                    {account.plannedTransferTo || "another account"} to move it.
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -300,6 +309,39 @@ export function AccountsView() {
                   )}
                 </div>
                 <p className="mt-0.5 text-xs text-muted">{account.accountType} account</p>
+                {isOverAllocated(goals, account) && (
+                  <p
+                    role="alert"
+                    className="mt-2 rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning"
+                  >
+                    Goals claim more than this account holds. Lower a goal amount or raise the
+                    balance.
+                  </p>
+                )}
+                {accountAllocated(goals, account.id) > 0 && (
+                  <div className="mt-2 max-w-xs">
+                    <div className="flex h-2 overflow-hidden rounded-full bg-surface-2">
+                      <span
+                        className="bg-primary"
+                        style={{
+                          width: `${Math.min(100, (accountAllocated(goals, account.id) / Math.max(account.balance, 1)) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="mt-1.5 flex items-center justify-between gap-2 text-xs">
+                      <span className="text-muted">
+                        {formatMoney(accountAllocated(goals, account.id), currency)} locked to goals
+                      </span>
+                      <span
+                        className={
+                          accountFree(goals, account) < 0 ? "font-medium text-danger" : "text-muted"
+                        }
+                      >
+                        {formatMoney(accountFree(goals, account), currency)} free
+                      </span>
+                    </div>
+                  </div>
+                )}
                 {account.defaultFor && account.defaultFor.length > 0 && (
                   <p className="mt-1 text-xs text-primary">
                     Default:{" "}

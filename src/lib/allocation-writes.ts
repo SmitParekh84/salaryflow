@@ -23,7 +23,16 @@ export function applyAllocation(
   const account = accounts.find((candidate) => candidate.id === accountId);
   if (!account) return { ok: false, reason: "That account no longer exists." };
 
-  const positive = entries.filter((entry) => entry.amount > 0);
+  // Merge repeats before validating: the check sums every entry, but the write
+  // takes one per goal, so two entries for the same goal would silently drop one.
+  const merged = new Map<string, number>();
+  for (const entry of entries) {
+    if (entry.amount > 0) merged.set(entry.goalId, (merged.get(entry.goalId) ?? 0) + entry.amount);
+  }
+  const positive: AllocationEntry[] = Array.from(merged, ([goalId, amount]) => ({
+    goalId,
+    amount,
+  }));
   if (positive.length === 0) return { ok: false, reason: "Enter an amount to allocate." };
 
   const requested = positive.reduce((sum, entry) => sum + entry.amount, 0);

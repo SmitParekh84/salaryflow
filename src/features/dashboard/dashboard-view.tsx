@@ -1,6 +1,9 @@
 "use client";
 
 import { CategoryIcon } from "@/components/category-icon";
+import { AllocationSheet } from "@/features/goals/allocation-sheet";
+import { goalSaved } from "@/lib/allocations";
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,17 +51,18 @@ export function DashboardView() {
   const activeBudgetRule = useFinanceStore((s) => s.budgetRules.find((rule) => rule.active));
   const summary = useSummary();
   const [addOpen, setAddOpen] = useState(false);
+  const [allocateOpen, setAllocateOpen] = useState(false);
 
   const currency = profile.currency;
   const financialYearStart = profile.financialYearStart ?? currentFinancialYearStart();
   const topGoal = goals[0];
   const nextBills = upcomingBills(bills, expenses).slice(0, 3);
   const emergencyGoal = goals.find((goal) => goal.type === "Emergency Fund");
-  const savingsAccount = accounts.find((account) => account.defaultFor?.includes("savings"));
-  const emergency =
-    emergencyGoal && savingsAccount
-      ? { ...emergencyGoal, saved: savingsAccount.balance }
-      : emergencyGoal;
+  const savingsAccount =
+    accounts.find(
+      (account) => account.status === "active" && account.defaultFor?.includes("savings"),
+    ) ?? accounts.find((account) => account.status === "active");
+  const emergency = emergencyGoal;
   const fundingPlan = buildFundingPlan({
     accounts,
     bills,
@@ -83,9 +87,52 @@ export function DashboardView() {
         </div>
         <div className="flex gap-2">
           {expenses.length === 0 && <SeedPrompt />}
-          <Button size="sm" onClick={() => setAddOpen(true)}>
-            <Plus className="h-4 w-4" /> Add
-          </Button>
+          <DropdownMenuPrimitive.Root>
+            <DropdownMenuPrimitive.Trigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4" /> Add
+              </Button>
+            </DropdownMenuPrimitive.Trigger>
+            <DropdownMenuPrimitive.Portal>
+              <DropdownMenuPrimitive.Content
+                data-slot="dropdown-menu-content"
+                align="end"
+                sideOffset={8}
+                collisionPadding={12}
+                className="z-50 min-w-48 rounded-2xl bg-surface p-1.5 text-foreground card-shadow outline-none"
+              >
+                <DropdownMenuPrimitive.Item asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setAddOpen(true)}
+                    className="w-full justify-start outline-none"
+                  >
+                    Expense
+                  </Button>
+                </DropdownMenuPrimitive.Item>
+                <DropdownMenuPrimitive.Item asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={!savingsAccount}
+                    onClick={() => setAllocateOpen(true)}
+                    className="w-full justify-start outline-none"
+                  >
+                    Save to goal
+                  </Button>
+                </DropdownMenuPrimitive.Item>
+                <DropdownMenuPrimitive.Item asChild>
+                  <Link
+                    href="/accounts"
+                    className="flex cursor-pointer rounded-sm px-3 py-2 text-sm outline-none focus:bg-surface-2"
+                  >
+                    Transfer money
+                  </Link>
+                </DropdownMenuPrimitive.Item>
+              </DropdownMenuPrimitive.Content>
+            </DropdownMenuPrimitive.Portal>
+          </DropdownMenuPrimitive.Root>
         </div>
       </div>
 
@@ -113,9 +160,7 @@ export function DashboardView() {
           value={formatMoney(summary.savedThisCycle, currency, true)}
           icon={PiggyBank}
           accent={CHART_COLORS.savings}
-          hint={`Target ${formatMoney(summary.savingsTarget, currency, true)} · ${
-            summary.savingsEvidence === "account" ? "net savings-account activity" : "goal deposits"
-          }`}
+          hint={`Target ${formatMoney(summary.savingsTarget, currency, true)} · goal deposits and savings activity`}
           delay={0.1}
         />
         <StatCard
@@ -185,7 +230,7 @@ export function DashboardView() {
                   [
                     "savings",
                     "Cash savings",
-                    summary.savingsEvidence === "account" ? "Net moved in" : "Goal deposits",
+                    "Saved this cycle",
                   ],
                   ["investments", "Investments", "Invested"],
                 ] as const
@@ -357,17 +402,17 @@ export function DashboardView() {
             <CardContent className="pt-3">
               <div className="mb-2 flex items-end justify-between">
                 <span className="text-2xl font-bold">
-                  {formatMoney(topGoal.saved, currency, true)}
+                  {formatMoney(goalSaved(topGoal), currency, true)}
                 </span>
                 <span className="text-xs text-muted">
                   of {formatMoney(topGoal.target, currency, true)}
                 </span>
               </div>
               <Progress
-                value={topGoal.target > 0 ? (topGoal.saved / topGoal.target) * 100 : 0}
+                value={topGoal.target > 0 ? (goalSaved(topGoal) / topGoal.target) * 100 : 0}
                 color="var(--primary)"
                 label={`${topGoal.name} funding progress`}
-                valueText={`${formatMoney(topGoal.saved, currency)} of ${formatMoney(topGoal.target, currency)}`}
+                valueText={`${formatMoney(goalSaved(topGoal), currency)} of ${formatMoney(topGoal.target, currency)}`}
               />
             </CardContent>
           </Card>
@@ -378,23 +423,23 @@ export function DashboardView() {
             <CardHeader className="flex items-center justify-between">
               <CardTitle>Emergency fund</CardTitle>
               <span className="text-xs font-medium text-success">
-                {Math.round((emergency.saved / emergency.target) * 100)}% funded
+                {Math.round((goalSaved(emergency) / emergency.target) * 100)}% funded
               </span>
             </CardHeader>
             <CardContent className="pt-3">
               <div className="mb-2 flex items-end justify-between">
                 <span className="text-2xl font-bold">
-                  {formatMoney(emergency.saved, currency, true)}
+                  {formatMoney(goalSaved(emergency), currency, true)}
                 </span>
                 <span className="text-xs text-muted">
                   target {formatMoney(emergency.target, currency, true)}
                 </span>
               </div>
               <Progress
-                value={emergency.target > 0 ? (emergency.saved / emergency.target) * 100 : 0}
+                value={emergency.target > 0 ? (goalSaved(emergency) / emergency.target) * 100 : 0}
                 color="var(--success)"
                 label="Emergency fund progress"
-                valueText={`${formatMoney(emergency.saved, currency)} of ${formatMoney(emergency.target, currency)}`}
+                valueText={`${formatMoney(goalSaved(emergency), currency)} of ${formatMoney(emergency.target, currency)}`}
               />
             </CardContent>
           </Card>
@@ -402,6 +447,14 @@ export function DashboardView() {
       </div>
 
       <ExpenseForm open={addOpen} onClose={() => setAddOpen(false)} />
+      {savingsAccount && (
+        <AllocationSheet
+          open={allocateOpen}
+          onClose={() => setAllocateOpen(false)}
+          accountId={savingsAccount.id}
+          title="Save to a goal"
+        />
+      )}
     </div>
   );
 }

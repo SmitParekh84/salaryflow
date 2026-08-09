@@ -427,6 +427,12 @@ export const useFinanceStore = create<FinanceState>()(
                 : account,
           ),
         }));
+        // Goal money follows the real money: when a closing account is emptied,
+        // its allocations repoint to the destination instead of pointing at a
+        // dead account. The balances above already moved by the same amount.
+        if (source.status === "closing") {
+          get().reassignAllocations(transfer.sourceAccountId, transfer.destinationAccountId);
+        }
         void get().syncWithServer();
         return true;
       },

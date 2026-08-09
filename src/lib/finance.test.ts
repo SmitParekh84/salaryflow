@@ -33,6 +33,7 @@ import {
 } from "./allocations";
 import { migrateGoalOpeningBalances } from "./goal-migration";
 import { applyAllocation, reassignGoalAccounts } from "./allocation-writes";
+import { monthsToGoal, projectGoal, whatIfDelta } from "./goal-projection";
 
 const profile: SalaryProfile = {
   amount: 30_000,
@@ -689,5 +690,160 @@ describe("allocation writes", () => {
     const moved = reassignGoalAccounts(funded, "hdfc", "union");
     expect(accountAllocated(moved, "union")).toBe(10000);
     expect(accountAllocated(moved, "hdfc")).toBe(0);
+  });
+});
+
+describe("goal contributions in the cycle", () => {
+  const inCycle = new Date("2026-08-09T00:00:00.000Z");
+
+  const goalWith = (contributions: GoalContribution[]): Goal => ({
+    id: "bike",
+    name: "Bike",
+    type: "Bike",
+    target: 85_000,
+    saved: 0,
+    monthlyContribution: 8_000,
+    contributions,
+  });
+
+  it("ignores migrated opening balances when counting this cycle's savings", () => {
+    const summary = computeSummary(
+      profile,
+      [],
+      [],
+      [],
+      [goalWith([{ id: "c1", amount: 5_000, date: inCycle.toISOString(), opening: true }])],
+      [],
+      undefined,
+      [],
+      [],
+      inCycle,
+    );
+    expect(summary.savedThisCycle).toBe(0);
+  });
+
+  it("counts a real in-cycle contribution", () => {
+    const summary = computeSummary(
+      profile,
+      [],
+      [],
+      [],
+      [goalWith([{ id: "c1", amount: 5_000, date: inCycle.toISOString(), accountId: "union" }])],
+      [],
+      undefined,
+      [],
+      [],
+      inCycle,
+    );
+    expect(summary.savedThisCycle).toBe(5_000);
+  });
+
+  it("no longer exposes savingsEvidence", () => {
+    const summary = computeSummary(profile, [], [], [], [], [], undefined, [], [], inCycle);
+    expect("savingsEvidence" in summary).toBe(false);
+  });
+
+  it("keeps committed goal money out of the spendable pool", () => {
+    const withContribution = computeSummary(
+      profile,
+      [],
+      [],
+      [],
+      [goalWith([{ id: "c1", amount: 9_000, date: inCycle.toISOString(), accountId: "union" }])],
+      [],
+      undefined,
+      [],
+      [],
+      inCycle,
+    );
+    const withoutContribution = computeSummary(
+      profile,
+      [],
+      [],
+      [],
+      [goalWith([])],
+      [],
+      undefined,
+      [],
+      [],
+      inCycle,
+    );
+    expect(withContribution.spendingBudget).toBeLessThan(withoutContribution.spendingBudget);
+  });
+});
+
+describe("goal projection", () => {
+  const now = new Date("2026-08-09T00:00:00.000Z");
+  const bike: Goal = {
+    id: "bike",
+    name: "Bike",
+    type: "Bike",
+    target: 85_000,
+    saved: 0,
+    monthlyContribution: 8_000,
+    contributions: [
+      { id: "c1", amount: 10_000, date: "2026-08-01T00:00:00.000Z", accountId: "union" },
+    ],
+  };
+
+  it("counts the months left at the current rate", () => {
+    expect(monthsToGoal(bike)).toBe(10);
+  });
+
+  it("returns null with no monthly contribution", () => {
+    expect(monthsToGoal({ ...bike, monthlyContribution: 0 })).toBeNull();
+  });
+
+  it("returns zero months once the target is reached", () => {
+    expect(monthsToGoal({ ...bike, target: 5_000 })).toBe(0);
+  });
+
+  it("labels the finish month", () => {
+    expect(projectGoal(bike, undefined, now)?.label).toBe("Jun 2027");
+  });
+
+  it("reports how much sooner a bigger contribution finishes", () => {
+    const result = whatIfDelta(bike, 15_000, now);
+    expect(result?.months).toBe(5);
+    expect(result?.monthsSooner).toBe(5);
+  });
+
+  it("reports zero sooner when the what-if matches the current plan", () => {
+    expect(whatIfDelta(bike, 8_000, now)?.monthsSooner).toBe(0);
+  });
+});
+
+describe("allocation split merges repeated goals", () => {
+  it("does not silently drop a second entry for the same goal", () => {
+    const union: BankAccount = {
+      id: "union",
+      bankName: "Union Bank",
+      accountType: "Savings",
+      balance: 10_569,
+      status: "active",
+    };
+    const bike: Goal = {
+      id: "bike",
+      name: "Bike",
+      type: "Bike",
+      target: 85_000,
+      saved: 0,
+      monthlyContribution: 8_000,
+      contributions: [],
+    };
+    const result = applyAllocation(
+      [bike],
+      [union],
+      [
+        { goalId: "bike", amount: 100 },
+        { goalId: "bike", amount: 200 },
+      ],
+      "union",
+      undefined,
+      new Date("2026-08-09T10:00:00.000Z"),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(goalSaved(result.goals[0])).toBe(300);
   });
 });
