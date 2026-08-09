@@ -28,7 +28,7 @@ import {
   Plus,
   Receipt,
   Sparkles,
-  Wallet,
+  TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -90,10 +90,11 @@ export function DashboardView() {
 
       <div className="grid gap-px overflow-hidden rounded-2xl bg-border card-shadow sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Salary"
-          value={formatMoney(summary.income, currency, true)}
-          icon={Wallet}
+          label="Invested this cycle"
+          value={formatMoney(summary.investedThisCycle, currency, true)}
+          icon={TrendingUp}
           accent="var(--primary)"
+          hint={`Target ${formatMoney(summary.investmentTarget, currency, true)}`}
           delay={0}
         />
         <StatCard

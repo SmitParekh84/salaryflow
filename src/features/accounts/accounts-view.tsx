@@ -92,7 +92,8 @@ export function AccountsView() {
   const [transferError, setTransferError] = useState("");
 
   const visibleAccounts = accounts.filter((account) => !account.hiddenFromAccounts);
-  const totalBalance = visibleAccounts.reduce((sum, account) => sum + account.balance, 0);
+  const includedBalanceAccounts = visibleAccounts.filter((account) => !account.maskBalance);
+  const totalBalance = includedBalanceAccounts.reduce((sum, account) => sum + account.balance, 0);
   const closingAccounts = accounts.filter((account) => account.status === "closing");
 
   function openAdd() {
@@ -227,7 +228,9 @@ export function AccountsView() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm text-muted">{visibleAccounts.length} linked accounts</p>
+          <p className="text-sm text-muted">
+            {visibleAccounts.length} linked accounts · {includedBalanceAccounts.length} in total
+          </p>
           <p className="mt-1 text-2xl font-bold">{formatMoney(totalBalance, currency)}</p>
         </div>
         <div className="flex w-full gap-2 sm:w-auto">

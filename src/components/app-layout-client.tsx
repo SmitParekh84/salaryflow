@@ -6,12 +6,20 @@ import { useHydrated } from "@/hooks/use-hydrated";
 import { useNotificationSync } from "@/hooks/use-notification-sync";
 import { NAV_ITEMS } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
 const ROUTE_STACK_KEY = "salaryflow:route-stack";
 const ROUTE_TITLES: Record<string, string> = {
   "/salary-history": "Salary history",
+};
+
+const SETTINGS_SECTION_TITLES: Record<string, string> = {
+  profile: "Profile",
+  money: "Money setup",
+  accounts: "Financial accounts",
+  planning: "Goals & rules",
+  system: "System",
 };
 
 function readRouteStack() {
@@ -28,6 +36,7 @@ function readRouteStack() {
 export default function AppLayoutClient({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const hydrated = useHydrated();
   const onboarded = useFinanceStore((s) => s.user.onboarded);
   useNotificationSync();
@@ -50,6 +59,11 @@ export default function AppLayoutClient({ children }: { children: React.ReactNod
   }, [pathname]);
 
   const goBack = () => {
+    if (pathname === "/settings" && searchParams.has("section")) {
+      window.history.replaceState(null, "", "/settings");
+      return;
+    }
+
     const stack = readRouteStack();
     if (stack.length > 1) {
       router.back();
@@ -59,8 +73,12 @@ export default function AppLayoutClient({ children }: { children: React.ReactNod
     router.push("/dashboard");
   };
 
+  const settingsSectionTitle =
+    pathname === "/settings"
+      ? SETTINGS_SECTION_TITLES[searchParams.get("section") ?? ""]
+      : undefined;
   const title =
-    ROUTE_TITLES[pathname] ??
+    settingsSectionTitle ?? ROUTE_TITLES[pathname] ??
     NAV_ITEMS.find((item) => pathname === item.href || pathname.startsWith(item.href + "/"))
       ?.label ??
     "SalaryFlow";

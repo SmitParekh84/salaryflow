@@ -30,9 +30,10 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-type SettingsSection = "profile" | "money" | "accounts" | "planning" | "system";
+export type SettingsSection = "profile" | "money" | "accounts" | "planning" | "system";
 
 const SETTINGS_SECTIONS: {
   id: SettingsSection;
@@ -62,7 +63,8 @@ const SETTINGS_SECTIONS: {
   { id: "system", label: "System", description: "Appearance, data and access", icon: MonitorCog },
 ];
 
-export function SettingsView() {
+export function SettingsView({ initialSection = "profile" }: { initialSection?: SettingsSection }) {
+  const searchParams = useSearchParams();
   const user = useFinanceStore((s) => s.user);
   const profile = useFinanceStore((s) => s.profile);
   const activeBudgetRule = useFinanceStore((s) => s.budgetRules.find((rule) => rule.active));
@@ -79,11 +81,19 @@ export function SettingsView() {
   const { theme, setTheme } = useTheme();
   const { logout } = useAuth();
 
-  const [section, setSection] = useState<SettingsSection>("profile");
+  const requestedSection = searchParams.get("section");
+  const hasRequestedSection = SETTINGS_SECTIONS.some((item) => item.id === requestedSection);
+  const section = hasRequestedSection
+    ? (requestedSection as SettingsSection)
+    : initialSection;
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [saved, setSaved] = useState(false);
   const [preferencesSaved, setPreferencesSaved] = useState(false);
+
+  const selectSection = (nextSection: SettingsSection) => {
+    window.history.replaceState(null, "", `/settings?section=${nextSection}`);
+  };
 
   const saveProfile = async () => {
     updateUser({ name, email });
@@ -118,7 +128,11 @@ export function SettingsView() {
 
   const hiddenAccounts = accounts.filter((account) => account.hiddenFromAccounts);
   const visibleAccounts = accounts.filter((account) => !account.hiddenFromAccounts);
-  const visibleBalance = visibleAccounts.reduce((total, account) => total + account.balance, 0);
+  const includedBalanceAccounts = visibleAccounts.filter((account) => !account.maskBalance);
+  const visibleBalance = includedBalanceAccounts.reduce(
+    (total, account) => total + account.balance,
+    0,
+  );
   const ruleSavingsTarget = activeBudgetRule ? summary.savingsTarget : undefined;
   const savingsPercentage = activeBudgetRule?.allocations.find(
     (allocation) => allocation.kind === "savings",
@@ -131,27 +145,35 @@ export function SettingsView() {
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
-      <aside className="lg:sticky lg:top-24">
-        <div className="mb-3 px-1">
-          <h2 className="text-sm font-semibold">Settings</h2>
+      <aside className={cn("lg:sticky lg:top-24", hasRequestedSection && "hidden lg:block")}>
+        <div className="mb-4 px-1 lg:mb-3">
+          <h2 className="text-lg font-semibold lg:text-sm">Settings and activity</h2>
           <p className="mt-1 text-xs leading-relaxed text-muted">
             Personalize how SalaryFlow works for you.
           </p>
         </div>
-        <div className="lg:hidden">
-          <Label htmlFor="settings-section">Settings section</Label>
-          <Select
-            id="settings-section"
-            value={section}
-            onChange={(event) => setSection(event.target.value as SettingsSection)}
-          >
-            {SETTINGS_SECTIONS.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.label}
-              </option>
-            ))}
-          </Select>
-        </div>
+        <nav aria-label="Mobile settings sections" className="divide-y divide-border border-y border-border lg:hidden">
+          {SETTINGS_SECTIONS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => selectSection(item.id)}
+                className="flex min-h-16 w-full items-center gap-3 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-(--ring)"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-foreground">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-medium">{item.label}</span>
+                  <span className="mt-0.5 block text-xs text-muted">{item.description}</span>
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
+              </button>
+            );
+          })}
+        </nav>
         <nav aria-label="Settings sections" className="hidden flex-col gap-1 lg:flex">
           {SETTINGS_SECTIONS.map((item) => {
             const Icon = item.icon;
@@ -161,7 +183,7 @@ export function SettingsView() {
                 key={item.id}
                 type="button"
                 variant="ghost"
-                onClick={() => setSection(item.id)}
+                onClick={() => selectSection(item.id)}
                 aria-current={selected ? "page" : undefined}
                 className={cn(
                   "h-auto shrink-0 justify-start gap-3 px-3 py-2.5 text-left lg:w-full",
@@ -179,7 +201,8 @@ export function SettingsView() {
         </nav>
       </aside>
 
-      <Card className="min-w-0 shadow-none">
+      <div className={cn("min-w-0", !hasRequestedSection && "hidden lg:block")}>
+      <Card className="min-w-0 rounded-none bg-transparent shadow-none lg:rounded-2xl lg:bg-surface">
         {section === "profile" && (
           <SettingsPane
             title="User profile"
@@ -337,10 +360,10 @@ export function SettingsView() {
           >
             <div className="grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3">
               <AccountStat
-                label="Visible balance"
+                label="Included balance"
                 value={formatMoney(visibleBalance, profile.currency)}
               />
-              <AccountStat label="Bank accounts" value={String(visibleAccounts.length)} />
+              <AccountStat label="Balances included" value={String(includedBalanceAccounts.length)} />
               <AccountStat label="Credit cards" value={String(creditCards.length)} />
             </div>
 
@@ -471,6 +494,7 @@ export function SettingsView() {
           </SettingsPane>
         )}
       </Card>
+      </div>
     </div>
   );
 }
@@ -486,11 +510,11 @@ function SettingsPane({
 }) {
   return (
     <div>
-      <header className="border-b border-border px-5 py-4 sm:px-6">
+      <header className="border-b border-border py-4 lg:px-6">
         <h2 className="text-base font-semibold">{title}</h2>
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted">{description}</p>
       </header>
-      <div className="space-y-5 p-5 sm:p-6">{children}</div>
+      <div className="space-y-5 py-5 lg:p-6">{children}</div>
     </div>
   );
 }
