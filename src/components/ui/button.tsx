@@ -6,7 +6,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
 export const buttonVariants = cva(
-  "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap font-medium transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-150 outline-none active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-(--ring) disabled:pointer-events-none disabled:opacity-50 sm:min-h-0 sm:min-w-0 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap font-medium transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-150 outline-none active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-(--ring) disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -22,10 +22,10 @@ export const buttonVariants = cva(
         link: "h-auto min-h-0 min-w-0 text-primary underline-offset-4 hover:underline",
       },
       size: {
-        sm: "h-10 rounded-xl px-3 text-xs sm:h-8",
-        md: "h-11 rounded-xl px-4 text-sm sm:h-10",
+        sm: "h-11 rounded-xl px-3 text-xs",
+        md: "h-11 rounded-xl px-4 text-sm",
         lg: "h-12 rounded-xl px-6 text-base",
-        icon: "h-11 w-11 rounded-xl p-0 sm:h-10 sm:w-10",
+        icon: "h-11 w-11 rounded-xl p-0",
       },
     },
     defaultVariants: {

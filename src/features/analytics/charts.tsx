@@ -1,6 +1,7 @@
 "use client";
 
 import { getCategoryColor } from "@/components/category-icon";
+import { financialYearMonths } from "@/lib/financial-year";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense, Income, SalaryHistoryEntry } from "@/lib/types";
 import { formatMoney, parseFinancialDate } from "@/lib/utils";
@@ -92,20 +93,19 @@ export function CashFlowChart({
   incomes,
   salaryHistory,
   currency,
+  financialYearStart,
 }: {
   expenses: Expense[];
   incomes: Income[];
   salaryHistory: SalaryHistoryEntry[];
   currency: string;
+  financialYearStart: number;
 }) {
   const data = useMemo(() => {
-    const today = new Date();
     const points = new Map<string, { date: Date; inflow: number; outflow: number }>();
 
-    for (let monthsAgo = 5; monthsAgo >= 0; monthsAgo--) {
-      const date = new Date(today.getFullYear(), today.getMonth() - monthsAgo, 1);
-      const key = `${date.getFullYear()}-${date.getMonth()}`;
-      points.set(key, { date, inflow: 0, outflow: 0 });
+    for (const month of financialYearMonths(financialYearStart)) {
+      points.set(month.key, { date: month.date, inflow: 0, outflow: 0 });
     }
 
     for (const salary of salaryHistory) {
@@ -132,7 +132,7 @@ export function CashFlowChart({
       inflow: Math.round(point.inflow),
       outflow: Math.round(point.outflow),
     }));
-  }, [expenses, incomes, salaryHistory]);
+  }, [expenses, financialYearStart, incomes, salaryHistory]);
 
   return (
     <ResponsiveContainer width="100%" height={240}>

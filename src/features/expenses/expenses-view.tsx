@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Select } from "@/components/ui/input";
 import { CATEGORIES } from "@/lib/constants";
+import { currentFinancialYearStart, isInFinancialYear } from "@/lib/financial-year";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
 import { formatMoney, newestFirst } from "@/lib/utils";
@@ -16,6 +17,9 @@ import { SeedPrompt, TransactionList } from "./transaction-list";
 export function ExpensesView() {
   const expenses = useFinanceStore((s) => s.expenses);
   const currency = useFinanceStore((s) => s.profile.currency);
+  const financialYearStart = useFinanceStore(
+    (s) => s.profile.financialYearStart ?? currentFinancialYearStart(),
+  );
   const storedCustomCategories = useFinanceStore((s) => s.profile.customCategories);
   const customCategories = storedCustomCategories ?? [];
 
@@ -27,6 +31,7 @@ export function ExpensesView() {
   const filtered = useMemo(() => {
     const term = q.toLowerCase().trim();
     return newestFirst(expenses)
+      .filter((expense) => isInFinancialYear(expense.date, financialYearStart))
       .filter((e) => (cat === "all" ? true : e.category === cat))
       .filter((e) =>
         !term
@@ -37,7 +42,7 @@ export function ExpensesView() {
             e.shared?.friendName.toLowerCase().includes(term) ||
             String(e.amount).includes(term),
       );
-  }, [expenses, q, cat]);
+  }, [expenses, financialYearStart, q, cat]);
 
   const total = filtered.reduce((s, e) => s + e.amount, 0);
 

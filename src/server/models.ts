@@ -56,6 +56,7 @@ const SalaryProfileSchema = new Schema(
     savingsGoal: { type: Number, default: 0 },
     emergencyFundGoal: { type: Number, default: 0 },
     investmentAmount: { type: Number, default: 0 },
+    financialYearStart: Number,
     customCategories: [
       new Schema(
         {

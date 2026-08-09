@@ -4,6 +4,11 @@ import { budgetAllocationTarget } from "./budget-rules";
 import { computeSummary, cycleInfo, isInCurrentCycle } from "./calculations";
 import { creditCardUsage } from "./credit-cards";
 import { buildFundingPlan } from "./funding-plan";
+import {
+  currentFinancialYearStart,
+  financialYearMonths,
+  isInFinancialYear,
+} from "./financial-year";
 import type {
   AccountTransfer,
   BankAccount,
@@ -27,6 +32,33 @@ const profile: SalaryProfile = {
   emergencyFundGoal: 100_000,
   investmentAmount: 0,
 };
+
+describe("India financial years", () => {
+  it("switches to the new year on April 1", () => {
+    expect(currentFinancialYearStart(new Date(2026, 2, 31))).toBe(2025);
+    expect(currentFinancialYearStart(new Date(2026, 3, 1))).toBe(2026);
+  });
+
+  it("includes April through March and excludes the next April", () => {
+    expect(isInFinancialYear("2026-04-01", 2026)).toBe(true);
+    expect(isInFinancialYear("2027-03-31", 2026)).toBe(true);
+    expect(isInFinancialYear("2027-04-01", 2026)).toBe(false);
+    expect(financialYearMonths(2026).map((month) => month.label)).toEqual([
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+      "Jan",
+      "Feb",
+      "Mar",
+    ]);
+  });
+});
 
 const rule: BudgetRule = {
   id: "rule",

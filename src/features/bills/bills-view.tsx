@@ -359,9 +359,7 @@ export function BillsView() {
             <Button variant="secondary" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => void save()}>
-              {editingId ? "Save changes" : "Add bill"}
-            </Button>
+            <Button onClick={() => void save()}>{editingId ? "Save changes" : "Add bill"}</Button>
           </ModalFooter>
         </div>
       </Modal>

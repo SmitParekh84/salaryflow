@@ -57,7 +57,7 @@ export function Combobox({
         <PopoverPrimitive.Content
           align="start"
           sideOffset={6}
-          className="z-70 w-(--radix-popover-trigger-width) overflow-hidden rounded-2xl bg-surface shadow-lg"
+          className="z-110 w-(--radix-popover-trigger-width) overflow-hidden rounded-2xl bg-surface shadow-lg"
         >
           <Command className="w-full" loop>
             <div className="flex items-center gap-2 border-b border-border px-3">

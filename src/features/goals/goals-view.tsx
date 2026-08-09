@@ -187,9 +187,7 @@ export function GoalsView() {
             <Button variant="secondary" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => void save()}>
-              {editingId ? "Save goal" : "Create goal"}
-            </Button>
+            <Button onClick={() => void save()}>{editingId ? "Save goal" : "Create goal"}</Button>
           </ModalFooter>
         </div>
       </Modal>

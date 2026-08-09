@@ -296,10 +296,7 @@ export function RulesView() {
             <Button variant="secondary" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button
-              disabled={total !== 100 || !name.trim()}
-              onClick={() => void saveCustomRule()}
-            >
+            <Button disabled={total !== 100 || !name.trim()} onClick={() => void saveCustomRule()}>
               Save & activate
             </Button>
           </ModalFooter>

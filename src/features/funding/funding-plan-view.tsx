@@ -294,10 +294,7 @@ export function FundingPlanView() {
             <Button variant="secondary" onClick={() => setPayingItem(null)}>
               Cancel
             </Button>
-            <Button
-              disabled={saving || !paymentAccountId}
-              onClick={() => void savePayments()}
-            >
+            <Button disabled={saving || !paymentAccountId} onClick={() => void savePayments()}>
               {saving ? "Saving…" : "Save payment"}
             </Button>
           </ModalFooter>

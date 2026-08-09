@@ -4,6 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox, Input, Label } from "@/components/ui/input";
+import {
+  currentFinancialYearStart,
+  financialYearLabel,
+  isInFinancialYear,
+} from "@/lib/financial-year";
 import { useFinanceStore } from "@/lib/store";
 import { formatMoney, localDateInputValue, newestFirst, parseFinancialDate } from "@/lib/utils";
 import { format } from "date-fns";
@@ -22,6 +27,10 @@ export default function SalaryHistoryPage() {
   const [note, setNote] = useState("");
   const [credited, setCredited] = useState(true);
   const [saving, setSaving] = useState(false);
+  const financialYearStart = profile.financialYearStart ?? currentFinancialYearStart();
+  const visibleEntries = entries.filter((entry) =>
+    isInFinancialYear(entry.date, financialYearStart),
+  );
 
   useEffect(() => {
     void loadSalaryHistory();
@@ -49,7 +58,7 @@ export default function SalaryHistoryPage() {
     <div className="space-y-5">
       <p className="text-sm text-muted">
         Record one salary credit per month. Your normal salary is{" "}
-        {formatMoney(profile.amount, profile.currency)}.
+        {formatMoney(profile.amount, profile.currency)}. Showing {financialYearLabel(financialYearStart)}.
       </p>
 
       <Card className="p-4 shadow-none sm:p-5">
@@ -112,14 +121,14 @@ export default function SalaryHistoryPage() {
         </div>
       </Card>
 
-      {entries.length === 0 ? (
+      {visibleEntries.length === 0 ? (
         <Card className="p-8 text-center shadow-none">
           <CalendarDays className="mx-auto h-6 w-6 text-muted" />
           <p className="mt-2 text-sm font-medium">No salary months recorded</p>
         </Card>
       ) : (
         <div className="divide-y divide-border border-y border-border">
-          {newestFirst(entries).map((entry) => {
+          {newestFirst(visibleEntries).map((entry) => {
             const difference =
               entry.varianceAmount ?? entry.amount - (entry.baseAmount ?? profile.amount);
             return (

@@ -684,21 +684,13 @@ export function AccountsView() {
           </div>
           {transferError && <p className="text-sm text-danger">{transferError}</p>}
           <ModalFooter className="flex-wrap">
-            <Button
-              variant="secondary"
-              onClick={() => saveTransfer("scheduled")}
-            >
+            <Button variant="secondary" onClick={() => saveTransfer("scheduled")}>
               Schedule
             </Button>
-            <Button
-              variant="secondary"
-              onClick={() => saveTransfer("already-transferred")}
-            >
+            <Button variant="secondary" onClick={() => saveTransfer("already-transferred")}>
               Already transferred
             </Button>
-            <Button onClick={() => saveTransfer("transfer-now")}>
-              Transfer now
-            </Button>
+            <Button onClick={() => saveTransfer("transfer-now")}>Transfer now</Button>
           </ModalFooter>
         </div>
       </Modal>

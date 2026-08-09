@@ -184,6 +184,7 @@ export interface SalaryProfile {
   savingsGoal: number;
   emergencyFundGoal: number;
   investmentAmount: number;
+  financialYearStart?: number;
   customCategories?: CustomCategory[];
 }
 

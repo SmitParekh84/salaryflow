@@ -1,19 +1,20 @@
 "use client";
 
-import {
-  CATEGORY_ICON_OPTIONS,
-  CategoryGlyph,
-  CategoryIcon,
-} from "@/components/category-icon";
+import { CATEGORY_ICON_OPTIONS, CategoryGlyph, CategoryIcon } from "@/components/category-icon";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { useSummary } from "@/hooks/use-summary";
 import { CATEGORIES, COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
 import { download, exportExpensesCsv } from "@/lib/export";
+import {
+  availableFinancialYears,
+  currentFinancialYearStart,
+  financialYearLabel,
+} from "@/lib/financial-year";
 import { useFinanceStore } from "@/lib/store";
-import { useAuth } from "@/lib/useAuth";
 import type { CategoryIconName } from "@/lib/types";
+import { useAuth } from "@/lib/useAuth";
 import { cn, formatMoney, uid } from "@/lib/utils";
 import {
   ChevronRight,
@@ -23,10 +24,10 @@ import {
   Landmark,
   ListChecks,
   LogOut,
-  Shapes,
   MonitorCog,
   Moon,
   PiggyBank,
+  Shapes,
   SlidersHorizontal,
   Sun,
   Target,
@@ -37,7 +38,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 export type SettingsSection =
@@ -83,12 +84,16 @@ const SETTINGS_SECTIONS: {
 ];
 
 export function SettingsView({ initialSection = "profile" }: { initialSection?: SettingsSection }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const user = useFinanceStore((s) => s.user);
   const profile = useFinanceStore((s) => s.profile);
   const activeBudgetRule = useFinanceStore((s) => s.budgetRules.find((rule) => rule.active));
   const goals = useFinanceStore((s) => s.goals);
   const expenses = useFinanceStore((s) => s.expenses);
+  const incomes = useFinanceStore((s) => s.incomes);
+  const bills = useFinanceStore((s) => s.bills);
+  const salaryHistory = useFinanceStore((s) => s.salaryHistory);
   const accounts = useFinanceStore((s) => s.accounts);
   const creditCards = useFinanceStore((s) => s.creditCards);
   const updateAccount = useFinanceStore((s) => s.updateAccount);
@@ -111,9 +116,17 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
   const [categoryIcon, setCategoryIcon] = useState<CategoryIconName>("package");
   const [categoryColor, setCategoryColor] = useState("#0ea5e9");
   const [categoryError, setCategoryError] = useState("");
+  const currentFinancialYear = currentFinancialYearStart();
+  const selectedFinancialYear = profile.financialYearStart ?? currentFinancialYear;
+  const financialYears = availableFinancialYears([
+    ...expenses.map((item) => item.date),
+    ...incomes.map((item) => item.date),
+    ...bills.map((item) => item.dueDate),
+    ...salaryHistory.map((item) => item.date),
+  ]);
 
   const selectSection = (nextSection: SettingsSection) => {
-    window.history.replaceState(null, "", `/settings?section=${nextSection}`);
+    router.replace(`/settings?section=${nextSection}`, { scroll: false });
   };
 
   const saveProfile = async () => {
@@ -368,6 +381,26 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                     </Select>
                   </div>
                 </div>
+                <div className="max-w-sm">
+                  <Label htmlFor="financial-year">Financial year</Label>
+                  <Select
+                    id="financial-year"
+                    value={selectedFinancialYear}
+                    onChange={(event) =>
+                      updateProfile({ financialYearStart: Number(event.target.value) })
+                    }
+                  >
+                    {financialYears.map((year) => (
+                      <option key={year} value={year}>
+                        {financialYearLabel(year)}{year === currentFinancialYear ? " · Current" : ""}
+                      </option>
+                    ))}
+                  </Select>
+                  <p className="mt-1.5 text-xs text-muted">
+                    India financial years run from April 1 to March 31. Historical screens use
+                    this selection.
+                  </p>
+                </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="savings-goal">
@@ -472,7 +505,7 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                   void addCategory();
                 }}
               >
-                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <div className="grid gap-3 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="category-name">Category name</Label>
                     <Input
@@ -493,7 +526,7 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                       type="color"
                       value={categoryColor}
                       onChange={(event) => setCategoryColor(event.target.value)}
-                      className="w-full p-1 sm:w-16"
+                      className="p-1"
                     />
                   </div>
                 </div>

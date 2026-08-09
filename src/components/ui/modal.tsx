@@ -66,7 +66,9 @@ export function Modal({
                       </DialogPrimitive.Close>
                     </div>
                   )}
-                  {!title && <DialogPrimitive.Title className="sr-only">Dialog</DialogPrimitive.Title>}
+                  {!title && (
+                    <DialogPrimitive.Title className="sr-only">Dialog</DialogPrimitive.Title>
+                  )}
                   <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
                     {children}
                   </div>

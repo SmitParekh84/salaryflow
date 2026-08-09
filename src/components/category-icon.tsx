@@ -11,8 +11,8 @@ import type {
 import { cn } from "@/lib/utils";
 import {
   BriefcaseBusiness,
-  Coffee,
   Clapperboard,
+  Coffee,
   Fuel,
   Gamepad2,
   Gift,
@@ -102,9 +102,16 @@ export const CATEGORY_ICON_OPTIONS: { value: CategoryIconName; label: string }[]
   { value: "package", label: "General" },
 ];
 
-export function getCategoryColor(category: ExpenseCategory, customCategories: CustomCategory[] = []) {
+export function getCategoryColor(
+  category: ExpenseCategory,
+  customCategories: CustomCategory[] = [],
+) {
   const defaultMeta = CATEGORY_META[category as DefaultExpenseCategory];
-  return defaultMeta?.color ?? customCategories.find((item) => item.name === category)?.color ?? "#94a3b8";
+  return (
+    defaultMeta?.color ??
+    customCategories.find((item) => item.name === category)?.color ??
+    "#94a3b8"
+  );
 }
 
 export function CategoryGlyph({ icon, className }: { icon: CategoryIconName; className?: string }) {
@@ -122,7 +129,8 @@ export function CategoryIcon({
   const storedCustomCategories = useFinanceStore((state) => state.profile.customCategories);
   const customCategories = storedCustomCategories ?? [];
   const customCategory = customCategories.find((item) => item.name === category);
-  const icon = customCategory?.icon ?? DEFAULT_CATEGORY_ICONS[category as DefaultExpenseCategory] ?? "package";
+  const icon =
+    customCategory?.icon ?? DEFAULT_CATEGORY_ICONS[category as DefaultExpenseCategory] ?? "package";
   const Icon = ICONS[icon];
   return (
     <Icon

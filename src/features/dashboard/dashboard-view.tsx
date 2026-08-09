@@ -14,6 +14,7 @@ import { useSummary } from "@/hooks/use-summary";
 import { billCycle } from "@/lib/bill-cycle";
 import { projectedGoalDate, upcomingBills } from "@/lib/calculations";
 import { buildFundingPlan } from "@/lib/funding-plan";
+import { currentFinancialYearStart, financialYearLabel } from "@/lib/financial-year";
 import { useFinanceStore } from "@/lib/store";
 import { formatMoney, newestFirst } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -48,6 +49,7 @@ export function DashboardView() {
   const [addOpen, setAddOpen] = useState(false);
 
   const currency = profile.currency;
+  const financialYearStart = profile.financialYearStart ?? currentFinancialYearStart();
   const topGoal = goals[0];
   const nextBills = upcomingBills(bills, expenses).slice(0, 3);
   const emergencyGoal = goals.find((goal) => goal.type === "Emergency Fund");
@@ -218,7 +220,7 @@ export function DashboardView() {
       <Card>
         <CardHeader>
           <div>
-            <CardTitle>Cash flow · 6 months</CardTitle>
+            <CardTitle>Cash flow · {financialYearLabel(financialYearStart)}</CardTitle>
             <p className="mt-1 text-xs text-muted">
               Monthly confirmed salary and credits in, recorded spending out
             </p>
@@ -230,6 +232,7 @@ export function DashboardView() {
             incomes={incomes}
             salaryHistory={salaryHistory}
             currency={currency}
+            financialYearStart={financialYearStart}
           />
         </CardContent>
       </Card>

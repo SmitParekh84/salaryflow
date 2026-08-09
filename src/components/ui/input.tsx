@@ -105,60 +105,60 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
         disabled={disabled}
         required={required}
       >
-          <SelectPrimitive.Trigger
-            ref={ref}
-            id={id}
-            data-slot="select-trigger"
-            aria-label={ariaLabel}
-            onBlur={() => {
-              const target = selectTarget(selectedValue);
-              onBlur?.({ target, currentTarget: target } as React.FocusEvent<HTMLSelectElement>);
-            }}
-            className={cn(
-              "flex h-11 w-full min-w-0 items-center justify-between gap-2 rounded-xl border border-transparent bg-surface-2 px-3 text-sm text-foreground outline-none transition-[color,box-shadow,border-color] data-placeholder:text-muted focus-visible:border-primary/30 focus-visible:ring-2 focus-visible:ring-(--ring) disabled:cursor-not-allowed disabled:opacity-60 [&>span]:min-w-0 [&>span]:truncate",
-              className,
-            )}
+        <SelectPrimitive.Trigger
+          ref={ref}
+          id={id}
+          data-slot="select-trigger"
+          aria-label={ariaLabel}
+          onBlur={() => {
+            const target = selectTarget(selectedValue);
+            onBlur?.({ target, currentTarget: target } as React.FocusEvent<HTMLSelectElement>);
+          }}
+          className={cn(
+            "flex h-11 w-full min-w-0 items-center justify-between gap-2 rounded-xl border border-transparent bg-surface-2 px-3 text-sm text-foreground outline-none transition-[color,box-shadow,border-color] data-placeholder:text-muted focus-visible:border-primary/30 focus-visible:ring-2 focus-visible:ring-(--ring) disabled:cursor-not-allowed disabled:opacity-60 [&>span]:min-w-0 [&>span]:truncate",
+            className,
+          )}
+        >
+          <SelectPrimitive.Value placeholder={placeholder} />
+          <SelectPrimitive.Icon asChild>
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted" />
+          </SelectPrimitive.Icon>
+        </SelectPrimitive.Trigger>
+        <SelectPrimitive.Portal>
+          <SelectPrimitive.Content
+            data-slot="select-content"
+            position="popper"
+            sideOffset={6}
+            collisionPadding={12}
+            className="z-110 max-h-[min(20rem,var(--radix-select-content-available-height))] min-w-(--radix-select-trigger-width) overflow-hidden rounded-2xl bg-surface text-foreground card-shadow"
           >
-            <SelectPrimitive.Value placeholder={placeholder} />
-            <SelectPrimitive.Icon asChild>
-              <ChevronDown className="h-4 w-4 shrink-0 text-muted" />
-            </SelectPrimitive.Icon>
-          </SelectPrimitive.Trigger>
-          <SelectPrimitive.Portal>
-            <SelectPrimitive.Content
-              data-slot="select-content"
-              position="popper"
-              sideOffset={6}
-              collisionPadding={12}
-              className="z-110 max-h-[min(20rem,var(--radix-select-content-available-height))] min-w-(--radix-select-trigger-width) overflow-hidden rounded-2xl bg-surface text-foreground card-shadow"
-            >
-              <SelectPrimitive.ScrollUpButton className="flex h-7 items-center justify-center text-muted">
-                <ChevronUp className="h-4 w-4" />
-              </SelectPrimitive.ScrollUpButton>
-              <SelectPrimitive.Viewport className="p-1.5">
-                {options
-                  .filter((option) => option.value !== "")
-                  .map((option) => (
-                    <SelectPrimitive.Item
-                      key={option.value}
-                      value={option.value}
-                      disabled={option.disabled}
-                      className="relative flex min-h-10 cursor-default select-none items-center rounded-xl py-2 pl-9 pr-3 text-sm outline-none data-disabled:pointer-events-none data-highlighted:bg-surface-2 data-disabled:opacity-50"
-                    >
-                      <span className="absolute left-3 flex h-4 w-4 items-center justify-center text-primary">
-                        <SelectPrimitive.ItemIndicator>
-                          <Check className="h-4 w-4" />
-                        </SelectPrimitive.ItemIndicator>
-                      </span>
-                      <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
-                    </SelectPrimitive.Item>
-                  ))}
-              </SelectPrimitive.Viewport>
-              <SelectPrimitive.ScrollDownButton className="flex h-7 items-center justify-center text-muted">
-                <ChevronDown className="h-4 w-4" />
-              </SelectPrimitive.ScrollDownButton>
-            </SelectPrimitive.Content>
-          </SelectPrimitive.Portal>
+            <SelectPrimitive.ScrollUpButton className="flex h-7 items-center justify-center text-muted">
+              <ChevronUp className="h-4 w-4" />
+            </SelectPrimitive.ScrollUpButton>
+            <SelectPrimitive.Viewport className="p-1.5">
+              {options
+                .filter((option) => option.value !== "")
+                .map((option) => (
+                  <SelectPrimitive.Item
+                    key={option.value}
+                    value={option.value}
+                    disabled={option.disabled}
+                    className="relative flex min-h-10 cursor-default select-none items-center rounded-xl py-2 pl-9 pr-3 text-sm outline-none data-disabled:pointer-events-none data-highlighted:bg-surface-2 data-disabled:opacity-50"
+                  >
+                    <span className="absolute left-3 flex h-4 w-4 items-center justify-center text-primary">
+                      <SelectPrimitive.ItemIndicator>
+                        <Check className="h-4 w-4" />
+                      </SelectPrimitive.ItemIndicator>
+                    </span>
+                    <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
+                  </SelectPrimitive.Item>
+                ))}
+            </SelectPrimitive.Viewport>
+            <SelectPrimitive.ScrollDownButton className="flex h-7 items-center justify-center text-muted">
+              <ChevronDown className="h-4 w-4" />
+            </SelectPrimitive.ScrollDownButton>
+          </SelectPrimitive.Content>
+        </SelectPrimitive.Portal>
       </SelectPrimitive.Root>
     );
   },
