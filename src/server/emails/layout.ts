@@ -17,6 +17,9 @@ import { EMAIL_COLORS, EMAIL_COLORS_DARK } from "@/lib/theme";
 const L = EMAIL_COLORS;
 const D = EMAIL_COLORS_DARK;
 
+/** Navy backplate from the app icon (--ink-800). Only shows if images are blocked. */
+const INK = "#07182f";
+
 /**
  * Resolves to SF on Apple clients and Segoe on Windows. Falls back to Arial for
  * Outlook, which ignores the modern entries but honours the last one.
@@ -30,6 +33,24 @@ export const SANS_STACK =
  */
 export const MONO_STACK =
   "ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace";
+
+/**
+ * Absolute origin for images in email.
+ *
+ * The recipient's mail client fetches these from the public internet, so a
+ * localhost `NEXTAUTH_URL` is useless — a dev send would show a broken logo.
+ * Development therefore falls back to production so test emails still render.
+ */
+const PUBLIC_ORIGIN = "https://spendly.smitparekh.co.in";
+
+function assetOrigin() {
+  const base = process.env.NEXTAUTH_URL?.trim().replace(/\/+$/, "");
+  if (!base || base.includes("localhost") || base.includes("127.0.0.1")) return PUBLIC_ORIGIN;
+  return base;
+}
+
+/** The app icon — the same file the dashboard, auth pages and manifest use. */
+const MARK_PX = 34;
 
 export function escapeHtml(value: string) {
   return value
@@ -60,7 +81,6 @@ const DARK_SCHEME_CSS = `
   @media (prefers-color-scheme: dark) {
     .sp-canvas   { background: ${D.background} !important; }
     .sp-card     { background: ${D.surface} !important; border-color: ${D.border} !important; }
-    .sp-mark     { background: ${D.brand} !important; color: ${D.brandOn} !important; }
     .sp-heading,
     .sp-wordmark { color: ${D.foreground} !important; }
     .sp-text     { color: ${D.muted} !important; }
@@ -90,12 +110,22 @@ export function renderShell({ title, preheader, content }: ShellOptions) {
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="sp-canvas" style="background:${L.background};">
       <tr>
         <td align="center" style="padding:40px 16px;">
+          <!-- Ghost table: Outlook's Word engine ignores max-width, so without
+               this the card stretches to the full window. Outlook-only. -->
+          <!--[if mso]>
+          <table role="presentation" width="520" align="center" cellspacing="0" cellpadding="0" border="0"><tr><td>
+          <![endif]-->
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="sp-card" style="max-width:520px;background:${L.surface};border:1px solid ${L.border};border-radius:16px;">
             <tr>
               <td style="padding:28px 32px 4px;">
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                   <tr>
-                    <td align="center" width="34" height="34" class="sp-mark" style="width:34px;height:34px;border-radius:9px;background:${L.brand};color:${L.brandOn};font-family:${SANS_STACK};font-size:17px;font-weight:700;line-height:34px;" aria-hidden="true">S</td>
+                    <!-- The icon carries its own navy backplate, so it needs no
+                         tile behind it and reads correctly in both schemes. The
+                         td colour is only the images-blocked fallback. -->
+                    <td width="${MARK_PX}" height="${MARK_PX}" style="width:${MARK_PX}px;height:${MARK_PX}px;border-radius:9px;background:${INK};font-size:0;line-height:0;">
+                      <img src="${assetOrigin()}/icons/icon-192.png" width="${MARK_PX}" height="${MARK_PX}" alt="" aria-hidden="true" style="display:block;width:${MARK_PX}px;height:${MARK_PX}px;border:0;border-radius:9px;outline:none;text-decoration:none;">
+                    </td>
                     <td class="sp-wordmark" style="padding-left:10px;font-family:${SANS_STACK};font-size:16px;font-weight:600;letter-spacing:-0.01em;color:${L.foreground};">Spendly</td>
                   </tr>
                 </table>
@@ -113,6 +143,7 @@ export function renderShell({ title, preheader, content }: ShellOptions) {
               </td>
             </tr>
           </table>
+          <!--[if mso]></td></tr></table><![endif]-->
         </td>
       </tr>
     </table>

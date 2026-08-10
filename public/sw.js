@@ -4,7 +4,10 @@ const PRECACHE = ["/", "/offline", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)).catch(() => {})
+    caches
+      .open(CACHE)
+      .then((cache) => cache.addAll(PRECACHE))
+      .catch(() => {}),
   );
   self.skipWaiting();
 });
@@ -13,9 +16,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) =>
-        Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-      )
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))),
   );
   self.clients.claim();
 });
@@ -45,7 +46,7 @@ self.addEventListener("fetch", (event) => {
             if (cached) return cached;
           }
           return caches.match(OFFLINE_URL);
-        })
+        }),
     );
     return;
   }
@@ -59,8 +60,8 @@ self.addEventListener("fetch", (event) => {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(request, copy));
           return res;
-        })
-    )
+        }),
+    ),
   );
 });
 
@@ -71,6 +72,7 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(title, {
       body: data.body || "You have a new update.",
       icon: "/icons/icon.svg",
-      badge: "/icons/icon.svg",    })
+      badge: "/icons/icon.svg",
+    }),
   );
 });

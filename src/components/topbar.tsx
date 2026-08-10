@@ -53,7 +53,12 @@ export function TopBar({
   const [openMenu, setOpenMenu] = useState(false);
 
   return (
-    <header className="sticky top-0 z-20 flex items-center gap-1.5 border-b border-border bg-background/70 px-3 py-3.5 backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-8">
+    // The status bar is translucent in the iOS PWA (`viewport-fit=cover` plus
+    // `black-translucent`), so the web view starts at y=0 behind the clock and
+    // battery. Padding the sticky bar by the top inset lets its blur run under
+    // the status bar while the controls clear it. The inset is 0 on Android and
+    // desktop, where `max()` falls through to the original 0.875rem.
+    <header className="sticky top-0 z-20 flex items-center gap-1.5 border-b border-border bg-background/70 px-3 pb-3.5 pt-[max(0.875rem,env(safe-area-inset-top))] backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-8">
       {/* Hamburger button — only in hamburger nav mode on mobile */}
       {showHamburger && !showBack && (
         <Button

@@ -41,7 +41,7 @@ export function createOtpEmail({ code, purpose, expiresInMinutes }: Omit<OtpEmai
                 <h1 class="sp-heading" style="margin:0 0 10px;font-family:${SANS_STACK};font-size:24px;font-weight:600;line-height:1.25;letter-spacing:-0.02em;color:${C.foreground};">${heading}</h1>
                 <p class="sp-text" style="margin:0 0 24px;font-family:${SANS_STACK};font-size:15px;line-height:1.6;color:${C.muted};">${lead}</p>
                 <div class="sp-panel" style="padding:22px 16px;border:1px solid ${C.border};border-radius:12px;background:${C.background};text-align:center;">
-                  <div class="sp-code" style="font-family:${MONO_STACK};font-size:34px;font-weight:600;line-height:1;letter-spacing:${CODE_TRACKING_PX}px;text-indent:${CODE_TRACKING_PX}px;white-space:nowrap;color:${C.foreground};">${safeCode}</div>
+                  <div class="sp-code" style="font-family:${MONO_STACK};font-size:34px;font-weight:600;line-height:1;mso-line-height-rule:exactly;letter-spacing:${CODE_TRACKING_PX}px;text-indent:${CODE_TRACKING_PX}px;white-space:nowrap;color:${C.foreground};">${safeCode}</div>
                   <div class="sp-subtle" style="margin-top:14px;font-family:${SANS_STACK};font-size:12px;line-height:1;color:${C.subtle};">${expiry}</div>
                 </div>
                 <p class="sp-text" style="margin:24px 0 0;font-family:${SANS_STACK};font-size:13px;line-height:1.6;color:${C.muted};">${reassurance}</p>`;
@@ -66,7 +66,7 @@ export function createOtpEmail({ code, purpose, expiresInMinutes }: Omit<OtpEmai
     ].join("\n"),
     html: renderShell({
       title: `${heading} · Spendly`,
-      preheader: `${code} · ${expiry.toLowerCase()}.`,
+      preheader: `${code} · ${expiry}.`,
       content,
     }),
   };

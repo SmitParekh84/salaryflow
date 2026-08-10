@@ -42,7 +42,11 @@ export function Modal({
                 <motion.div
                   data-slot="dialog-content"
                   className={cn(
-                    "pointer-events-auto relative flex max-h-[calc(100dvh-1rem)] w-full min-w-0 flex-col overflow-hidden rounded-t-[20px] bg-surface text-foreground shadow-xl outline-none sm:max-h-[90vh] sm:max-w-lg sm:rounded-[20px]",
+                    // iOS: the sheet is flush to the screen edges, so its top can
+                    // reach under the status bar and its bottom under the home
+                    // indicator. Both insets are 0 elsewhere. The sm: breakpoint
+                    // resets them — there the sheet is centred with its own margin.
+                    "pointer-events-auto relative flex max-h-[calc(100dvh-1rem-env(safe-area-inset-top))] w-full min-w-0 flex-col overflow-hidden rounded-t-[20px] bg-surface pb-[env(safe-area-inset-bottom)] text-foreground shadow-xl outline-none sm:max-h-[90vh] sm:max-w-lg sm:rounded-[20px] sm:pb-0",
                     className,
                   )}
                   initial={{ opacity: 0, y: 28, scale: 0.98 }}
