@@ -1,13 +1,13 @@
 "use client";
 
-import { MobileNav, Sidebar } from "@/components/sidebar";
+import { HamburgerDrawer, MobileNav, Sidebar } from "@/components/sidebar";
 import { TopBar } from "@/components/topbar";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useNotificationSync } from "@/hooks/use-notification-sync";
 import { NAV_ITEMS } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const ROUTE_STACK_KEY = "spendly:route-stack";
 const ROUTE_TITLES: Record<string, string> = {
@@ -40,11 +40,18 @@ export default function AppLayoutClient({ children }: { children: React.ReactNod
   const searchParams = useSearchParams();
   const hydrated = useHydrated();
   const onboarded = useFinanceStore((s) => s.user.onboarded);
+  const navMode = useFinanceStore((s) => s.user.navMode ?? "bottom");
+  const [hamburgerOpen, setHamburgerOpen] = useState(false);
   useNotificationSync();
 
   useEffect(() => {
     if (hydrated && !onboarded) router.replace("/onboarding");
   }, [hydrated, onboarded, router]);
+
+  // Close hamburger drawer on route change
+  useEffect(() => {
+    setHamburgerOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const stack = readRouteStack();
@@ -93,16 +100,36 @@ export default function AppLayoutClient({ children }: { children: React.ReactNod
     );
   }
 
+  const isHamburger = navMode === "hamburger";
+
   return (
     <div className="min-h-screen">
       <Sidebar />
       <div className="lg:pl-64">
-        <TopBar title={title} showBack={pathname !== "/dashboard"} onBack={goBack} />
-        <main className="mx-auto max-w-6xl px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-5 sm:pt-6 lg:px-8 lg:pb-12">
+        <TopBar
+          title={title}
+          showBack={pathname !== "/dashboard"}
+          onBack={goBack}
+          showHamburger={isHamburger}
+          onHamburger={() => setHamburgerOpen(true)}
+        />
+        <main
+          className="mx-auto max-w-6xl px-4 pt-5 sm:pt-6 lg:px-8 lg:pb-12"
+          style={{
+            paddingBottom: isHamburger
+              ? "max(1.5rem, env(safe-area-inset-bottom))"
+              : "calc(5rem + env(safe-area-inset-bottom))",
+          }}
+        >
           {children}
         </main>
       </div>
-      <MobileNav />
+
+      {isHamburger ? (
+        <HamburgerDrawer open={hamburgerOpen} onClose={() => setHamburgerOpen(false)} />
+      ) : (
+        <MobileNav />
+      )}
     </div>
   );
 }

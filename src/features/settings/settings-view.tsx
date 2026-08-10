@@ -1,12 +1,12 @@
 "use client";
 
 import { CATEGORY_ICON_OPTIONS, CategoryGlyph, CategoryIcon } from "@/components/category-icon";
+import { NavModeToggle } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { useSummary } from "@/hooks/use-summary";
 import { CATEGORIES, COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
-import { PICKER_DEFAULT_COLOR } from "@/lib/theme";
 import { download, exportExpensesCsv } from "@/lib/export";
 import {
   availableFinancialYears,
@@ -14,6 +14,7 @@ import {
   financialYearLabel,
 } from "@/lib/financial-year";
 import { useFinanceStore } from "@/lib/store";
+import { PICKER_DEFAULT_COLOR } from "@/lib/theme";
 import type { CategoryIconName } from "@/lib/types";
 import { useAuth } from "@/lib/useAuth";
 import { cn, formatMoney, uid } from "@/lib/utils";
@@ -663,6 +664,16 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                   >
                     System
                   </Button>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-5 lg:hidden">
+                <h3 className="text-sm font-semibold">Mobile navigation</h3>
+                <p className="mt-1 text-xs text-muted">
+                  Choose how you navigate on your phone.
+                </p>
+                <div className="mt-3">
+                  <NavModeToggle />
                 </div>
               </div>
 

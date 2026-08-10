@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/useAuth";
 import { cn } from "@/lib/utils";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
-import { ArrowLeft, Bell, Check, Search } from "lucide-react";
+import { ArrowLeft, Bell, Check, Menu, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -17,10 +17,14 @@ export function TopBar({
   title,
   showBack = false,
   onBack,
+  showHamburger = false,
+  onHamburger,
 }: {
   title: string;
   showBack?: boolean;
   onBack?: () => void;
+  showHamburger?: boolean;
+  onHamburger?: () => void;
 }) {
   const router = useRouter();
   const user = useFinanceStore((s) => s.user);
@@ -50,6 +54,19 @@ export function TopBar({
 
   return (
     <header className="sticky top-0 z-20 flex items-center gap-1.5 border-b border-border bg-background/70 px-3 py-3.5 backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-8">
+      {/* Hamburger button — only in hamburger nav mode on mobile */}
+      {showHamburger && !showBack && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onHamburger}
+          className="shrink-0 lg:hidden"
+          aria-label="Open navigation menu"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+      )}
       {showBack && (
         <Button
           type="button"

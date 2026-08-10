@@ -205,6 +205,7 @@ export interface UserProfile {
   email: string;
   onboarded: boolean;
   isAdmin?: boolean;
+  navMode?: "bottom" | "hamburger";
 }
 
 export type BankAccountType = "Savings" | "Salary" | "Current" | "Other";
