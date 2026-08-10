@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 export type PwaPlatform = "android" | "ios" | "desktop" | null;
 
@@ -21,29 +21,54 @@ interface BeforeInstallPromptEvent extends Event {
   readonly userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+const DISPLAY_MODE_QUERY = "(display-mode: standalone)";
+
+/** Subscribes to the only thing that can change standalone mode at runtime. */
+function subscribeDisplayMode(onChange: () => void) {
+  const query = window.matchMedia(DISPLAY_MODE_QUERY);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+function getStandaloneSnapshot() {
+  return (
+    window.matchMedia(DISPLAY_MODE_QUERY).matches ||
+    // iOS Safari predates the display-mode media query and reports it here.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (navigator as any).standalone === true
+  );
+}
+
+/** The platform never changes for the life of the document. */
+function subscribePlatform() {
+  return () => {};
+}
+
+function getPlatformSnapshot(): PwaPlatform {
+  const ua = navigator.userAgent;
+  if (/iphone|ipad|ipod/i.test(ua)) return "ios";
+  if (/android/i.test(ua)) return "android";
+  return "desktop";
+}
+
 export function usePwaInstall(): PwaInstallState {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [platform, setPlatform] = useState<PwaPlatform>(null);
+  const [installedThisSession, setInstalledThisSession] = useState(false);
+
+  // Both values are read from the browser rather than assigned during an effect.
+  // Writing them with setState in an effect body caused a cascading render on
+  // every mount, and React flags it for that reason; useSyncExternalStore is the
+  // supported way to read from an external system. The server snapshots keep SSR
+  // and the first hydration render in agreement — React then re-renders with the
+  // real client value, so there is no hydration mismatch.
+  const standalone = useSyncExternalStore(
+    subscribeDisplayMode,
+    getStandaloneSnapshot,
+    () => false,
+  );
+  const platform = useSyncExternalStore(subscribePlatform, getPlatformSnapshot, () => null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    // Detect standalone (installed) mode
-    const standalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (navigator as any).standalone === true;
-    setIsInstalled(standalone);
-
-    // Detect platform
-    const ua = navigator.userAgent;
-    const isIos = /iphone|ipad|ipod/i.test(ua);
-    const isAndroid = /android/i.test(ua);
-    if (isIos) setPlatform("ios");
-    else if (isAndroid) setPlatform("android");
-    else setPlatform("desktop");
-
     // Capture Android/Chrome/Edge deferred install prompt
     const handler = (event: Event) => {
       event.preventDefault();
@@ -51,9 +76,10 @@ export function usePwaInstall(): PwaInstallState {
     };
     window.addEventListener("beforeinstallprompt", handler);
 
-    // Clear prompt if app gets installed
+    // `appinstalled` fires before the display mode flips — often not until the
+    // next launch — so it is tracked separately rather than read from matchMedia.
     const onAppInstalled = () => {
-      setIsInstalled(true);
+      setInstalledThisSession(true);
       setDeferredPrompt(null);
     };
     window.addEventListener("appinstalled", onAppInstalled);
@@ -63,6 +89,8 @@ export function usePwaInstall(): PwaInstallState {
       window.removeEventListener("appinstalled", onAppInstalled);
     };
   }, []);
+
+  const isInstalled = standalone || installedThisSession;
 
   async function promptInstall() {
     if (!deferredPrompt) return;

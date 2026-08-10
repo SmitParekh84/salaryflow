@@ -21,11 +21,22 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // The console is a separate surface with its own sign-in. Sending an operator
+  // to the app's /login would land them in the product, not the console — and
+  // /admin/login must stay reachable while signed out or the gate loops.
+  const isConsole = pathname === "/admin" || pathname.startsWith("/admin/");
+  if (pathname === "/admin/login") return NextResponse.next();
+
   const cookie = req.cookies.get("sf_session")?.value;
   if (!cookie) {
     const url = req.nextUrl.clone();
-    url.pathname = "/login";
-    url.search = `next=${encodeURIComponent(pathname)}`;
+    if (isConsole) {
+      url.pathname = "/admin/login";
+      url.search = "";
+    } else {
+      url.pathname = "/login";
+      url.search = `next=${encodeURIComponent(pathname)}`;
+    }
     return NextResponse.redirect(url);
   }
 

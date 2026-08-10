@@ -42,16 +42,23 @@ export default function AppLayoutClient({ children }: { children: React.ReactNod
   const onboarded = useFinanceStore((s) => s.user.onboarded);
   const navMode = useFinanceStore((s) => s.user.navMode ?? "bottom");
   const [hamburgerOpen, setHamburgerOpen] = useState(false);
+  const [drawerPathname, setDrawerPathname] = useState(pathname);
   useNotificationSync();
+
+  // Close the hamburger drawer on route change.
+  //
+  // Adjusted during render rather than in an effect: an effect would paint the
+  // new route with the drawer still open for one frame, then close it. React
+  // re-runs this component immediately on the set below, before anything reaches
+  // the screen, so the drawer is already closed on the first paint.
+  if (pathname !== drawerPathname) {
+    setDrawerPathname(pathname);
+    setHamburgerOpen(false);
+  }
 
   useEffect(() => {
     if (hydrated && !onboarded) router.replace("/onboarding");
   }, [hydrated, onboarded, router]);
-
-  // Close hamburger drawer on route change
-  useEffect(() => {
-    setHamburgerOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     const stack = readRouteStack();

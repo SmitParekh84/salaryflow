@@ -142,8 +142,8 @@ export function PwaInstallSection() {
 
               <div className="mt-6 rounded-2xl border border-border bg-surface-2 px-4 py-3 text-xs text-muted">
                 <strong className="font-medium text-foreground">Why Safari?</strong> Apple restricts
-                the "Add to Home Screen" PWA feature to Safari only on iOS. Chrome, Firefox, and
-                other iOS browsers cannot install apps to the home screen.
+                the &ldquo;Add to Home Screen&rdquo; PWA feature to Safari only on iOS. Chrome,
+                Firefox, and other iOS browsers cannot install apps to the home screen.
               </div>
             </motion.div>
           </>
