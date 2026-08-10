@@ -272,6 +272,46 @@ const WaitlistSchema = new Schema(
   { timestamps: true },
 );
 
+/* ---------------------------------------------------------------------------
+   Sync identity
+   ---------------------------------------------------------------------------
+   Every collection the client mirrors needs a stable identity that survives a
+   round-trip. Mongo's `_id` cannot serve: the client mints ids like `exp_1a2b3c`
+   before the server has ever seen the item, so `clientId` carries that value and
+   is what sync upserts match on.
+
+   `removedAt` is a tombstone. Deleting a row outright would let a second device
+   that has not pulled yet re-create it on its next push, so rows are marked and
+   filtered out on read instead. The name avoids colliding with RecycleBin's own
+   `deletedAt`, which is a user-facing timestamp with a different meaning.
+   --------------------------------------------------------------------------- */
+const SYNCED_SCHEMAS = [
+  ExpenseSchema,
+  IncomeSchema,
+  BillSchema,
+  GoalSchema,
+  InvestmentSchema,
+  BankAccountSchema,
+  AccountTransferSchema,
+  CreditCardSchema,
+  BudgetRuleSchema,
+  RecycleBinSchema,
+];
+
+for (const schema of SYNCED_SCHEMAS) {
+  schema.add({
+    clientId: { type: String },
+    removedAt: { type: Date, default: null },
+  });
+  // Partial rather than sparse: a compound sparse index only skips documents
+  // missing *every* key, and `userId` is always present — so pre-migration rows
+  // without a clientId would collide on `null`.
+  schema.index(
+    { userId: 1, clientId: 1 },
+    { unique: true, partialFilterExpression: { clientId: { $type: "string" } } },
+  );
+}
+
 export type ExpenseDoc = InferSchemaType<typeof ExpenseSchema>;
 export type IncomeDoc = InferSchemaType<typeof IncomeSchema>;
 export type SalaryProfileDoc = InferSchemaType<typeof SalaryProfileSchema>;

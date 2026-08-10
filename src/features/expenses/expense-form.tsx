@@ -477,7 +477,7 @@ export function ExpenseForm({
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" loading={isSubmitting}>
             {editing ? "Save changes" : sharedMode ? "Add shared expense" : "Add expense"}
           </Button>
         </ModalFooter>

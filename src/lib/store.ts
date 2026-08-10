@@ -140,6 +140,13 @@ interface FinanceState {
   markNotificationRead: (id: string) => void;
   markAllRead: () => void;
 
+  /**
+   * Server timestamp of the last state this device successfully pulled. Sent
+   * back as `since` so the server can tell "the user deleted this" apart from
+   * "this device has not seen it yet" — without it, a stale push would tombstone
+   * whatever the other device just added.
+   */
+  lastSyncedAt: string | null;
   syncWithServer: () => Promise<void>;
   loadFromServer: () => Promise<void>;
   loadSeed: () => void;
@@ -187,11 +194,16 @@ function normalizeServerItems<T extends { id: string }>(items: unknown, fallback
     if (!item || typeof item !== "object") return [];
 
     const record = item as Record<string, unknown>;
-    const rawId = record.id ?? record._id;
+    // `clientId` first: it is the id this device minted and the one sync upserts
+    // on, so it survives round-trips. `_id` is only a fallback for rows written
+    // before the sync migration.
+    const rawId = record.clientId ?? record.id ?? record._id;
     if (rawId === undefined || rawId === null) return [];
 
     const data = { ...record };
     delete data._id;
+    delete data.clientId;
+    delete data.removedAt;
     return [{ ...data, id: String(rawId) } as unknown as T];
   });
 }
@@ -233,6 +245,7 @@ export const useFinanceStore = create<FinanceState>()(
       recycleBin: [],
       salaryHistory: [],
       notifications: [],
+      lastSyncedAt: null,
 
       // onboarding + profile
       completeOnboarding: (user, profile) =>
@@ -775,6 +788,7 @@ export const useFinanceStore = create<FinanceState>()(
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               userId: state.user.email || undefined,
+              since: state.lastSyncedAt,
               onboardingCompleted: state.user.onboarded,
               profile: state.profile,
               expenses: state.expenses,
@@ -790,11 +804,18 @@ export const useFinanceStore = create<FinanceState>()(
             }),
             credentials: "include",
           });
-          if (!res.ok) return;
+          if (!res.ok) {
+            // A rejected push means the server kept its copy and deleted
+            // nothing. Surfacing it beats the old silent return, which is how a
+            // failed sync came to look identical to a successful one.
+            console.error("[SYNC] push rejected", res.status);
+            return;
+          }
           const json = await res.json();
           if (json?.data) {
             const d = json.data;
             set({
+              lastSyncedAt: json.syncedAt ?? state.lastSyncedAt,
               profile: d.profile || state.profile,
               expenses: normalizeServerItems<Expense>(d.expenses, state.expenses),
               incomes: normalizeServerItems<Income>(d.incomes, state.incomes),
@@ -827,6 +848,7 @@ export const useFinanceStore = create<FinanceState>()(
           const state = get();
           const data = json.data;
           set({
+            lastSyncedAt: json.syncedAt ?? state.lastSyncedAt,
             profile: data.profile || state.profile,
             expenses: normalizeServerItems<Expense>(data.expenses, []),
             incomes: normalizeServerItems<Income>(data.incomes, []),
@@ -878,16 +900,23 @@ export const useFinanceStore = create<FinanceState>()(
           recycleBin: [],
           salaryHistory: [],
           notifications: [],
+          // Signing out must clear the watermark: the next account starts from
+          // "has seen nothing", so its first push can never tombstone rows.
+          lastSyncedAt: null,
         }),
     }),
     {
       name: STORE_KEY,
-      version: 3,
+      version: 4,
       migrate: (persistedState) => {
         const state = persistedState as Partial<FinanceState>;
 
         return {
           ...state,
+          // Devices upgrading from the destroy-and-replace era have no
+          // watermark. Starting at null makes their first push additive-only,
+          // so an old client cannot tombstone rows it never pulled.
+          lastSyncedAt: null,
           expenses: normalizeServerItems<Expense>(state.expenses, []),
           incomes: normalizeServerItems<Income>(state.incomes, []),
           bills: normalizeServerItems<Bill>(state.bills, []),

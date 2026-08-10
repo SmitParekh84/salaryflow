@@ -1,5 +1,6 @@
 import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
 import { getCurrentUser } from "@/lib/server-auth";
+import { connectDB } from "@/server/db";
 import {
   AccountTransferModel,
   BankAccountModel,
@@ -14,59 +15,67 @@ import {
   SalaryProfileModel,
   UserModel,
 } from "@/server/models";
+import { mergeCollection, type SyncModel } from "@/server/sync-merge";
+
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * Two-device sync.
+ *
+ * This used to delete every row for the account and re-insert the pushing
+ * device's local copy. That is last-writer-wins at the *account* level: a phone
+ * that had not pulled recently would silently destroy anything the other phone
+ * had added since. It is replaced here by a per-item merge.
+ *
+ * The rule that makes it safe is `since`: the client sends the timestamp of the
+ * state it is pushing from. A server row absent from that push is only removed
+ * if the client had already seen it (`updatedAt <= since`). A row written by
+ * another device *after* this client last pulled is newer than `since`, so it
+ * survives — which is exactly the case that used to lose data.
+ */
+
+/** Collections the client mirrors, in `body` key order. */
+const COLLECTIONS: { key: string; model: SyncModel }[] = [
+  { key: "expenses", model: ExpenseModel },
+  { key: "incomes", model: IncomeModel },
+  { key: "bills", model: BillModel },
+  { key: "goals", model: GoalModel },
+  { key: "investments", model: InvestmentModel },
+  { key: "accounts", model: BankAccountModel },
+  { key: "accountTransfers", model: AccountTransferModel },
+  { key: "creditCards", model: CreditCardModel },
+  { key: "budgetRules", model: BudgetRuleModel },
+  { key: "recycleBin", model: RecycleBinModel },
+];
+
+/** Fields the client must never dictate. */
+const RESERVED = ["_id", "id", "userId", "clientId", "removedAt", "createdAt", "updatedAt"];
+
 async function getServerState(userId: string) {
-  const [
-    profile,
-    expenses,
-    incomes,
-    bills,
-    goals,
-    investments,
-    accounts,
-    accountTransfers,
-    creditCards,
-    budgetRules,
-    recycleBin,
-  ] = await Promise.all([
+  const live = { userId, removedAt: null };
+
+  const [profile, ...lists] = await Promise.all([
     SalaryProfileModel.findOne({ userId }).lean(),
-    ExpenseModel.find({ userId }).lean(),
-    IncomeModel.find({ userId }).lean(),
-    BillModel.find({ userId }).lean(),
-    GoalModel.find({ userId }).lean(),
-    InvestmentModel.find({ userId }).lean(),
-    BankAccountModel.find({ userId }).lean(),
-    AccountTransferModel.find({ userId }).sort({ date: -1 }).lean(),
-    CreditCardModel.find({ userId }).lean(),
-    BudgetRuleModel.find({ userId }).lean(),
-    RecycleBinModel.find({ userId }).sort({ deletedAt: -1 }).lean(),
+    ...COLLECTIONS.map((c) => c.model.find(live).lean()),
   ]);
 
-  return {
-    profile,
-    expenses,
-    incomes,
-    bills,
-    goals,
-    investments,
-    accounts,
-    accountTransfers,
-    creditCards,
-    budgetRules,
-    recycleBin,
-  };
+  const state: Record<string, unknown> = { profile };
+  COLLECTIONS.forEach((c, index) => {
+    state[c.key] = lists[index];
+  });
+  return state;
 }
 
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  await connectDB();
   const userId = user.email || String(user._id);
-  return NextResponse.json({ data: await getServerState(userId) });
+  return NextResponse.json({ data: await getServerState(userId), syncedAt: new Date().toISOString() });
 }
 
 export async function POST(req: Request) {
@@ -79,53 +88,56 @@ export async function POST(req: Request) {
   if (!body || typeof body !== "object")
     return NextResponse.json({ error: "Invalid sync payload" }, { status: 422 });
 
+  await connectDB();
   const userId = user.email || String(user._id);
+
+  // Absent or unparseable `since` means "this client has seen nothing", so no
+  // row is ever tombstoned. Additive-only is the safe reading of an unknown
+  // client state — the old code assumed the opposite and deleted everything.
+  const since = body.since ? new Date(body.since) : null;
+  const seenCutoff = since && !Number.isNaN(since.getTime()) ? since : null;
+  const now = new Date();
 
   if (body.onboardingCompleted === true) {
     await UserModel.updateOne({ _id: user._id }, { onboardingCompleted: true });
   }
 
-  // upsert profile
   if (body.profile) {
+    const profile = { ...body.profile };
+    for (const field of RESERVED) delete profile[field];
     await SalaryProfileModel.findOneAndUpdate(
       { userId },
-      { ...body.profile, userId },
+      { ...profile, userId },
       { upsert: true, new: true },
     );
   }
 
-  // replace collections for user
-  const collections = [
-    { model: ExpenseModel, items: body.expenses || [] },
-    { model: IncomeModel, items: body.incomes || [] },
-    { model: BillModel, items: body.bills || [] },
-    { model: GoalModel, items: body.goals || [] },
-    { model: InvestmentModel, items: body.investments || [] },
-    { model: BankAccountModel, items: body.accounts || [] },
-    { model: AccountTransferModel, items: body.accountTransfers || [] },
-    { model: CreditCardModel, items: body.creditCards || [] },
-    { model: BudgetRuleModel, items: body.budgetRules || [] },
-    { model: RecycleBinModel, items: body.recycleBin || [] },
-  ];
+  for (const { key, model } of COLLECTIONS) {
+    // A key the client omitted is "no opinion", not "delete everything".
+    if (!Array.isArray(body[key])) continue;
 
-  for (const entry of collections) {
-    await entry.model.deleteMany({ userId });
-    if (Array.isArray(entry.items) && entry.items.length > 0) {
-      const docs = entry.items.map((item: unknown) => {
-        const copy = { ...(item as Record<string, unknown>) };
-        const rawId = copy._id ?? copy.id;
-        delete copy.id;
-        delete copy._id;
-        if (typeof rawId === "string" && /^[a-f\d]{24}$/i.test(rawId)) {
-          copy._id = rawId;
-        }
-        copy.userId = userId;
-        return copy;
+    const result = await mergeCollection({
+      model,
+      userId,
+      items: body[key],
+      since: seenCutoff,
+      now,
+    });
+
+    if (!result.ok) {
+      console.error(`[SYNC] ${key}: ${result.rejected} row(s) rejected`, {
+        userId,
+        reason: result.reason,
       });
-      await entry.model.insertMany(docs, { ordered: false }).catch(() => null);
+      return NextResponse.json(
+        { error: `Some ${key} could not be saved. Nothing was deleted.` },
+        { status: 409 },
+      );
     }
   }
 
-  // return merged server state
-  return NextResponse.json({ data: await getServerState(userId) });
+  return NextResponse.json({
+    data: await getServerState(userId),
+    syncedAt: now.toISOString(),
+  });
 }

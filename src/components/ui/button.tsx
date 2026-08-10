@@ -38,19 +38,67 @@ export const buttonVariants = cva(
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  /** Shows a spinner and blocks input. The label stays mounted so the button cannot resize. */
+  loading?: boolean;
+}
+
+/**
+ * Deliberately faster than a default 1s spin: a quicker spinner makes the same
+ * wait feel shorter. Sized to the cap height of the label it sits on.
+ */
+function Spinner() {
+  return (
+    <svg
+      className="size-4 animate-spin [animation-duration:0.6s]"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden="true"
+    >
+      <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2.5" />
+      <path
+        d="M8 1.5a6.5 6.5 0 0 1 6.5 6.5"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, loading = false, children, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
+    // `asChild` forwards to an arbitrary element, which cannot host the overlay.
+    const isLoading = loading && !asChild;
 
     return (
       <Comp
         ref={ref}
         data-slot="button"
-        className={cn(buttonVariants({ variant, size, className }))}
+        // The label keeps its space and only fades, so the button never resizes
+        // mid-submit — a width change under the user's finger reads as a glitch.
+        // `disabled:opacity-100` overrides the base disabled dimming: a loading
+        // button is working, not unavailable, and should not look greyed out.
+        className={cn(
+          buttonVariants({ variant, size }),
+          isLoading && "relative disabled:opacity-100",
+          className,
+        )}
         {...props}
-      />
+        aria-busy={isLoading || undefined}
+        disabled={isLoading || props.disabled}
+      >
+        {isLoading ? (
+          <>
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <Spinner />
+            </span>
+            <span className="inline-flex items-center gap-2 opacity-0">{children}</span>
+          </>
+        ) : (
+          children
+        )}
+      </Comp>
     );
   },
 );

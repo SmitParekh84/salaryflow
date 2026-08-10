@@ -23,11 +23,24 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Brand } from "./brand";
 import { Card } from "./ui/card";
+
+/**
+ * Paints the tapped tab as active the instant it is pressed, before the route
+ * commits. Without it a tap looks ignored until the new page renders, which is
+ * what makes bottom-bar navigation feel laggy on a phone.
+ *
+ * Must be rendered *inside* the `<Link>` — `useLinkStatus` reads the nearest
+ * link's pending state.
+ */
+function TabPendingState({ children }: { children: (pending: boolean) => React.ReactNode }) {
+  const { pending } = useLinkStatus();
+  return <>{children(pending)}</>;
+}
 
 export const ICONS: Record<string, LucideIcon> = {
   LayoutDashboard,
@@ -282,16 +295,37 @@ export function MobileNav() {
                 href={item.href}
                 aria-label={item.label}
                 aria-current={active ? "page" : undefined}
-                className={cn(
-                  "relative flex min-w-0 flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-(--ring)",
-                  active ? "text-primary" : "text-muted",
-                )}
+                className="relative flex min-w-0 flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-(--ring) active:scale-[0.96]"
               >
-                {active && (
-                  <span className="absolute top-0 inset-x-3 h-0.5 rounded-b-full bg-primary" />
-                )}
-                <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-                <span className="max-w-full truncate whitespace-nowrap">{label}</span>
+                <TabPendingState>
+                  {(pending) => {
+                    // A pending tab reads as active immediately, so the press is
+                    // acknowledged even before `loading.tsx` swaps in.
+                    const lit = active || pending;
+                    return (
+                      <>
+                        {lit && (
+                          <span className="absolute top-0 inset-x-3 h-0.5 rounded-b-full bg-primary" />
+                        )}
+                        <Icon
+                          className={cn(
+                            "h-5 w-5 shrink-0 transition-colors duration-150",
+                            lit ? "text-primary" : "text-muted",
+                          )}
+                          aria-hidden="true"
+                        />
+                        <span
+                          className={cn(
+                            "max-w-full truncate whitespace-nowrap transition-colors duration-150",
+                            lit ? "text-primary" : "text-muted",
+                          )}
+                        >
+                          {label}
+                        </span>
+                      </>
+                    );
+                  }}
+                </TabPendingState>
               </Link>
             );
           })}
