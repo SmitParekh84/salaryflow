@@ -1,6 +1,7 @@
 "use client";
 
 import { Brand } from "@/components/brand";
+import { PwaInstallSection } from "@/components/pwa-install-prompt";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -94,8 +95,8 @@ export function LandingHero() {
             transition={{ duration: 0.6, delay: 0.12 }}
             className="mx-auto mt-6 max-w-xl text-pretty text-base text-muted sm:text-lg"
           >
-            Spendly divides what&apos;s left by the days until your next salary,
-            so every day you get one clear number. Zero finance knowledge required.
+            Spendly divides what&apos;s left by the days until your next salary, so every day you
+            get one clear number. Zero finance knowledge required.
           </motion.p>
 
           <motion.div
@@ -124,9 +125,7 @@ export function LandingHero() {
           >
             <div className="glass rounded-3xl border p-6 text-left card-shadow">
               <p className="text-xs font-medium text-muted">Safe to spend today</p>
-              <p className="mt-1 text-5xl font-bold tracking-tight text-success">
-                ₹1,240
-              </p>
+              <p className="mt-1 text-5xl font-bold tracking-tight text-success">₹1,240</p>
               <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-surface-2">
                 <div className="h-full w-2/3 rounded-full [background-image:var(--success-gradient)]" />
               </div>
@@ -158,6 +157,8 @@ export function LandingHero() {
             ))}
           </div>
         </section>
+
+        <PwaInstallSection />
       </main>
 
       <footer className="border-t border-border py-8 text-center text-xs text-muted">
