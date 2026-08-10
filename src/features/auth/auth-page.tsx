@@ -6,13 +6,14 @@ import { Checkbox, Input, Label } from "@/components/ui/input";
 import { useAuth } from "@/lib/useAuth";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, LockKeyhole, MailCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle, Eye, EyeOff, LockKeyhole, MailCheck } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 type AuthMode = "signin" | "signup";
 type SignupStep = "identity" | "password" | "verify";
+type SignInView = "credentials" | "forgot" | "forgot-sent";
 
 const strengthStyles = [
   { label: "Too short", bar: "bg-border", text: "text-muted" },
@@ -44,6 +45,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
 function AuthContent({ mode }: { mode: AuthMode }) {
   const searchParams = useSearchParams();
   const [signupStep, setSignupStep] = useState<SignupStep>("identity");
+  const [signInView, setSignInView] = useState<SignInView>("credentials");
   const [direction, setDirection] = useState<1 | -1>(1);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -55,17 +57,22 @@ function AuthContent({ mode }: { mode: AuthMode }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+  const [forgotEmail, setForgotEmail] = useState("");
   const { login, register } = useAuth();
   const strength = getPasswordStrength(password);
   const requestedPath = searchParams.get("next");
   const nextPath =
     requestedPath?.startsWith("/") && !requestedPath.startsWith("//") ? requestedPath : undefined;
 
-  // Spatial consistency: steps enter from the side they are travelling toward,
-  // and a step reversed out of leaves the way it came in.
   function goToStep(next: SignupStep, nextDirection: 1 | -1) {
     setDirection(nextDirection);
     setSignupStep(next);
+  }
+
+  function goToSignInView(view: SignInView, dir: 1 | -1 = 1) {
+    setDirection(dir);
+    setSignInView(view);
+    setError(null);
   }
 
   useEffect(() => {
@@ -82,6 +89,30 @@ function AuthContent({ mode }: { mode: AuthMode }) {
       await login(email.trim().toLowerCase(), password, remember, nextPath);
     } catch (caughtError: unknown) {
       setError(caughtError instanceof Error ? caughtError.message : "Sign in failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function submitForgotPassword(event: React.FormEvent) {
+    event.preventDefault();
+    setError(null);
+    if (!forgotEmail.trim()) {
+      setError("Enter your email address");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/send-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail.trim().toLowerCase() }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error || "Unable to send reset link");
+      goToSignInView("forgot-sent", 1);
+    } catch (caughtError: unknown) {
+      setError(caughtError instanceof Error ? caughtError.message : "Unable to send reset link");
     } finally {
       setLoading(false);
     }
@@ -165,22 +196,35 @@ function AuthContent({ mode }: { mode: AuthMode }) {
     }
   }
 
-  const heading =
-    mode === "signin"
+  const isSignIn = mode === "signin";
+
+  const heading = isSignIn
+    ? signInView === "credentials"
       ? "Sign in to your money"
-      : signupStep === "identity"
-        ? "Create your account"
-        : signupStep === "password"
-          ? "Secure your account"
-          : "Verify your email";
-  const description =
-    mode === "signin"
+      : signInView === "forgot"
+        ? "Reset your password"
+        : "Check your email"
+    : signupStep === "identity"
+      ? "Create your account"
+      : signupStep === "password"
+        ? "Secure your account"
+        : "Verify your email";
+
+  const description = isSignIn
+    ? signInView === "credentials"
       ? "Your latest salary cycle will be ready after a secure sync."
-      : signupStep === "identity"
-        ? "Start with the details you will use for your Spendly account."
-        : signupStep === "password"
-          ? "Create a strong password to protect your financial records."
-          : `Enter the six-digit code sent to ${email.trim().toLowerCase()}.`;
+      : signInView === "forgot"
+        ? "Enter your email and we'll send you a reset link."
+        : `A reset link has been sent to ${forgotEmail.trim().toLowerCase()}.`
+    : signupStep === "identity"
+      ? "Start with the details you will use for your Spendly account."
+      : signupStep === "password"
+        ? "Create a strong password to protect your financial records."
+        : `Enter the six-digit code sent to ${email.trim().toLowerCase()}.`;
+
+  const stepKey = isSignIn
+    ? `signin-${signInView}`
+    : signupStep;
 
   return (
     <main className="auth-background min-h-dvh lg:grid lg:grid-cols-[minmax(24rem,0.92fr)_minmax(30rem,1.08fr)]">
@@ -250,10 +294,20 @@ function AuthContent({ mode }: { mode: AuthMode }) {
 
           <div className="mt-8">
             <div className="flex items-center justify-between gap-4">
-              <p className="text-sm font-medium text-primary">
-                {mode === "signin" ? "Welcome back" : "New account"}
-              </p>
-              {mode === "signup" && <SignupProgress step={signupStep} />}
+              {isSignIn && signInView !== "credentials" ? (
+                <button
+                  type="button"
+                  onClick={() => goToSignInView("credentials", -1)}
+                  className="flex items-center gap-1.5 text-sm font-medium text-primary"
+                >
+                  <ArrowLeft className="h-4 w-4" /> Back to sign in
+                </button>
+              ) : (
+                <p className="text-sm font-medium text-primary">
+                  {isSignIn ? "Welcome back" : "New account"}
+                </p>
+              )}
+              {!isSignIn && <SignupProgress step={signupStep} />}
             </div>
             <h1 className="mt-2 text-[2rem] font-semibold leading-tight tracking-[-0.02em]">
               {heading}
@@ -261,21 +315,40 @@ function AuthContent({ mode }: { mode: AuthMode }) {
             <p className="mt-2 text-sm leading-relaxed text-muted">{description}</p>
           </div>
 
-          <AuthStep stepKey={mode === "signin" ? "signin" : signupStep} direction={direction}>
-            {mode === "signin" ? (
-              <SignInForm
-                email={email}
-                setEmail={setEmail}
-                password={password}
-                setPassword={setPassword}
-                remember={remember}
-                setRemember={setRemember}
-                showPassword={showPassword}
-                setShowPassword={setShowPassword}
-                loading={loading}
-                error={error}
-                onSubmit={submitSignIn}
-              />
+          <AuthStep stepKey={stepKey} direction={direction}>
+            {isSignIn ? (
+              signInView === "credentials" ? (
+                <SignInForm
+                  email={email}
+                  setEmail={setEmail}
+                  password={password}
+                  setPassword={setPassword}
+                  remember={remember}
+                  setRemember={setRemember}
+                  showPassword={showPassword}
+                  setShowPassword={setShowPassword}
+                  loading={loading}
+                  error={error}
+                  onSubmit={submitSignIn}
+                  onForgotPassword={() => {
+                    setForgotEmail(email);
+                    goToSignInView("forgot", 1);
+                  }}
+                />
+              ) : signInView === "forgot" ? (
+                <ForgotPasswordForm
+                  email={forgotEmail}
+                  setEmail={setForgotEmail}
+                  loading={loading}
+                  error={error}
+                  onSubmit={submitForgotPassword}
+                />
+              ) : (
+                <ForgotPasswordSent
+                  email={forgotEmail}
+                  onBackToSignIn={() => goToSignInView("credentials", -1)}
+                />
+              )
             ) : signupStep === "identity" ? (
               <IdentityForm
                 name={name}
@@ -377,6 +450,7 @@ function SignInForm({
   loading,
   error,
   onSubmit,
+  onForgotPassword,
 }: {
   email: string;
   setEmail: (value: string) => void;
@@ -389,6 +463,7 @@ function SignInForm({
   loading: boolean;
   error: string | null;
   onSubmit: (event: React.FormEvent) => void;
+  onForgotPassword: () => void;
 }) {
   return (
     <form onSubmit={onSubmit} className="mt-8 space-y-5">
@@ -407,9 +482,13 @@ function SignInForm({
           <Checkbox checked={remember} onChange={(event) => setRemember(event.target.checked)} />
           Remember me
         </label>
-        <Link href="/forgot-password" className="text-sm font-medium text-primary">
+        <button
+          type="button"
+          onClick={onForgotPassword}
+          className="text-sm font-medium text-primary"
+        >
           Forgot password?
-        </Link>
+        </button>
       </div>
       {error && <AuthError message={error} />}
       <Button className="w-full" disabled={loading || !email.trim() || !password}>
@@ -423,6 +502,56 @@ function SignInForm({
         </Link>
       </p>
     </form>
+  );
+}
+
+function ForgotPasswordForm({
+  email,
+  setEmail,
+  loading,
+  error,
+  onSubmit,
+}: {
+  email: string;
+  setEmail: (value: string) => void;
+  loading: boolean;
+  error: string | null;
+  onSubmit: (event: React.FormEvent) => void;
+}) {
+  return (
+    <form onSubmit={onSubmit} className="mt-8 space-y-5">
+      <EmailField email={email} setEmail={setEmail} autoFocus />
+      {error && <AuthError message={error} />}
+      <Button className="w-full" disabled={loading || !email.trim()}>
+        {loading ? "Sending..." : "Send reset link"}
+        {!loading && <ArrowRight className="h-4 w-4" />}
+      </Button>
+    </form>
+  );
+}
+
+function ForgotPasswordSent({
+  email,
+  onBackToSignIn,
+}: {
+  email: string;
+  onBackToSignIn: () => void;
+}) {
+  return (
+    <div className="mt-8 space-y-5">
+      <div className="flex flex-col items-center gap-3 rounded-2xl bg-success/10 px-4 py-6 text-center">
+        <CheckCircle className="h-8 w-8 text-success" />
+        <p className="text-sm font-medium text-foreground">Reset link sent</p>
+        <p className="text-sm text-muted">
+          We sent a password reset link to{" "}
+          <span className="font-medium text-foreground">{email}</span>. Check your inbox and spam
+          folder.
+        </p>
+      </div>
+      <Button variant="ghost" className="w-full" onClick={onBackToSignIn}>
+        <ArrowLeft className="h-4 w-4" /> Back to sign in
+      </Button>
+    </div>
   );
 }
 
@@ -615,7 +744,15 @@ function SignupProgress({ step }: { step: SignupStep }) {
   );
 }
 
-function EmailField({ email, setEmail }: { email: string; setEmail: (value: string) => void }) {
+function EmailField({
+  email,
+  setEmail,
+  autoFocus,
+}: {
+  email: string;
+  setEmail: (value: string) => void;
+  autoFocus?: boolean;
+}) {
   return (
     <div>
       <Label htmlFor="auth-email">Email</Label>
@@ -627,6 +764,7 @@ function EmailField({ email, setEmail }: { email: string; setEmail: (value: stri
         autoComplete="email"
         inputMode="email"
         placeholder="you@example.com"
+        autoFocus={autoFocus}
         required
       />
     </div>
@@ -654,15 +792,39 @@ function PasswordField({
   autoFocus?: boolean;
   revealable?: boolean;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Browser autofill bypasses React's synthetic onChange — poll for an autofilled
+  // value shortly after mount so the controlled state stays in sync.
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    const check = () => {
+      if (el.value && el.value !== value) setValue(el.value);
+    };
+    const timer = window.setTimeout(check, 300);
+    const timer2 = window.setTimeout(check, 800);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearTimeout(timer2);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div>
       <Label htmlFor={id}>{label}</Label>
       <div className="relative">
         <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
         <Input
+          ref={inputRef}
           id={id}
           value={value}
           onChange={(event) => setValue(event.target.value)}
+          onInput={(event) => {
+            const v = (event.target as HTMLInputElement).value;
+            if (v !== value) setValue(v);
+          }}
           type={revealable && visible ? "text" : "password"}
           autoComplete={autoComplete}
           minLength={autoComplete === "new-password" ? 12 : 1}
