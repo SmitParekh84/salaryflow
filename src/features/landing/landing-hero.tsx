@@ -271,6 +271,7 @@ export function LandingHero() {
           <a href="#faq">FAQ</a>
         </nav>
         <div className={styles.navActions}>
+          <Link href="/download">Download app</Link>
           <Link href="/login">Log in</Link>
           <a href="#waitlist" className={styles.navCta}>
             Join waitlist
@@ -298,6 +299,9 @@ export function LandingHero() {
             <a href="#faq" onClick={() => setMenuOpen(false)}>
               FAQ
             </a>
+            <Link href="/download" onClick={() => setMenuOpen(false)}>
+              Download app
+            </Link>
             <Link href="/login">Log in</Link>
           </nav>
         )}
