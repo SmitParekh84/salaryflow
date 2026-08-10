@@ -1,6 +1,6 @@
-const CACHE = "spendly-v1";
+const CACHE = "spendly-v2";
 const OFFLINE_URL = "/offline";
-const PRECACHE = ["/", "/dashboard", "/offline", "/manifest.webmanifest"];
+const PRECACHE = ["/", "/offline", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -23,19 +23,28 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
+  const url = new URL(request.url);
+
+  // Authenticated API responses must always reflect the active session.
+  if (url.origin === self.location.origin && url.pathname.startsWith("/api/")) return;
 
   // Network-first for navigations, fall back to cache/offline.
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(request, copy));
+          if (url.pathname === "/" || url.pathname === OFFLINE_URL) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(request, copy));
+          }
           return res;
         })
         .catch(async () => {
-          const cached = await caches.match(request);
-          return cached || caches.match(OFFLINE_URL);
+          if (url.pathname === "/" || url.pathname === OFFLINE_URL) {
+            const cached = await caches.match(request);
+            if (cached) return cached;
+          }
+          return caches.match(OFFLINE_URL);
         })
     );
     return;

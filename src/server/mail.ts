@@ -1,108 +1,27 @@
-import { EMAIL_COLORS } from "@/lib/theme";
-import nodemailer from "nodemailer";
-
-type OtpEmailOptions = {
-  to: string;
-  code: string;
-  purpose: "register" | "reset";
-  expiresInMinutes: number;
-};
+import { Resend } from "resend";
+import { createOtpEmail, type OtpEmailOptions } from "./emails/otp-email";
 
 export type MailResult =
   | { sent: true }
   | { sent: false; reason: "not-configured" | "delivery-failed" };
 
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+/**
+ * Sender identity.
+ *
+ * Spendly lives on spendly.smitparekh.co.in, but the domain verified in Resend
+ * is the apex smitparekh.co.in — the subdomain is not a separate verified
+ * sending domain, so the envelope must stay on the apex or Resend rejects it.
+ */
+const DEFAULT_FROM = "Spendly <noreply@smitparekh.co.in>";
+
+let client: Resend | null = null;
 
 function getMailConfig() {
-  const host = process.env.SMTP_HOST?.trim();
-  const user = process.env.SMTP_USER?.trim();
-  const pass = process.env.SMTP_PASS;
-  const from = process.env.SMTP_FROM?.trim();
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) return null;
 
-  if (!host || !user || !pass || !from) return null;
-
-  return {
-    host,
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === "true",
-    auth: { user, pass },
-    from,
-  };
-}
-
-function createOtpEmail({ code, purpose, expiresInMinutes }: OtpEmailOptions) {
-  const isRegistration = purpose === "register";
-  const title = isRegistration
-    ? "Verify your Spendly account"
-    : "Reset your Spendly password";
-  const preheader = isRegistration
-    ? "Use this code to finish creating your Spendly account."
-    : "Use this code to reset your Spendly password.";
-  const action = isRegistration ? "finish creating your account" : "reset your password";
-  const safeCode = escapeHtml(code);
-
-  return {
-    subject: isRegistration
-      ? `${code} is your Spendly verification code`
-      : `${code} is your Spendly reset code`,
-    text: [
-      title,
-      "",
-      `Use this verification code to ${action}:`,
-      code,
-      "",
-      `This code expires in ${expiresInMinutes} minutes.`,
-      "If you did not request this code, you can safely ignore this email.",
-      "",
-      "Spendly",
-    ].join("\n"),
-    html: `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>${title}</title>
-  </head>
-  <body style="margin:0;background:${EMAIL_COLORS.background};color:${EMAIL_COLORS.foreground};font-family:Arial,sans-serif;">
-    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${preheader}</div>
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:${EMAIL_COLORS.background};">
-      <tr>
-        <td align="center" style="padding:32px 16px;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:520px;background:${EMAIL_COLORS.surface};border:1px solid ${EMAIL_COLORS.border};border-radius:12px;overflow:hidden;">
-            <tr>
-              <td style="padding:28px 32px 18px;">
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                  <tr>
-                    <td align="center" width="36" height="36" style="width:36px;height:36px;border-radius:8px;background:${EMAIL_COLORS.brand};color:${EMAIL_COLORS.brandOn};font-size:17px;font-weight:700;">S</td>
-                    <td style="padding-left:10px;font-size:16px;font-weight:700;color:${EMAIL_COLORS.foreground};">Spendly</td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:10px 32px 32px;">
-                <h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:${EMAIL_COLORS.foreground};">${title}</h1>
-                <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:${EMAIL_COLORS.muted};">Use this verification code to ${action}.</p>
-                <div style="padding:20px;border-radius:10px;background:${EMAIL_COLORS.background};text-align:center;font-family:'Courier New',monospace;font-size:32px;font-weight:700;line-height:1;letter-spacing:8px;color:${EMAIL_COLORS.foreground};">${safeCode}</div>
-                <p style="margin:20px 0 0;font-size:13px;line-height:1.6;color:${EMAIL_COLORS.muted};">This code expires in ${expiresInMinutes} minutes. If you did not request it, you can safely ignore this email.</p>
-              </td>
-            </tr>
-          </table>
-          <p style="margin:18px 0 0;font-size:12px;line-height:1.5;color:${EMAIL_COLORS.subtle};">Spendly account security</p>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>`,
-  };
+  if (!client) client = new Resend(apiKey);
+  return { client, from: process.env.RESEND_FROM?.trim() || DEFAULT_FROM };
 }
 
 export async function sendOtpEmail(options: OtpEmailOptions): Promise<MailResult> {
@@ -111,16 +30,18 @@ export async function sendOtpEmail(options: OtpEmailOptions): Promise<MailResult
 
   const { subject, text, html } = createOtpEmail(options);
   try {
-    const transporter = nodemailer.createTransport({
-      host: config.host,
-      port: config.port,
-      secure: config.secure,
-      auth: config.auth,
-      connectionTimeout: 10_000,
-      greetingTimeout: 10_000,
-      socketTimeout: 15_000,
+    const { error } = await config.client.emails.send({
+      from: config.from,
+      to: options.to,
+      subject,
+      text,
+      html,
     });
-    await transporter.sendMail({ from: config.from, to: options.to, subject, text, html });
+    // Resend reports delivery rejections in the payload, not as a thrown error.
+    if (error) {
+      console.error("[MAIL] OTP delivery failed", error.message);
+      return { sent: false, reason: "delivery-failed" };
+    }
     return { sent: true };
   } catch (error) {
     console.error(

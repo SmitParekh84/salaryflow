@@ -69,7 +69,7 @@ export async function POST(req: Request) {
       {
         error:
           delivery.reason === "not-configured" && process.env.NODE_ENV !== "production"
-            ? "Email delivery is not configured. Add the SMTP settings to .env.local and restart the server."
+            ? "Email delivery is not configured. Add RESEND_API_KEY to .env.local and restart the server."
             : "Verification email is temporarily unavailable. Check the address and try again.",
       },
       { status: 503 },

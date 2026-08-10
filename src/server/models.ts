@@ -265,6 +265,13 @@ const UserSchema = new Schema(
   { timestamps: true },
 );
 
+const WaitlistSchema = new Schema(
+  {
+    email: { type: String, required: true, unique: true, index: true },
+  },
+  { timestamps: true },
+);
+
 export type ExpenseDoc = InferSchemaType<typeof ExpenseSchema>;
 export type IncomeDoc = InferSchemaType<typeof IncomeSchema>;
 export type SalaryProfileDoc = InferSchemaType<typeof SalaryProfileSchema>;
@@ -278,6 +285,7 @@ export type BudgetRuleDoc = InferSchemaType<typeof BudgetRuleSchema>;
 export type RecycleBinDoc = InferSchemaType<typeof RecycleBinSchema>;
 export type NotificationDoc = InferSchemaType<typeof NotificationSchema>;
 export type UserDoc = InferSchemaType<typeof UserSchema>;
+export type WaitlistDoc = InferSchemaType<typeof WaitlistSchema>;
 
 export const ExpenseModel = models.Expense || model("Expense", ExpenseSchema);
 export const IncomeModel = models.Income || model("Income", IncomeSchema);
@@ -294,6 +302,7 @@ export const BudgetRuleModel = models.BudgetRule || model("BudgetRule", BudgetRu
 export const RecycleBinModel = models.RecycleBin || model("RecycleBin", RecycleBinSchema);
 export const NotificationModel = models.Notification || model("Notification", NotificationSchema);
 export const UserModel = models.User || model("User", UserSchema);
+export const WaitlistModel = models.Waitlist || model("Waitlist", WaitlistSchema);
 
 const RateLimitSchema = new Schema(
   {

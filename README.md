@@ -57,7 +57,7 @@ public/
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in database, auth, and SMTP settings
+cp .env.example .env.local   # fill in database, auth, and Resend settings
 npm run dev                  # http://localhost:3000 (Turbopack)
 ```
 
@@ -91,17 +91,17 @@ Environment variables (`.env.local`):
 ```
 MONGODB_URI=...      # MongoDB connection string (db: salaryflow)
 AUTH_SECRET=...      # At least 32 random characters
-SMTP_HOST=...        # SMTP server used for account emails
-SMTP_PORT=587        # Usually 587, or 465 with SMTP_SECURE=true
-SMTP_SECURE=false
-SMTP_USER=...
-SMTP_PASS=...
-SMTP_FROM="Spendly <no-reply@your-domain.com>"
+RESEND_API_KEY=...   # Resend API key used for account emails
+RESEND_FROM="Spendly <noreply@your-verified-domain.com>"
 ```
 
-Registration and password-reset codes require SMTP. The API returns a clear
-`503` response when mail is not configured or the provider rejects delivery;
-it never reports a successful send when no message was accepted.
+Registration and password-reset codes are delivered through
+[Resend](https://resend.com). `RESEND_FROM` must sit on a domain verified in the
+Resend dashboard — Spendly is hosted at `spendly.smitparekh.co.in` but sends from
+the verified apex `smitparekh.co.in`, since a subdomain is not automatically a
+verified sender. The API returns a clear `503` response when mail is not
+configured or the provider rejects delivery; it never reports a successful send
+when no message was accepted.
 
 ---
 

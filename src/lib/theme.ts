@@ -77,6 +77,26 @@ export const EMAIL_COLORS = {
 } as const;
 
 /**
+ * Dark-scheme mirror of `EMAIL_COLORS`, applied through a
+ * `prefers-color-scheme` block in the email <head>.
+ *
+ * Clients that ignore media queries (Outlook desktop) simply keep the light
+ * palette, which is the correct fallback. Follows the same inversion as `.dark`
+ * in globals.css: the brand gets brighter and its label goes dark, because a
+ * deep teal reads as muddy against black.
+ */
+export const EMAIL_COLORS_DARK = {
+  brand: "#21d9aa",
+  brandOn: "#04241d",
+  background: "#000000",
+  surface: "#1c1c1e",
+  border: "#38383a",
+  foreground: "#f5f5f7",
+  muted: "#a1a1a6",
+  subtle: "#8e8e93",
+} as const;
+
+/**
  * Starting swatch for a user-created category. `<input type="color">` only
  * accepts a literal hex, so this cannot be a token — mirrors --hue-sky.
  */
