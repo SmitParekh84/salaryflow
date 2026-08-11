@@ -1,3 +1,4 @@
+import { BRAND } from "@/lib/brand";
 import { EMAIL_COLORS } from "@/lib/theme";
 import { escapeHtml, MONO_STACK, renderShell, SANS_STACK } from "./layout";
 
@@ -62,7 +63,7 @@ export function createOtpEmail({ code, purpose, expiresInMinutes }: Omit<OtpEmai
         ? "Didn't request this? Ignore this email — no account was created."
         : "Didn't request this? Ignore this email — your password is unchanged.",
       "",
-      "Aartha — Spend with clarity.",
+      `${BRAND.name} — ${BRAND.brandline}`,
     ].join("\n"),
     html: renderShell({
       title: `${heading} · Aartha`,

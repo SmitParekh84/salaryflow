@@ -11,7 +11,7 @@
    src/lib/theme.ts (EMAIL_COLORS). Update that file alongside this block.
    ============================================================================ */
 :root {
-  /* Brand — teal, taken from the Spendly app icon */
+  /* Brand — teal, taken from the Aartha app icon */
   --brand-50: #e8f8f3;
   --brand-100: #c6ede1;
   --brand-200: #8fdcc5;

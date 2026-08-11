@@ -1,6 +1,6 @@
-# Spendly Finance Calculation Contract
+# Aartha Finance Calculation Contract
 
-This document defines the source of truth for Spendly calculations and UI bindings. Code changes that affect money should preserve these rules and update the focused tests in `src/lib/finance.test.ts`.
+This document defines the source of truth for Aartha calculations and UI bindings. Code changes that affect money should preserve these rules and update the focused tests in `src/lib/finance.test.ts`.
 
 ## Core Invariants
 
@@ -95,7 +95,7 @@ newAccountBalance = oldAccountBalance - userPaid
 
 Only `userPaid` is deducted. The friend's payment is never deducted from the current user's account.
 
-The `balanceApplied` marker records that Spendly performed the deduction. It allows edit, delete, and recycle-bin restore operations to reverse or reapply the amount exactly once.
+The `balanceApplied` marker records that Aartha performed the deduction. It allows edit, delete, and recycle-bin restore operations to reverse or reapply the amount exactly once.
 
 When the selected source is a credit card, no bank balance is reduced. The expense becomes part of credit-card usage.
 

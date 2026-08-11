@@ -1,5 +1,6 @@
 "use client";
 
+import { BRAND } from "@/lib/brand";
 import { NAV_ITEMS } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -72,7 +73,7 @@ export function Sidebar() {
         aria-label="Aartha dashboard"
         className="mb-8 flex items-center rounded-xl px-2 py-1 outline-none transition-transform duration-150 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-(--ring)"
       >
-        <Brand tagline="Spend with clarity" />
+        <Brand tagline={BRAND.brandlineShort} />
       </Link>
 
       <nav className="flex flex-1 flex-col gap-1">
@@ -136,7 +137,7 @@ export function HamburgerDrawer({ open, onClose }: { open: boolean; onClose: () 
             className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
           >
             <div className="flex items-center justify-between px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4 border-b border-border">
-              <Brand tagline="Spend with clarity" />
+              <Brand tagline={BRAND.brandlineShort} />
               <button
                 onClick={onClose}
                 aria-label="Close menu"
