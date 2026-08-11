@@ -340,12 +340,13 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                       type="number"
                       min={1}
                       max={31}
-                      value={profile.salaryDay}
-                      onChange={(e) =>
+                      value={profile.salaryDay || ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
                         updateProfile({
-                          salaryDay: Math.max(1, Math.min(31, Number(e.target.value))),
-                        })
-                      }
+                          salaryDay: value === "" ? 0 : Math.min(31, Number(value)),
+                        });
+                      }}
                     />
                   </div>
                   <div>

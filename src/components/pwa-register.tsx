@@ -16,7 +16,9 @@ export function PwaRegister() {
         void caches
           .keys()
           .then((keys) =>
-            Promise.all(keys.filter((key) => key.startsWith("spendly-")).map((key) => caches.delete(key))),
+            Promise.all(
+              keys.filter((key) => key.startsWith("spendly-")).map((key) => caches.delete(key)),
+            ),
           );
       }
       return;

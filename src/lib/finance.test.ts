@@ -663,6 +663,45 @@ describe("finance summary", () => {
     expect(summary.savedThisCycle).toBe(5_000);
   });
 
+  it("counts transfers into an account that directly backs a savings goal", () => {
+    const emergencyAccount: BankAccount = {
+      id: "emergency-account",
+      bankName: "Central Bank",
+      accountType: "Savings",
+      balance: 5_000,
+      status: "active",
+    };
+    const emergencyGoal: Goal = {
+      id: "emergency-goal",
+      name: "Emergency Fund",
+      type: "Emergency Fund",
+      target: 100_000,
+      saved: 0,
+      monthlyContribution: 5_000,
+      balanceAccountId: emergencyAccount.id,
+    };
+
+    const summary = computeSummary(
+      profile,
+      [],
+      [],
+      [],
+      [emergencyGoal],
+      [],
+      rule,
+      [...savingsAccounts, emergencyAccount],
+      [
+        transfer({
+          destinationAccountId: emergencyAccount.id,
+          amount: 5_000,
+        }),
+      ],
+      now,
+    );
+
+    expect(summary.savedThisCycle).toBe(5_000);
+  });
+
   it("keeps savings reserved to a goal neutral when its account closes", () => {
     const summary = computeSummary(
       profile,
@@ -802,8 +841,18 @@ describe("credit cards", () => {
     const usage = creditCardUsage(
       card,
       [
-        expense({ id: "previous-statement", amount: 855, accountId: "card", date: "2026-07-26T10:00:00.000Z" }),
-        expense({ id: "current-statement", amount: 1_881, accountId: "card", date: "2026-08-06T10:00:00.000Z" }),
+        expense({
+          id: "previous-statement",
+          amount: 855,
+          accountId: "card",
+          date: "2026-07-26T10:00:00.000Z",
+        }),
+        expense({
+          id: "current-statement",
+          amount: 1_881,
+          accountId: "card",
+          date: "2026-08-06T10:00:00.000Z",
+        }),
       ],
       [],
       new Date("2026-08-11T12:00:00.000Z"),

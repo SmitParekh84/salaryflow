@@ -57,7 +57,8 @@ export function Combobox({
         <PopoverPrimitive.Content
           align="start"
           sideOffset={6}
-          className="z-110 w-(--radix-popover-trigger-width) overflow-hidden rounded-2xl bg-surface shadow-lg"
+          collisionPadding={12}
+          className="z-110 max-h-(--radix-popover-content-available-height) w-(--radix-popover-trigger-width) overflow-hidden rounded-2xl bg-surface shadow-lg"
         >
           <Command className="w-full" loop>
             <div className="flex items-center gap-2 border-b border-border px-3">
@@ -67,7 +68,7 @@ export function Combobox({
                 className="h-10 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
               />
             </div>
-            <Command.List className="max-h-64 overflow-y-auto p-1.5">
+            <Command.List className="max-h-[min(16rem,var(--radix-popover-content-available-height))] touch-pan-y overflow-y-auto overscroll-contain p-1.5">
               <Command.Empty className="px-3 py-6 text-center text-sm text-muted">
                 {emptyText}
               </Command.Empty>

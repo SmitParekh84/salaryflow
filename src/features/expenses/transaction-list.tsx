@@ -43,7 +43,25 @@ export function TransactionList({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="group flex items-center gap-3 py-3"
+              role={onEdit ? "button" : undefined}
+              tabIndex={onEdit ? 0 : undefined}
+              onClick={onEdit ? () => onEdit(e) : undefined}
+              onKeyDown={
+                onEdit
+                  ? (event) => {
+                      if (event.target !== event.currentTarget) return;
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onEdit(e);
+                      }
+                    }
+                  : undefined
+              }
+              className={cn(
+                "group flex items-center gap-3 py-3",
+                onEdit &&
+                  "cursor-pointer rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-(--ring)",
+              )}
             >
               <div
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
@@ -75,7 +93,10 @@ export function TransactionList({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => toggleFavorite(e.id)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleFavorite(e.id);
+                    }}
                     className="h-8 w-8"
                     aria-label="Favorite"
                   >
@@ -90,7 +111,10 @@ export function TransactionList({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => onEdit(e)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onEdit(e);
+                      }}
                       className="h-8 w-8"
                       aria-label="Edit"
                     >
@@ -100,7 +124,10 @@ export function TransactionList({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => deleteExpense(e.id)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      deleteExpense(e.id);
+                    }}
                     className="h-8 w-8 text-danger hover:bg-danger/10"
                     aria-label="Delete"
                   >

@@ -127,6 +127,10 @@ netSavingsAccountFlow =
 cashSavedThisCycle = max(0, netSavingsAccountFlow)
 ```
 
+Savings accounts include accounts explicitly marked for savings and accounts that directly back a
+goal through `balanceAccountId`. A transfer into an Emergency Fund account therefore counts as cash
+saved even when that bank account has no separate savings-purpose tag.
+
 ### Explicit Exclusions
 
 The following contribute exactly zero to `cashSavedThisCycle`:

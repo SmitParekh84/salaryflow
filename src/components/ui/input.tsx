@@ -135,7 +135,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
             <SelectPrimitive.ScrollUpButton className="flex h-7 items-center justify-center text-muted">
               <ChevronUp className="h-4 w-4" />
             </SelectPrimitive.ScrollUpButton>
-            <SelectPrimitive.Viewport className="p-1.5">
+            <SelectPrimitive.Viewport className="max-h-[min(18rem,var(--radix-select-content-available-height))] touch-pan-y overflow-y-auto overscroll-contain p-1.5">
               {options
                 .filter((option) => option.value !== "")
                 .map((option) => (

@@ -49,7 +49,10 @@ export function AccountDetailView({ kind, id }: { kind: string; id: string }) {
         title="Account not found"
         description="This account may have been removed or is no longer available."
         action={
-          <button className="text-sm font-medium text-primary" onClick={() => router.push("/accounts")}>
+          <button
+            className="text-sm font-medium text-primary"
+            onClick={() => router.push("/accounts")}
+          >
             Return to accounts
           </button>
         }
@@ -73,7 +76,9 @@ export function AccountDetailView({ kind, id }: { kind: string; id: string }) {
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-lg font-semibold sm:text-xl">{entityName}</h2>
             <p className="mt-0.5 text-xs text-muted">
-              {creditCard ? `${creditCard.bankName} credit card` : `${account?.accountType} account`}
+              {creditCard
+                ? `${creditCard.bankName} credit card`
+                : `${account?.accountType} account`}
             </p>
           </div>
           <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-medium capitalize text-muted">
@@ -157,11 +162,7 @@ export function AccountDetailView({ kind, id }: { kind: string; id: string }) {
         </div>
       </Card>
 
-      <ExpenseForm
-        open={editing !== null}
-        onClose={() => setEditing(null)}
-        editing={editing}
-      />
+      <ExpenseForm open={editing !== null} onClose={() => setEditing(null)} editing={editing} />
     </div>
   );
 }

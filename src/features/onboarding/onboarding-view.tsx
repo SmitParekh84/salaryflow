@@ -137,10 +137,11 @@ export function OnboardingView() {
                 type="number"
                 min={1}
                 max={31}
-                value={profile.salaryDay}
-                onChange={(e) =>
-                  patch({ salaryDay: Math.max(1, Math.min(31, Number(e.target.value))) })
-                }
+                value={profile.salaryDay || ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  patch({ salaryDay: value === "" ? 0 : Math.min(31, Number(value)) });
+                }}
               />
             </div>
             <div>

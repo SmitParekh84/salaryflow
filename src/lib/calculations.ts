@@ -138,7 +138,7 @@ export function computeSummary(
   expenses: Expense[],
   incomes: Income[],
   investments: Investment[],
-  _goals: Goal[],
+  goals: Goal[],
   salaryHistory: { amount: number; date: string; confirmed?: boolean; source?: string }[] = [],
   budgetRule?: BudgetRule,
   accounts: BankAccount[] = [],
@@ -178,9 +178,15 @@ export function computeSummary(
   const investedThisCycle = cycleExpenses
     .filter((expense) => expense.category === "Investment")
     .reduce((sum, expense) => sum + expense.amount, 0);
+  const goalBackedAccountIds = new Set(
+    goals.flatMap((goal) => (goal.balanceAccountId ? [goal.balanceAccountId] : [])),
+  );
   const savingsAccountIds = new Set(
     accounts
-      .filter((account) => account.defaultFor?.includes("savings"))
+      .filter(
+        (account) =>
+          account.defaultFor?.includes("savings") || goalBackedAccountIds.has(account.id),
+      )
       .map((account) => account.id),
   );
   const completedCycleTransfers = accountTransfers.filter(
@@ -191,9 +197,7 @@ export function computeSummary(
       const incoming = savingsAccountIds.has(transfer.destinationAccountId) ? transfer.amount : 0;
       const outgoing = savingsAccountIds.has(transfer.sourceAccountId) ? transfer.amount : 0;
       const retainedForGoal =
-        outgoing > 0 && incoming === 0
-          ? Math.min(transfer.goalAmount ?? 0, transfer.amount)
-          : 0;
+        outgoing > 0 && incoming === 0 ? Math.min(transfer.goalAmount ?? 0, transfer.amount) : 0;
       return sum + incoming - outgoing + retainedForGoal;
     }, 0) +
     incomes
