@@ -2,12 +2,15 @@
 
 import { CATEGORY_ICON_OPTIONS, CategoryGlyph, CategoryIcon } from "@/components/category-icon";
 import { NavModeToggle } from "@/components/sidebar";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { useSummary } from "@/hooks/use-summary";
 import { CATEGORIES, COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
 import { download, exportExpensesCsv } from "@/lib/export";
+import { toInputValue } from "@/lib/number-input";
+import { salaryProfileSchema } from "@/lib/schemas";
 import {
   availableFinancialYears,
   currentFinancialYearStart,
@@ -17,7 +20,7 @@ import { useFinanceStore } from "@/lib/store";
 import { PICKER_DEFAULT_COLOR } from "@/lib/theme";
 import type { CategoryIconName } from "@/lib/types";
 import { useAuth } from "@/lib/useAuth";
-import { cn, formatMoney, uid } from "@/lib/utils";
+import { cn, currencySymbol, formatMoney, uid } from "@/lib/utils";
 import {
   ChevronRight,
   Download,
@@ -41,7 +44,7 @@ import {
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export type SettingsSection =
   | "profile"
@@ -118,6 +121,32 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
   const [categoryIcon, setCategoryIcon] = useState<CategoryIconName>("package");
   const [categoryColor, setCategoryColor] = useState<string>(PICKER_DEFAULT_COLOR);
   const [categoryError, setCategoryError] = useState("");
+
+  /**
+   * Salary fields are drafted locally rather than written straight to the store.
+   * They used to call `updateProfile` on every keystroke, so typing "85000"
+   * briefly set the salary to 8, then 85 — recomputing safe-to-spend against
+   * nonsense on each character, and persisting whatever was half-typed.
+   */
+  const [draft, setDraft] = useState({
+    amount: toInputValue(profile.amount, 0),
+    salaryDay: toInputValue(profile.salaryDay, 0),
+    savingsGoal: toInputValue(profile.savingsGoal, 0),
+    emergencyFundGoal: toInputValue(profile.emergencyFundGoal, 0),
+  });
+  const [preferenceErrors, setPreferenceErrors] = useState<Partial<Record<string, string>>>({});
+
+  // Re-seeds only when the profile changes elsewhere (a server sync), since
+  // typing no longer touches it.
+  useEffect(() => {
+    setDraft({
+      amount: toInputValue(profile.amount, 0),
+      salaryDay: toInputValue(profile.salaryDay, 0),
+      savingsGoal: toInputValue(profile.savingsGoal, 0),
+      emergencyFundGoal: toInputValue(profile.emergencyFundGoal, 0),
+    });
+  }, [profile.amount, profile.salaryDay, profile.savingsGoal, profile.emergencyFundGoal]);
+
   const currentFinancialYear = currentFinancialYearStart();
   const selectedFinancialYear = profile.financialYearStart ?? currentFinancialYear;
   const financialYears = availableFinancialYears([
@@ -139,6 +168,34 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
   };
 
   const savePreferences = async () => {
+    const parsed = salaryProfileSchema.safeParse({
+      amount: draft.amount,
+      salaryDay: draft.salaryDay,
+      savingsGoal: draft.savingsGoal,
+      emergencyFundGoal: draft.emergencyFundGoal,
+      cycle: profile.cycle,
+      currency: profile.currency,
+      country: profile.country,
+    });
+
+    if (!parsed.success) {
+      setPreferenceErrors(
+        Object.fromEntries(
+          parsed.error.issues.map((issue) => [String(issue.path[0]), issue.message]),
+        ),
+      );
+      return;
+    }
+
+    setPreferenceErrors({});
+    updateProfile({
+      amount: parsed.data.amount,
+      salaryDay: parsed.data.salaryDay,
+      emergencyFundGoal: parsed.data.emergencyFundGoal,
+      // A live budget rule owns the savings target; the field is read-only then.
+      ...(activeBudgetRule ? {} : { savingsGoal: parsed.data.savingsGoal }),
+    });
+
     await syncWithServer();
     setPreferencesSaved(true);
     setTimeout(() => setPreferencesSaved(false), 1600);
@@ -325,29 +382,29 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
                     <Label htmlFor="salary-amount">Salary amount</Label>
-                    <Input
+                    <AmountInput
                       id="salary-amount"
-                      type="number"
-                      min={0}
-                      value={profile.amount || ""}
-                      onChange={(e) => updateProfile({ amount: Number(e.target.value) })}
+                      prefix={currencySymbol(profile.currency)}
+                      value={draft.amount}
+                      invalid={Boolean(preferenceErrors.amount)}
+                      onChange={(amount) => setDraft({ ...draft, amount })}
                     />
+                    {preferenceErrors.amount && (
+                      <p className="mt-1 text-xs text-danger">{preferenceErrors.amount}</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="salary-day">Salary day</Label>
-                    <Input
+                    <AmountInput
                       id="salary-day"
-                      type="number"
-                      min={1}
-                      max={31}
-                      value={profile.salaryDay || ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        updateProfile({
-                          salaryDay: value === "" ? 0 : Math.min(31, Number(value)),
-                        });
-                      }}
+                      decimals={0}
+                      value={draft.salaryDay}
+                      invalid={Boolean(preferenceErrors.salaryDay)}
+                      onChange={(salaryDay) => setDraft({ ...draft, salaryDay })}
                     />
+                    {preferenceErrors.salaryDay && (
+                      <p className="mt-1 text-xs text-danger">{preferenceErrors.salaryDay}</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="profile-country">Country</Label>
@@ -412,18 +469,21 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                         ? "Monthly savings target (current cycle)"
                         : "Monthly savings goal"}
                     </Label>
-                    <Input
+                    <AmountInput
                       id="savings-goal"
-                      type="number"
-                      min={0}
+                      prefix={currencySymbol(profile.currency)}
                       value={
                         ruleSavingsTarget === undefined
-                          ? profile.savingsGoal || ""
-                          : Math.round(ruleSavingsTarget)
+                          ? draft.savingsGoal
+                          : String(Math.round(ruleSavingsTarget))
                       }
                       readOnly={Boolean(activeBudgetRule)}
-                      onChange={(e) => updateProfile({ savingsGoal: Number(e.target.value) })}
+                      invalid={Boolean(preferenceErrors.savingsGoal)}
+                      onChange={(savingsGoal) => setDraft({ ...draft, savingsGoal })}
                     />
+                    {preferenceErrors.savingsGoal && (
+                      <p className="mt-1 text-xs text-danger">{preferenceErrors.savingsGoal}</p>
+                    )}
                     <p className="mt-1 text-xs text-muted">
                       {activeBudgetRule
                         ? `${activeBudgetRule.name} sets ${savingsPercentage ?? 0}% of this cycle's confirmed ${formatMoney(summary.salaryIncome, profile.currency)} salary. Other income does not increase this target.`
@@ -432,13 +492,18 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                   </div>
                   <div>
                     <Label htmlFor="emergency-target">Emergency fund target</Label>
-                    <Input
+                    <AmountInput
                       id="emergency-target"
-                      type="number"
-                      min={0}
-                      value={profile.emergencyFundGoal || ""}
-                      onChange={(e) => updateProfile({ emergencyFundGoal: Number(e.target.value) })}
+                      prefix={currencySymbol(profile.currency)}
+                      value={draft.emergencyFundGoal}
+                      invalid={Boolean(preferenceErrors.emergencyFundGoal)}
+                      onChange={(emergencyFundGoal) => setDraft({ ...draft, emergencyFundGoal })}
                     />
+                    {preferenceErrors.emergencyFundGoal && (
+                      <p className="mt-1 text-xs text-danger">
+                        {preferenceErrors.emergencyFundGoal}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <Button type="submit" size="sm">
