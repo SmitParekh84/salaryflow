@@ -28,17 +28,21 @@
    src/lib/theme.ts (EMAIL_COLORS). Update that file alongside this block.
    ============================================================================ */
 :root {
-  /* Brand — teal, taken from the Aartha app icon */
-  --brand-50: #e8f8f3;
-  --brand-100: #c6ede1;
-  --brand-200: #8fdcc5;
-  --brand-300: #4fc9a8;
-  --brand-400: #21d9aa;
-  --brand-500: #079875;
-  --brand-600: #07836a;
-  --brand-700: #0a6f57;
-  --brand-800: #085644;
-  --brand-900: #063d31;
+  /* Brand — green, taken from the Aartha mark's swoosh.
+     600 is the light-mode primary and carries white text: #0b8446 holds
+     4.77:1, so it clears AA. 400 is the dark-mode primary and carries
+     --primary-foreground below at 8.9:1. Do not lighten either without
+     rechecking those two pairings. */
+  --brand-50: #eafaf1;
+  --brand-100: #c9f2dc;
+  --brand-200: #93e6b8;
+  --brand-300: #57d68d;
+  --brand-400: #2fd977;
+  --brand-500: #12a65c;
+  --brand-600: #0b8446;
+  --brand-700: #0a6f3b;
+  --brand-800: #08562e;
+  --brand-900: #063d21;
 
   /* Brand ink — navy from the app icon backplate */
   --ink-700: #102746;
@@ -103,7 +107,7 @@
   --border: rgba(60, 60, 67, 0.14);
 
   /* brand-600, not brand-500: it clears 4.5:1 against white for button labels
-     and inline links, where the lighter logo teal does not. */
+     and inline links, where the lighter logo green does not. */
   --primary: var(--brand-600);
   --primary-foreground: var(--grey-0);
   --primary-hover: var(--brand-700);
@@ -177,9 +181,9 @@
   --border: rgba(84, 84, 88, 0.5);
 
   /* Apple's dark-mode pattern: the accent gets brighter, its label goes dark.
-     A darker teal would read as muddy against a black ground. */
+     A darker green would read as muddy against a black ground. */
   --primary: var(--brand-400);
-  --primary-foreground: #04241d;
+  --primary-foreground: #042415;
   --primary-hover: var(--brand-300);
   --accent: var(--brand-400);
 

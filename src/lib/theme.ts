@@ -66,7 +66,7 @@ export const FALLBACK_CATEGORY_COLOR = CATEGORY_COLORS.other;
  * Keep in sync with LAYER 1 of src/app/globals.css.
  */
 export const EMAIL_COLORS = {
-  brand: "#07836a",
+  brand: "#0b8446",
   brandOn: "#ffffff",
   background: "#f2f2f7",
   surface: "#ffffff",
@@ -86,8 +86,8 @@ export const EMAIL_COLORS = {
  * deep teal reads as muddy against black.
  */
 export const EMAIL_COLORS_DARK = {
-  brand: "#21d9aa",
-  brandOn: "#04241d",
+  brand: "#2fd977",
+  brandOn: "#042415",
   background: "#000000",
   surface: "#1c1c1e",
   border: "#38383a",

@@ -24,7 +24,10 @@ export function BrandMark({
   const mark = MARK_SIZES[size];
   return (
     <Image
-      src="/icons/icon-192.png"
+      // The transparent green mark, not the app tile: this sits directly on
+      // sidebar and auth surfaces, where a rounded tile would read as a
+      // pasted-on icon rather than part of the lockup.
+      src="/icons/brand-mark.png"
       width={mark.px}
       height={mark.px}
       alt=""
