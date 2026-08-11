@@ -44,7 +44,7 @@ import {
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export type SettingsSection =
   | "profile"
@@ -88,6 +88,20 @@ const SETTINGS_SECTIONS: {
   { id: "system", label: "System", description: "Appearance, data and access", icon: MonitorCog },
 ];
 
+function draftFromProfile(profile: {
+  amount?: number;
+  salaryDay?: number;
+  savingsGoal?: number;
+  emergencyFundGoal?: number;
+}) {
+  return {
+    amount: toInputValue(profile.amount, 0),
+    salaryDay: toInputValue(profile.salaryDay, 0),
+    savingsGoal: toInputValue(profile.savingsGoal, 0),
+    emergencyFundGoal: toInputValue(profile.emergencyFundGoal, 0),
+  };
+}
+
 export function SettingsView({ initialSection = "profile" }: { initialSection?: SettingsSection }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -128,24 +142,20 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
    * briefly set the salary to 8, then 85 — recomputing safe-to-spend against
    * nonsense on each character, and persisting whatever was half-typed.
    */
-  const [draft, setDraft] = useState({
-    amount: toInputValue(profile.amount, 0),
-    salaryDay: toInputValue(profile.salaryDay, 0),
-    savingsGoal: toInputValue(profile.savingsGoal, 0),
-    emergencyFundGoal: toInputValue(profile.emergencyFundGoal, 0),
-  });
+  const [draft, setDraft] = useState(() => draftFromProfile(profile));
   const [preferenceErrors, setPreferenceErrors] = useState<Partial<Record<string, string>>>({});
 
-  // Re-seeds only when the profile changes elsewhere (a server sync), since
-  // typing no longer touches it.
-  useEffect(() => {
-    setDraft({
-      amount: toInputValue(profile.amount, 0),
-      salaryDay: toInputValue(profile.salaryDay, 0),
-      savingsGoal: toInputValue(profile.savingsGoal, 0),
-      emergencyFundGoal: toInputValue(profile.emergencyFundGoal, 0),
-    });
-  }, [profile.amount, profile.salaryDay, profile.savingsGoal, profile.emergencyFundGoal]);
+  /**
+   * Re-seed when the profile changes elsewhere — a server sync — but not while
+   * typing, which no longer touches the store. Adjusting state during render is
+   * React's supported pattern for this; an effect would cascade a second render.
+   */
+  const profileStamp = `${profile.amount}|${profile.salaryDay}|${profile.savingsGoal}|${profile.emergencyFundGoal}`;
+  const [seededFrom, setSeededFrom] = useState(profileStamp);
+  if (seededFrom !== profileStamp) {
+    setSeededFrom(profileStamp);
+    setDraft(draftFromProfile(profile));
+  }
 
   const currentFinancialYear = currentFinancialYearStart();
   const selectedFinancialYear = profile.financialYearStart ?? currentFinancialYear;
