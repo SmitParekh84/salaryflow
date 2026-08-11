@@ -90,20 +90,27 @@ describe("transferSchema", () => {
 });
 
 describe("budgetRuleSchema", () => {
+  const valid = { name: "My rule", needs: "50", wants: "20", savings: "15", investments: "15" };
+
   it("accepts a split that adds to 100", () => {
-    expect(budgetRuleSchema.parse({ needs: "50", wants: "30", savings: "20" }).needs).toBe(50);
+    expect(budgetRuleSchema.parse(valid).needs).toBe(50);
   });
 
   it("rejects a split that does not add to 100", () => {
-    expect(firstError(budgetRuleSchema, { needs: "50", wants: "30", savings: "30" })).toBe(
-      "The three shares must add up to 100%",
+    expect(firstError(budgetRuleSchema, { ...valid, savings: "30" })).toBe(
+      "The four shares must add up to 100%",
     );
   });
 
   it("rejects a share above 100", () => {
-    expect(firstError(budgetRuleSchema, { needs: "500", wants: "0", savings: "0" })).toBe(
+    // The old input carried max={100} but stored whatever Number() returned.
+    expect(firstError(budgetRuleSchema, { ...valid, needs: "500" })).toBe(
       "Needs share cannot exceed 100",
     );
+  });
+
+  it("requires a rule name", () => {
+    expect(firstError(budgetRuleSchema, { ...valid, name: "  " })).toBe("Rule name is required");
   });
 });
 
@@ -129,8 +136,20 @@ describe("goalSchema", () => {
 });
 
 describe("investmentSchema", () => {
-  it("keeps an explicit zero for invested amount", () => {
-    expect(investmentSchema.parse({ type: "Index fund", invested: "0" }).invested).toBe(0);
+  const valid = { name: "Nifty 50 index", type: "SIP", invested: "25000" };
+
+  it("accepts a valid investment", () => {
+    expect(investmentSchema.parse(valid).invested).toBe(25000);
+  });
+
+  it("rejects a zero invested amount", () => {
+    expect(firstError(investmentSchema, { ...valid, invested: "0" })).toBe(
+      "Invested amount must be greater than 0",
+    );
+  });
+
+  it("treats a blank monthly SIP as absent rather than zero", () => {
+    expect(investmentSchema.parse({ ...valid, monthly: "" }).monthly).toBeUndefined();
   });
 });
 

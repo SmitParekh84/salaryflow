@@ -88,8 +88,9 @@ export const goalSchema = z.object({
 export type GoalInput = z.input<typeof goalSchema>;
 
 export const investmentSchema = z.object({
-  type: requiredText("investment type"),
-  invested: money("invested amount"),
+  name: requiredText("investment name"),
+  type: optionalText(40),
+  invested: positiveMoney("invested amount"),
   currentValue: optionalMoney("current value"),
   monthly: optionalMoney("monthly SIP"),
   frequency: optionalText(40),
@@ -117,14 +118,17 @@ export type SalaryProfileInput = z.input<typeof salaryProfileSchema>;
  */
 export const budgetRuleSchema = z
   .object({
+    name: requiredText("rule name", 80),
     needs: percentage("needs share"),
     wants: percentage("wants share"),
-    savings: percentage("savings share"),
+    savings: percentage("cash savings share"),
+    investments: percentage("investments share"),
   })
-  .refine((values) => Math.abs(values.needs + values.wants + values.savings - 100) < 0.01, {
-    path: ["needs"],
-    message: "The three shares must add up to 100%",
-  });
+  .refine(
+    (values) =>
+      Math.abs(values.needs + values.wants + values.savings + values.investments - 100) < 0.01,
+    { path: ["needs"], message: "The four shares must add up to 100%" },
+  );
 export type BudgetRuleInput = z.input<typeof budgetRuleSchema>;
 
 export const onboardingSchema = z.object({

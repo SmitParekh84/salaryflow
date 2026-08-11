@@ -1,6 +1,7 @@
 "use client";
 
 import { StatCard } from "@/components/stat-card";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -9,9 +10,10 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { Modal, ModalFooter } from "@/components/ui/modal";
 import { useSummary } from "@/hooks/use-summary";
 import { INVESTMENT_TYPES } from "@/lib/constants";
+import { investmentSchema } from "@/lib/schemas";
 import { useFinanceStore } from "@/lib/store";
 import type { InvestmentType } from "@/lib/types";
-import { cn, formatMoney } from "@/lib/utils";
+import { cn, currencySymbol, formatMoney } from "@/lib/utils";
 import { Coins, Plus, Trash2, TrendingUp, Wallet } from "lucide-react";
 import { useState } from "react";
 
@@ -25,14 +27,16 @@ export function InvestmentsView() {
   const summary = useSummary();
 
   const [open, setOpen] = useState(false);
+  // Money is held as strings so a cleared field stays blank instead of becoming 0.
   const [form, setForm] = useState({
     name: "",
     type: "SIP" as InvestmentType,
-    invested: 0,
-    currentValue: 0,
-    monthly: 0,
+    invested: "",
+    currentValue: "",
+    monthly: "",
     accountId: "",
   });
+  const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
 
   const totalInvested = investments.reduce((s, i) => s + i.invested, 0);
   const totalValue = investments.reduce((s, i) => s + i.currentValue, 0);
@@ -49,14 +53,27 @@ export function InvestmentsView() {
   };
 
   const save = async () => {
-    if (!form.name || form.invested <= 0) return;
+    const parsed = investmentSchema.safeParse(form);
+    if (!parsed.success) {
+      setErrors(
+        Object.fromEntries(
+          parsed.error.issues.map((issue) => [String(issue.path[0]), issue.message]),
+        ),
+      );
+      return;
+    }
+
+    setErrors({});
     addInvestment({
-      ...form,
-      currentValue: form.currentValue || form.invested,
-      monthly: form.monthly || undefined,
-      accountId: form.accountId || undefined,
+      name: parsed.data.name,
+      type: form.type,
+      invested: parsed.data.invested,
+      // An unstated current value means it has not moved from the amount put in.
+      currentValue: parsed.data.currentValue ?? parsed.data.invested,
+      monthly: parsed.data.monthly,
+      accountId: parsed.data.accountId,
     });
-    setForm({ name: "", type: "SIP", invested: 0, currentValue: 0, monthly: 0, accountId: "" });
+    setForm({ name: "", type: "SIP", invested: "", currentValue: "", monthly: "", accountId: "" });
     setOpen(false);
     await syncWithServer();
   };
@@ -160,17 +177,21 @@ export function InvestmentsView() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Name</Label>
+              <Label htmlFor="investment-name">Name</Label>
               <Input
+                id="investment-name"
                 autoFocus
                 placeholder="e.g. Nifty 50 Index"
                 value={form.name}
+                aria-invalid={Boolean(errors.name) || undefined}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
+              {errors.name && <p className="mt-1 text-xs text-danger">{errors.name}</p>}
             </div>
             <div>
-              <Label>Type</Label>
+              <Label htmlFor="investment-type">Type</Label>
               <Select
+                id="investment-type"
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value as InvestmentType })}
               >
@@ -182,34 +203,46 @@ export function InvestmentsView() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Invested</Label>
-              <Input
-                type="number"
-                value={form.invested || ""}
-                onChange={(e) => setForm({ ...form, invested: Number(e.target.value) })}
+              <Label htmlFor="investment-invested">Invested</Label>
+              <AmountInput
+                id="investment-invested"
+                prefix={currencySymbol(currency)}
+                value={form.invested}
+                invalid={Boolean(errors.invested)}
+                onChange={(invested) => setForm({ ...form, invested })}
               />
+              {errors.invested && <p className="mt-1 text-xs text-danger">{errors.invested}</p>}
             </div>
             <div>
-              <Label>Current value</Label>
-              <Input
-                type="number"
-                value={form.currentValue || ""}
-                onChange={(e) => setForm({ ...form, currentValue: Number(e.target.value) })}
+              <Label htmlFor="investment-current">Current value</Label>
+              <AmountInput
+                id="investment-current"
+                prefix={currencySymbol(currency)}
+                value={form.currentValue}
+                invalid={Boolean(errors.currentValue)}
+                onChange={(currentValue) => setForm({ ...form, currentValue })}
               />
+              {errors.currentValue && (
+                <p className="mt-1 text-xs text-danger">{errors.currentValue}</p>
+              )}
             </div>
           </div>
           <div>
-            <Label>Monthly SIP (optional)</Label>
-            <Input
-              type="number"
-              value={form.monthly || ""}
-              onChange={(e) => setForm({ ...form, monthly: Number(e.target.value) })}
+            <Label htmlFor="investment-monthly">Monthly SIP (optional)</Label>
+            <AmountInput
+              id="investment-monthly"
+              prefix={currencySymbol(currency)}
+              value={form.monthly}
+              invalid={Boolean(errors.monthly)}
+              onChange={(monthly) => setForm({ ...form, monthly })}
             />
+            {errors.monthly && <p className="mt-1 text-xs text-danger">{errors.monthly}</p>}
           </div>
           {accounts.length > 0 && (
             <div>
-              <Label>Paid from</Label>
+              <Label htmlFor="investment-account">Paid from</Label>
               <Select
+                id="investment-account"
                 value={form.accountId}
                 onChange={(event) => setForm({ ...form, accountId: event.target.value })}
               >
