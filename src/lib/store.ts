@@ -35,18 +35,29 @@ import type {
 import { completeTransferWrite } from "./transfer-writes";
 import { uid } from "./utils";
 
-const STORE_KEY = "spendly-store";
-const LEGACY_STORE_KEY = "salaryflow-store";
+const STORE_KEY = "aartha-store";
+
+/**
+ * Ordered newest-first. Every rename prepends its predecessor, so someone who
+ * skipped a release still carries their data forward instead of arriving to an
+ * empty app.
+ */
+const LEGACY_STORE_KEYS = ["spendly-store", "salaryflow-store"] as const;
 
 export function migrateLegacyBrandStorage(
   storage: Pick<Storage, "getItem" | "setItem" | "removeItem">,
 ) {
   if (storage.getItem(STORE_KEY)) return false;
-  const legacyState = storage.getItem(LEGACY_STORE_KEY);
-  if (!legacyState) return false;
-  storage.setItem(STORE_KEY, legacyState);
-  storage.removeItem(LEGACY_STORE_KEY);
-  return true;
+
+  for (const legacyKey of LEGACY_STORE_KEYS) {
+    const legacyState = storage.getItem(legacyKey);
+    if (!legacyState) continue;
+    storage.setItem(STORE_KEY, legacyState);
+    for (const staleKey of LEGACY_STORE_KEYS) storage.removeItem(staleKey);
+    return true;
+  }
+
+  return false;
 }
 
 if (typeof window !== "undefined") migrateLegacyBrandStorage(window.localStorage);
@@ -868,7 +879,7 @@ export const useFinanceStore = create<FinanceState>()(
 
       loadSeed: () =>
         set({
-          user: { name: "Alex Morgan", email: "alex@spendly.app", onboarded: true },
+          user: { name: "Alex Morgan", email: "alex@aartha.app", onboarded: true },
           profile: seedProfile,
           expenses: seedExpenses(),
           incomes: seedIncomes(),

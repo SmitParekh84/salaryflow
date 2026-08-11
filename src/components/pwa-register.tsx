@@ -13,11 +13,16 @@ export function PwaRegister() {
           Promise.all(registrations.map((registration) => registration.unregister())),
         );
       if ("caches" in window) {
+        // Includes retired brand prefixes so a dev machine that ran an older
+        // build does not keep serving its stale precache.
+        const ownedPrefixes = ["aartha-", "spendly-"];
         void caches
           .keys()
           .then((keys) =>
             Promise.all(
-              keys.filter((key) => key.startsWith("spendly-")).map((key) => caches.delete(key)),
+              keys
+                .filter((key) => ownedPrefixes.some((prefix) => key.startsWith(prefix)))
+                .map((key) => caches.delete(key)),
             ),
           );
       }

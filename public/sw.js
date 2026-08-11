@@ -1,4 +1,4 @@
-const CACHE = "spendly-v2";
+const CACHE = "aartha-v1";
 const OFFLINE_URL = "/offline";
 const PRECACHE = ["/", "/offline", "/manifest.webmanifest"];
 
@@ -67,7 +67,7 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("push", (event) => {
   const data = event.data ? event.data.json() : {};
-  const title = data.title || "Spendly";
+  const title = data.title || "Aartha";
   event.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || "You have a new update.",

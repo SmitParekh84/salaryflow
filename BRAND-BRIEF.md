@@ -1,14 +1,14 @@
-# Spendly Brand Brief
+# Aartha Brand Brief
 
 ## Brief purpose
 
-This document defines what Spendly solves, who it serves, how the brand should
+This document defines what Aartha solves, who it serves, how the brand should
 feel, and what success looks like. Use it as the strategic foundation for the
 logo, app icon, wordmark, color system, typography, and wider visual identity.
 
 ## Brand in one sentence
 
-Spendly turns a monthly salary into one clear, trustworthy daily number so
+Aartha turns a monthly salary into one clear, trustworthy daily number so
 people always know what they can safely spend before their next payday.
 
 ## The problem we are solving
@@ -29,12 +29,12 @@ Salaried people often experience a repeating cycle:
 5. Anxiety increases, even when the person earns and plans responsibly.
 
 Traditional calendar-month budgets also fail people whose financial life is
-organized around salary dates. Spendly treats payday as the center of the
+organized around salary dates. Aartha treats payday as the center of the
 money cycle.
 
 ## Our solution
 
-Spendly calculates a live **Safe to Spend Today** amount:
+Aartha calculates a live **Safe to Spend Today** amount:
 
 ```text
 Safe to spend per day =
@@ -104,9 +104,9 @@ went and whether my financial position is improving.
 ## Positioning
 
 For salaried people who are uncertain what they can afford between paydays,
-Spendly is a salary-cycle money companion that converts income and
+Aartha is a salary-cycle money companion that converts income and
 commitments into a clear daily safe-to-spend amount. Unlike generic expense
-trackers, Spendly guides the next decision instead of only documenting the
+trackers, Aartha guides the next decision instead of only documenting the
 last one.
 
 ## Brand promise
@@ -135,7 +135,7 @@ The identity should feel:
 
 ## Competitive distinction
 
-Spendly should not present itself as another wallet, ledger, bank, or
+Aartha should not present itself as another wallet, ledger, bank, or
 investment platform. Its ownable territory is the intersection of:
 
 - **salary** — a predictable inflow;
@@ -213,7 +213,7 @@ and communicates the emotional result without overexplaining the calculation.
 
 ## Product KPIs
 
-These measure whether Spendly is solving the user problem. Final targets
+These measure whether Aartha is solving the user problem. Final targets
 should be set after a baseline cohort is available.
 
 | KPI                               | Definition                                                                             | Why it matters                                              |
@@ -278,7 +278,7 @@ The finished brand system should include:
 
 Before approving a direction, ask:
 
-> Could this identity belong only to Spendly, and does it make the movement
+> Could this identity belong only to Aartha, and does it make the movement
 > from payday uncertainty to daily clarity visible without relying on a generic
 > finance symbol?
 

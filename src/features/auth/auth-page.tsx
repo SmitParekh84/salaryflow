@@ -3,6 +3,7 @@
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Input, Label } from "@/components/ui/input";
+import { OtpInput } from "@/components/ui/otp-input";
 import { useAuth } from "@/lib/useAuth";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -217,7 +218,7 @@ function AuthContent({ mode }: { mode: AuthMode }) {
         ? "Enter your email and we'll send you a reset link."
         : `A reset link has been sent to ${forgotEmail.trim().toLowerCase()}.`
     : signupStep === "identity"
-      ? "Start with the details you will use for your Spendly account."
+      ? "Start with the details you will use for your Aartha account."
       : signupStep === "password"
         ? "Create a strong password to protect your financial records."
         : `Enter the six-digit code sent to ${email.trim().toLowerCase()}.`;
@@ -496,7 +497,7 @@ function SignInForm({
         {!loading && <ArrowRight className="h-4 w-4" />}
       </Button>
       <p className="text-center text-sm text-muted">
-        New to Spendly?{" "}
+        New to Aartha?{" "}
         <Link href="/register" className="font-medium text-primary">
           Sign up
         </Link>
@@ -692,17 +693,13 @@ function VerificationForm({
       </div>
       <div>
         <Label htmlFor="register-otp">Verification code</Label>
-        <Input
+        <OtpInput
           id="register-otp"
           value={otp}
-          onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          pattern="[0-9]*"
-          maxLength={6}
-          className="text-center font-mono text-lg tracking-[0.3em]"
+          onChange={setOtp}
+          disabled={loading}
+          invalid={Boolean(error)}
           autoFocus
-          required
         />
       </div>
       {error && <AuthError message={error} />}

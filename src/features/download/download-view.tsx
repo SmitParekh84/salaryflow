@@ -29,10 +29,10 @@ const GUIDES: Guide[] = [
     label: "iPhone & iPad",
     browser: "Safari",
     steps: [
-      "Open Spendly in Safari. Chrome and Firefox on iOS cannot install apps — Apple restricts it.",
+      "Open Aartha in Safari. Chrome and Firefox on iOS cannot install apps — Apple restricts it.",
       "Tap the Share button in the toolbar.",
       "Scroll down and choose Add to Home Screen.",
-      "Tap Add. Spendly appears on your home screen.",
+      "Tap Add. Aartha appears on your home screen.",
     ],
   },
   {
@@ -51,8 +51,8 @@ const GUIDES: Guide[] = [
     browser: "Chrome or Edge",
     steps: [
       "Click Install app below, or the install icon at the right of the address bar.",
-      "If you don't see it, open the ⋮ menu and choose Install Spendly.",
-      "Confirm Install. Spendly opens in its own window.",
+      "If you don't see it, open the ⋮ menu and choose Install Aartha.",
+      "Confirm Install. Aartha opens in its own window.",
     ],
   },
 ];
@@ -101,9 +101,9 @@ export function DownloadView() {
 
         <header className="mt-6 flex flex-col items-center text-center">
           <BrandMark size="lg" />
-          <h1 className="mt-4 text-2xl font-semibold tracking-[-0.02em]">Install Spendly</h1>
+          <h1 className="mt-4 text-2xl font-semibold tracking-[-0.02em]">Install Aartha</h1>
           <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted">
-            Spendly installs straight from your browser — it takes about ten seconds and works on
+            Aartha installs straight from your browser — it takes about ten seconds and works on
             every phone.
           </p>
         </header>
@@ -115,17 +115,17 @@ export function DownloadView() {
             <div className="mx-auto flex size-11 items-center justify-center rounded-full bg-success/10">
               <Check className="size-5 text-success" aria-hidden="true" />
             </div>
-            <h2 className="mt-3 font-semibold">Spendly is already installed</h2>
+            <h2 className="mt-3 font-semibold">Aartha is already installed</h2>
             <p className="mt-1.5 text-sm text-muted">You&rsquo;re running the installed app.</p>
             <Button asChild className="mt-5">
-              <Link href="/dashboard">Open Spendly</Link>
+              <Link href="/dashboard">Open Aartha</Link>
             </Button>
           </div>
         ) : (
           <>
             {canInstallNatively && (
               <div className="mt-8 rounded-2xl border border-border bg-surface p-6 text-center">
-                <p className="text-sm text-muted">Your browser can install Spendly directly.</p>
+                <p className="text-sm text-muted">Your browser can install Aartha directly.</p>
                 <Button onClick={handleInstall} loading={installing} size="lg" className="mt-4">
                   <Download className="size-4" aria-hidden="true" />
                   Install app

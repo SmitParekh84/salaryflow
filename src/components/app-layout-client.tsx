@@ -9,7 +9,7 @@ import { useFinanceStore } from "@/lib/store";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const ROUTE_STACK_KEY = "spendly:route-stack";
+const ROUTE_STACK_KEY = "aartha:route-stack";
 const ROUTE_TITLES: Record<string, string> = {
   "/salary-history": "Salary history",
 };
@@ -97,7 +97,7 @@ export default function AppLayoutClient({ children }: { children: React.ReactNod
     ROUTE_TITLES[pathname] ??
     NAV_ITEMS.find((item) => pathname === item.href || pathname.startsWith(item.href + "/"))
       ?.label ??
-    "Spendly";
+    "Aartha";
 
   if (!hydrated) {
     return (

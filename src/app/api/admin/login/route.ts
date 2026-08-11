@@ -30,7 +30,7 @@ const schema = z.object({
   password: z.string().min(1).max(128),
 });
 
-const DUMMY_PASSWORD_HASH = bcrypt.hashSync("spendly-invalid-password", 10);
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync("aartha-invalid-password", 10);
 const INVALID = { error: "Invalid credentials" };
 
 export async function POST(req: Request) {

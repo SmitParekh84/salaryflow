@@ -55,7 +55,7 @@ export default function AdminLoginPage() {
           <BrandMark size="lg" />
           <h1 className="mt-4 flex items-center gap-2 text-xl font-semibold tracking-[-0.02em]">
             <Shield className="size-4 text-muted" aria-hidden="true" />
-            Spendly Console
+            Aartha Console
           </h1>
           <p className="mt-1.5 text-sm text-muted">Operator access only.</p>
         </div>
@@ -98,7 +98,7 @@ export default function AdminLoginPage() {
         </form>
 
         <p className="mt-5 text-center text-xs text-muted">
-          This console manages the Spendly app. It is not a user account.
+          This console manages the Aartha app. It is not a user account.
         </p>
       </div>
     </main>

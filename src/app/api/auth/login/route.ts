@@ -22,7 +22,7 @@ const schema = z.object({
   remember: z.boolean().optional(),
 });
 
-const DUMMY_PASSWORD_HASH = bcrypt.hashSync("spendly-invalid-password", 10);
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync("aartha-invalid-password", 10);
 
 export async function POST(req: Request) {
   if (!isSameOriginRequest(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });

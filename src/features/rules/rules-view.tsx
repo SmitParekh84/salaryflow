@@ -1,5 +1,6 @@
 "use client";
 
+import { AmountInput } from "@/components/ui/amount-input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { Modal, ModalFooter } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
 import { useSummary } from "@/hooks/use-summary";
 import { BUDGET_RULE_TEMPLATES, createRuleFromTemplate } from "@/lib/budget-rules";
+import { budgetRuleSchema } from "@/lib/schemas";
 import { useFinanceStore } from "@/lib/store";
 import type { BudgetBucketKind } from "@/lib/types";
 import { formatMoney } from "@/lib/utils";
@@ -38,15 +40,19 @@ export function RulesView() {
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("My budget rule");
-  const [percentages, setPercentages] = useState<Record<BudgetBucketKind, number>>({
-    needs: 50,
-    wants: 20,
-    savings: 15,
-    investments: 15,
+  // Held as strings so a cleared field stays blank instead of collapsing to 0.
+  const [percentages, setPercentages] = useState<Record<BudgetBucketKind, string>>({
+    needs: "50",
+    wants: "20",
+    savings: "15",
+    investments: "15",
   });
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<string, string>>>({});
   const activeRule = rules.find((rule) => rule.active);
-  const total =
-    percentages.needs + percentages.wants + percentages.savings + percentages.investments;
+  const total = BUCKETS.reduce(
+    (sum, bucket) => sum + (Number(percentages[bucket.kind]) || 0),
+    0,
+  );
 
   async function applyTemplate(templateKey: string) {
     const existing = rules.find((rule) => rule.templateKey === templateKey);
@@ -61,13 +67,23 @@ export function RulesView() {
   }
 
   async function saveCustomRule() {
-    if (!name.trim() || total !== 100) return;
+    const parsed = budgetRuleSchema.safeParse({ name, ...percentages });
+    if (!parsed.success) {
+      setFieldErrors(
+        Object.fromEntries(
+          parsed.error.issues.map((issue) => [String(issue.path[0]), issue.message]),
+        ),
+      );
+      return;
+    }
+
+    setFieldErrors({});
     addRule({
-      name: name.trim(),
+      name: parsed.data.name,
       active: true,
       allocations: BUCKETS.map((bucket) => ({
         ...bucket,
-        percentage: percentages[bucket.kind],
+        percentage: parsed.data[bucket.kind],
       })),
     });
     setOpen(false);
@@ -277,22 +293,28 @@ export function RulesView() {
               id="rule-name"
               autoFocus
               value={name}
+              aria-invalid={Boolean(fieldErrors.name) || undefined}
               onChange={(event) => setName(event.target.value)}
             />
+            {fieldErrors.name && <p className="mt-1 text-xs text-danger">{fieldErrors.name}</p>}
           </div>
           {BUCKETS.map((bucket) => (
             <div key={bucket.kind}>
               <Label htmlFor={`rule-${bucket.kind}`}>{bucket.label} percentage</Label>
-              <Input
+              <AmountInput
                 id={`rule-${bucket.kind}`}
-                type="number"
-                min={0}
-                max={100}
+                decimals={0}
+                prefix="%"
                 value={percentages[bucket.kind]}
-                onChange={(event) =>
-                  setPercentages({ ...percentages, [bucket.kind]: Number(event.target.value) })
-                }
+                invalid={Boolean(fieldErrors[bucket.kind])}
+                aria-describedby={fieldErrors[bucket.kind] ? `rule-${bucket.kind}-error` : undefined}
+                onChange={(next) => setPercentages({ ...percentages, [bucket.kind]: next })}
               />
+              {fieldErrors[bucket.kind] && (
+                <p id={`rule-${bucket.kind}-error`} className="mt-1 text-xs text-danger">
+                  {fieldErrors[bucket.kind]}
+                </p>
+              )}
             </div>
           ))}
           <div

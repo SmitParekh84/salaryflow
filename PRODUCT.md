@@ -10,7 +10,7 @@ Salaried individuals who need a clear, mobile-friendly view of income, spending,
 
 ## Product Purpose
 
-Spendly helps users understand what they can safely spend today while preserving an accurate personal record of salary credits, obligations, goals, investments, and bank balances. Success means users can update real financial data quickly and trust the resulting summary.
+Aartha helps users understand what they can safely spend today while preserving an accurate personal record of salary credits, obligations, goals, investments, and bank balances. Success means users can update real financial data quickly and trust the resulting summary.
 
 ## Brand Personality
 

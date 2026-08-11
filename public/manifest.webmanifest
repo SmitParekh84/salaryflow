@@ -1,6 +1,6 @@
 {
-  "name": "Spendly — Spend with clarity",
-  "short_name": "Spendly",
+  "name": "Aartha — Know what's safe to spend today",
+  "short_name": "Aartha",
   "description": "Salary-cycle money app that shows exactly how much you can safely spend today.",
   "start_url": "/dashboard",
   "scope": "/",

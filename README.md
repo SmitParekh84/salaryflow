@@ -1,4 +1,4 @@
-# Spendly 💸
+# Aartha 💸
 
 A premium, salary-cycle-driven money app that answers one question every day:
 **how much can I safely spend today?**
@@ -92,14 +92,14 @@ Environment variables (`.env.local`):
 MONGODB_URI=...      # MongoDB connection string (db: salaryflow)
 AUTH_SECRET=...      # At least 32 random characters
 RESEND_API_KEY=...   # Resend API key used for account emails
-RESEND_FROM="Spendly <noreply@your-verified-domain.com>"
+RESEND_FROM="Aartha <noreply@your-verified-domain.com>"
 ```
 
 Registration and password-reset codes are delivered through
 [Resend](https://resend.com). `RESEND_FROM` must sit on a domain verified in the
-Resend dashboard — Spendly is hosted at `spendly.smitparekh.co.in` but sends from
-the verified apex `smitparekh.co.in`, since a subdomain is not automatically a
-verified sender. The API returns a clear `503` response when mail is not
+Resend dashboard. Aartha's home is `aartha.app`, but mail still sends from the
+verified apex `smitparekh.co.in` — verify `aartha.app` in Resend before moving
+the sender, or delivery fails. The API returns a clear `503` response when mail is not
 configured or the provider rejects delivery; it never reports a successful send
 when no message was accepted.
 
@@ -129,8 +129,8 @@ The service worker registers only in production (`npm run build && npm run start
 ## 🐳 Docker
 
 ```bash
-docker build -t spendly .
-docker run -p 3000:3000 --env-file .env.local spendly
+docker build -t aartha .
+docker run -p 3000:3000 --env-file .env.local aartha
 ```
 
 ---

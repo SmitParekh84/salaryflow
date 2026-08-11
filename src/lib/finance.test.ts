@@ -53,19 +53,57 @@ const profile: SalaryProfile = {
   investmentAmount: 0,
 };
 
-describe("Spendly brand storage migration", () => {
-  it("moves persisted finance data to the new key exactly once", () => {
-    const values = new Map([["salaryflow-store", '{"state":{"expenses":[]},"version":3}']]);
-    const storage = {
-      getItem: (key: string) => values.get(key) ?? null,
-      setItem: (key: string, value: string) => values.set(key, value),
-      removeItem: (key: string) => values.delete(key),
+describe("Aartha brand storage migration", () => {
+  const STATE = '{"state":{"expenses":[]},"version":3}';
+
+  const makeStorage = (entries: [string, string][]) => {
+    const values = new Map(entries);
+    return {
+      values,
+      storage: {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => values.set(key, value),
+        removeItem: (key: string) => values.delete(key),
+      },
     };
+  };
+
+  it("moves data from the immediately previous key exactly once", () => {
+    const { values, storage } = makeStorage([["spendly-store", STATE]]);
 
     expect(migrateLegacyBrandStorage(storage)).toBe(true);
-    expect(values.get("spendly-store")).toBe('{"state":{"expenses":[]},"version":3}');
-    expect(values.has("salaryflow-store")).toBe(false);
+    expect(values.get("aartha-store")).toBe(STATE);
+    expect(values.has("spendly-store")).toBe(false);
     expect(migrateLegacyBrandStorage(storage)).toBe(false);
+  });
+
+  it("carries data forward for a user who skipped the previous rename", () => {
+    const { values, storage } = makeStorage([["salaryflow-store", STATE]]);
+
+    expect(migrateLegacyBrandStorage(storage)).toBe(true);
+    expect(values.get("aartha-store")).toBe(STATE);
+    expect(values.has("salaryflow-store")).toBe(false);
+  });
+
+  it("prefers the newest legacy key and clears every older one", () => {
+    const { values, storage } = makeStorage([
+      ["spendly-store", STATE],
+      ["salaryflow-store", '{"state":{"expenses":[{"id":"stale"}]},"version":1}'],
+    ]);
+
+    expect(migrateLegacyBrandStorage(storage)).toBe(true);
+    expect(values.get("aartha-store")).toBe(STATE);
+    expect(values.has("salaryflow-store")).toBe(false);
+  });
+
+  it("leaves existing current-key data untouched", () => {
+    const { values, storage } = makeStorage([
+      ["aartha-store", STATE],
+      ["spendly-store", '{"state":{"expenses":[{"id":"stale"}]},"version":1}'],
+    ]);
+
+    expect(migrateLegacyBrandStorage(storage)).toBe(false);
+    expect(values.get("aartha-store")).toBe(STATE);
   });
 });
 
@@ -938,6 +976,23 @@ describe("bills and funding plan", () => {
     expect(reserve?.amount).toBeCloseTo(899 / 3);
     expect(reserve?.timing).toContain("Every 90 days");
     expect(plan.total).toBeCloseTo(899 / 3);
+  });
+
+  it("keeps a future yearly bill anchored to its selected first due date", () => {
+    const renewal: Bill = {
+      id: "domain-renewal",
+      name: "Domain renewal",
+      amount: 1_124.7,
+      dueDay: 11,
+      dueDate: "2027-08-11",
+      frequency: "yearly",
+      category: "Business",
+      paid: false,
+    };
+
+    expect(billOccurrenceDate(renewal, new Date(2026, 7, 11, 12))).toEqual(
+      new Date(2027, 7, 11, 12),
+    );
   });
 
   it("anchors a legacy bill without dueDate in the current month", () => {

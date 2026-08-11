@@ -1,3 +1,4 @@
+import { BRAND } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
@@ -10,7 +11,7 @@ const MARK_SIZES = {
 type BrandSize = keyof typeof MARK_SIZES;
 
 /**
- * The Spendly app icon. Single definition so the dashboard, auth pages and
+ * The Aartha app icon. Single definition so the dashboard, auth pages and
  * landing page can never drift apart.
  */
 export function BrandMark({
@@ -57,7 +58,7 @@ export function Brand({
             size === "lg" ? "text-[0.95rem]" : "text-sm",
           )}
         >
-          Spendly
+          {BRAND.name}
         </span>
         {tagline && (
           <span className="mt-0.5 block truncate text-[10px] leading-tight text-muted">
