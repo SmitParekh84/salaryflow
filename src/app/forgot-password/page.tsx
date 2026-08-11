@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
+import { OtpInput } from "@/components/ui/otp-input";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
@@ -92,7 +93,13 @@ export default function ForgotPasswordPage() {
             </div>
             <div>
               <Label htmlFor="reset-otp">Verification code</Label>
-              <Input id="reset-otp" value={otp} onChange={(e) => setOtp(e.target.value)} />
+              <OtpInput
+                id="reset-otp"
+                value={otp}
+                onChange={setOtp}
+                disabled={loading}
+                invalid={Boolean(error)}
+              />
             </div>
             <div>
               <Label htmlFor="reset-password">New password</Label>

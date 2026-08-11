@@ -28,6 +28,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import styles from "./landing.module.css";
+import { SiteFooter } from "./site-footer";
 
 const moneyItems = [
   {
@@ -693,16 +694,7 @@ export function LandingHero() {
           </div>
         </section>
       </main>
-      <footer className={styles.footer}>
-        <Brand size="lg" tagline="Spend with clarity." />
-        <nav aria-label="Footer navigation">
-          <a href="#how-it-works">How it works</a>
-          <a href="#features">Features</a>
-          <a href="#privacy">Privacy</a>
-          <a href="#faq">FAQ</a>
-        </nav>
-        <p>© 2026 Aartha. All rights reserved.</p>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
