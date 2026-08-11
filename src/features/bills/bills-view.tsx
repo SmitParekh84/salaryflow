@@ -1,6 +1,7 @@
 "use client";
 
 import { CategoryIcon, getCategoryColor } from "@/components/category-icon";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,9 +11,16 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { Modal, ModalFooter } from "@/components/ui/modal";
 import { billCycle, billOccurrenceDate, monthlyBillReserve } from "@/lib/bill-cycle";
 import { CATEGORIES } from "@/lib/constants";
+import { billSchema } from "@/lib/schemas";
 import { useFinanceStore } from "@/lib/store";
 import type { Bill, BillFrequency } from "@/lib/types";
-import { dateInputToIso, formatMoney, localDateInputValue, parseFinancialDate } from "@/lib/utils";
+import {
+  currencySymbol,
+  dateInputToIso,
+  formatMoney,
+  localDateInputValue,
+  parseFinancialDate,
+} from "@/lib/utils";
 import { CalendarClock, Check, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -33,13 +41,14 @@ export function BillsView() {
 
   const [form, setForm] = useState({
     name: "",
-    amount: 0,
+    amount: "",
     dueDate: localDateInputValue(),
     category: "Utilities" as Bill["category"],
     accountId: "",
     frequency: "monthly" as BillFrequency,
-    intervalDays: 90,
+    intervalDays: "90",
   });
+  const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
 
   const sorted = useMemo(() => {
     return [...bills].sort((first, second) => {
@@ -62,13 +71,14 @@ export function BillsView() {
     setEditingId(null);
     setForm({
       name: "",
-      amount: 0,
+      amount: "",
       dueDate: localDateInputValue(),
       category: "Utilities",
       accountId: defaultAccount?.id ?? "",
       frequency: "monthly",
-      intervalDays: 90,
+      intervalDays: "90",
     });
+    setErrors({});
     setOpen(true);
   };
 
@@ -76,29 +86,45 @@ export function BillsView() {
     setEditingId(bill.id);
     setForm({
       name: bill.name,
-      amount: bill.amount,
+      amount: String(bill.amount),
       dueDate: bill.dueDate
         ? localDateInputValue(parseFinancialDate(bill.dueDate))
         : localDateInputValue(billOccurrenceDate(bill)),
       category: bill.category,
       accountId: bill.accountId ?? "",
       frequency: bill.frequency,
-      intervalDays: bill.intervalDays ?? 90,
+      intervalDays: String(bill.intervalDays ?? 90),
     });
+    setErrors({});
     setOpen(true);
   };
 
   const save = async () => {
-    if (!form.name || form.amount <= 0) return;
+    const parsed = billSchema.safeParse({
+      name: form.name,
+      amount: form.amount,
+      // Only validated when it is the field actually driving the schedule.
+      intervalDays: form.frequency === "interval" ? form.intervalDays : undefined,
+    });
+    if (!parsed.success) {
+      setErrors(
+        Object.fromEntries(
+          parsed.error.issues.map((issue) => [String(issue.path[0]), issue.message]),
+        ),
+      );
+      return;
+    }
+
+    setErrors({});
     const selectedDate = parseFinancialDate(form.dueDate);
     const existing = editingId ? bills.find((bill) => bill.id === editingId) : undefined;
     const bill = {
-      name: form.name.trim(),
-      amount: form.amount,
+      name: parsed.data.name,
+      amount: parsed.data.amount,
       dueDay: selectedDate.getDate(),
       dueDate: dateInputToIso(form.dueDate),
       frequency: form.frequency,
-      intervalDays: form.frequency === "interval" ? form.intervalDays : undefined,
+      intervalDays: parsed.data.intervalDays,
       category: form.category,
       paid: existing?.paid ?? false,
       accountId: form.accountId || undefined,
@@ -257,26 +283,33 @@ export function BillsView() {
       >
         <div className="space-y-4">
           <div>
-            <Label>Bill name</Label>
+            <Label htmlFor="bill-name">Bill name</Label>
             <Input
+              id="bill-name"
               autoFocus
               placeholder="e.g. Electricity"
               value={form.name}
+              aria-invalid={Boolean(errors.name) || undefined}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
+            {errors.name && <p className="mt-1 text-xs text-danger">{errors.name}</p>}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Amount</Label>
-              <Input
-                type="number"
-                value={form.amount || ""}
-                onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })}
+              <Label htmlFor="bill-amount">Amount</Label>
+              <AmountInput
+                id="bill-amount"
+                prefix={currencySymbol(currency)}
+                value={form.amount}
+                invalid={Boolean(errors.amount)}
+                onChange={(amount) => setForm({ ...form, amount })}
               />
+              {errors.amount && <p className="mt-1 text-xs text-danger">{errors.amount}</p>}
             </div>
             <div>
-              <Label>Date</Label>
+              <Label htmlFor="bill-date">Date</Label>
               <Input
+                id="bill-date"
                 type="date"
                 value={form.dueDate}
                 onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
@@ -290,8 +323,9 @@ export function BillsView() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Repeats</Label>
+              <Label htmlFor="bill-frequency">Repeats</Label>
               <Select
+                id="bill-frequency"
                 value={form.frequency}
                 onChange={(event) =>
                   setForm({ ...form, frequency: event.target.value as BillFrequency })
@@ -305,19 +339,20 @@ export function BillsView() {
             </div>
             {form.frequency === "interval" && (
               <div>
-                <Label>Every</Label>
+                <Label htmlFor="bill-interval">Every</Label>
                 <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min={1}
-                    max={3650}
+                  <AmountInput
+                    id="bill-interval"
+                    decimals={0}
                     value={form.intervalDays}
-                    onChange={(event) =>
-                      setForm({ ...form, intervalDays: Number(event.target.value) })
-                    }
+                    invalid={Boolean(errors.intervalDays)}
+                    onChange={(intervalDays) => setForm({ ...form, intervalDays })}
                   />
                   <span className="text-sm text-muted">days</span>
                 </div>
+                {errors.intervalDays && (
+                  <p className="mt-1 text-xs text-danger">{errors.intervalDays}</p>
+                )}
               </div>
             )}
           </div>
