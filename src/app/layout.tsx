@@ -11,15 +11,15 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 import ClientAuthWrapper from "@/components/client-auth-wrapper";
 
 export const metadata: Metadata = {
-  title: "Spendly — Spend with clarity",
+  title: "Aartha — Know what's safe to spend today",
   description:
     "A salary-cycle money app that tells you exactly how much you can safely spend today, every day until your next salary.",
-  applicationName: "Spendly",
+  applicationName: "Aartha",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Spendly",
+    title: "Aartha",
   },
   icons: {
     icon: [
@@ -39,7 +39,8 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  // No maximumScale: capping zoom fails WCAG 2.1 AA 1.4.4 (Resize Text). Fields
+  // are 16px on mobile, so iOS has no reason to auto-zoom on focus anyway.
   viewportFit: "cover",
 };
 

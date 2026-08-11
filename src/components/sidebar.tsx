@@ -69,7 +69,7 @@ export function Sidebar() {
     >
       <Link
         href="/dashboard"
-        aria-label="Spendly dashboard"
+        aria-label="Aartha dashboard"
         className="mb-8 flex items-center rounded-xl px-2 py-1 outline-none transition-transform duration-150 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-(--ring)"
       >
         <Brand tagline="Spend with clarity" />

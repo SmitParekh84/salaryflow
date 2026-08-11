@@ -24,6 +24,8 @@ export function billOccurrenceDate(bill: Bill, now = new Date()): Date {
     return occurrence;
   }
   if (bill.frequency === "yearly") {
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+    if (source >= today) return source;
     const day = Math.min(
       source.getDate(),
       new Date(now.getFullYear(), source.getMonth() + 1, 0).getDate(),

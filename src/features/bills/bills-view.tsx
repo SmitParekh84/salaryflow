@@ -154,12 +154,15 @@ export function BillsView() {
             const categoryColor = getCategoryColor(b.category, customCategories);
             const cycle = billCycle(b, expenses);
             const account = accounts.find((item) => item.id === b.accountId);
+            const isFutureYear = cycle.occurrenceDate.getFullYear() > new Date().getFullYear();
             const dateLabel = cycle.occurrenceDate.toLocaleDateString("en-US", {
               day: "numeric",
               month: "short",
+              year: isFutureYear ? "numeric" : undefined,
             });
             const isFutureInterval =
               b.frequency === "interval" && !cycle.isDueThisMonth && !cycle.overdue;
+            const isScheduled = isFutureInterval || isFutureYear;
             return (
               <Card key={b.id} className="flex items-center gap-3 p-4">
                 <div
@@ -183,6 +186,8 @@ export function BillsView() {
                     </span>
                     {isFutureInterval ? (
                       <Badge color="var(--primary)">Saving</Badge>
+                    ) : isFutureYear ? (
+                      <Badge color="var(--primary)">Scheduled</Badge>
                     ) : cycle.isPaid ? (
                       <Badge color="var(--success)">Paid</Badge>
                     ) : cycle.overdue ? (
@@ -205,7 +210,7 @@ export function BillsView() {
                     </p>
                   )}
                   <div className="mt-1 flex items-center justify-end gap-1">
-                    {!cycle.isPaid && !isFutureInterval && (
+                    {!cycle.isPaid && !isScheduled && (
                       <Button
                         variant="ghost"
                         size="icon"

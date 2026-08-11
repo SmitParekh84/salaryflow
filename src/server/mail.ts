@@ -8,11 +8,11 @@ export type MailResult =
 /**
  * Sender identity.
  *
- * Spendly lives on spendly.smitparekh.co.in, but the domain verified in Resend
+ * Aartha lives on aartha.smitparekh.co.in, but the domain verified in Resend
  * is the apex smitparekh.co.in — the subdomain is not a separate verified
  * sending domain, so the envelope must stay on the apex or Resend rejects it.
  */
-const DEFAULT_FROM = "Spendly <noreply@smitparekh.co.in>";
+const DEFAULT_FROM = "Aartha <noreply@smitparekh.co.in>";
 
 let client: Resend | null = null;
 

@@ -1,7 +1,7 @@
 import { EMAIL_COLORS, EMAIL_COLORS_DARK } from "@/lib/theme";
 
 /**
- * Shared shell for every Spendly transactional email.
+ * Shared shell for every Aartha transactional email.
  *
  * Email is a hostile rendering target — no external CSS, no custom properties,
  * no JavaScript, and a Word layout engine in Outlook. Everything here is
@@ -41,7 +41,7 @@ export const MONO_STACK =
  * localhost `NEXTAUTH_URL` is useless — a dev send would show a broken logo.
  * Development therefore falls back to production so test emails still render.
  */
-const PUBLIC_ORIGIN = "https://spendly.smitparekh.co.in";
+const PUBLIC_ORIGIN = "https://aartha.smitparekh.co.in";
 
 function assetOrigin() {
   const base = process.env.NEXTAUTH_URL?.trim().replace(/\/+$/, "");
@@ -126,7 +126,7 @@ export function renderShell({ title, preheader, content }: ShellOptions) {
                     <td width="${MARK_PX}" height="${MARK_PX}" style="width:${MARK_PX}px;height:${MARK_PX}px;border-radius:9px;background:${INK};font-size:0;line-height:0;">
                       <img src="${assetOrigin()}/icons/icon-192.png" width="${MARK_PX}" height="${MARK_PX}" alt="" aria-hidden="true" style="display:block;width:${MARK_PX}px;height:${MARK_PX}px;border:0;border-radius:9px;outline:none;text-decoration:none;">
                     </td>
-                    <td class="sp-wordmark" style="padding-left:10px;font-family:${SANS_STACK};font-size:16px;font-weight:600;letter-spacing:-0.01em;color:${L.foreground};">Spendly</td>
+                    <td class="sp-wordmark" style="padding-left:10px;font-family:${SANS_STACK};font-size:16px;font-weight:600;letter-spacing:-0.01em;color:${L.foreground};">Aartha</td>
                   </tr>
                 </table>
               </td>
@@ -139,7 +139,7 @@ export function renderShell({ title, preheader, content }: ShellOptions) {
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:520px;">
             <tr>
               <td align="center" class="sp-subtle" style="padding:20px 8px 0;font-family:${SANS_STACK};font-size:12px;line-height:1.5;color:${L.subtle};">
-                Spendly &middot; Spend with clarity.
+                Aartha &middot; Spend with clarity.
               </td>
             </tr>
           </table>

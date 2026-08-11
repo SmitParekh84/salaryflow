@@ -217,7 +217,7 @@ function AuthContent({ mode }: { mode: AuthMode }) {
         ? "Enter your email and we'll send you a reset link."
         : `A reset link has been sent to ${forgotEmail.trim().toLowerCase()}.`
     : signupStep === "identity"
-      ? "Start with the details you will use for your Spendly account."
+      ? "Start with the details you will use for your Aartha account."
       : signupStep === "password"
         ? "Create a strong password to protect your financial records."
         : `Enter the six-digit code sent to ${email.trim().toLowerCase()}.`;
@@ -496,7 +496,7 @@ function SignInForm({
         {!loading && <ArrowRight className="h-4 w-4" />}
       </Button>
       <p className="text-center text-sm text-muted">
-        New to Spendly?{" "}
+        New to Aartha?{" "}
         <Link href="/register" className="font-medium text-primary">
           Sign up
         </Link>

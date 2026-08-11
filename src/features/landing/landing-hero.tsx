@@ -62,22 +62,22 @@ const moneyItems = [
 
 const faqs = [
   [
-    "What is Spendly?",
-    "Spendly is a personal finance app for salaried people. It turns your salary, commitments, goals, and days until payday into one clear daily spending number.",
+    "What is Aartha?",
+    "Aartha is a personal finance app for salaried people. It turns your salary, commitments, goals, and days until payday into one clear daily spending number.",
   ],
   [
     "How does Safe to Spend Today work?",
-    "Spendly subtracts protected bills, savings, investments, and recorded spending, then paces the remainder across the days until payday.",
+    "Aartha subtracts protected bills, savings, investments, and recorded spending, then paces the remainder across the days until payday.",
   ],
   [
-    "Does Spendly work with my salary date?",
+    "Does Aartha work with my salary date?",
     "Yes. Your cycle can start on any payday, whether that is the 1st, 7th, 25th, or another date.",
   ],
   [
     "Do I need to connect my bank account?",
-    "No. You stay in control and add only the information you want Spendly to use.",
+    "No. You stay in control and add only the information you want Aartha to use.",
   ],
-  ["Is Spendly free?", "You can join the waitlist now and use the interactive demo for free."],
+  ["Is Aartha free?", "You can join the waitlist now and use the interactive demo for free."],
   [
     "Can I change my bills, savings, or salary later?",
     "Yes. Update any input whenever life changes and your daily number recalculates.",
@@ -178,7 +178,7 @@ function WaitlistForm({ id, compact = false }: { id: string; compact?: boolean }
       <form
         onSubmit={submit}
         className={styles.waitlistForm}
-        aria-label="Join the Spendly waitlist"
+        aria-label="Join the Aartha waitlist"
       >
         <label htmlFor={id} className="sr-only">
           Email address
@@ -261,7 +261,7 @@ export function LandingHero() {
   return (
     <div className={styles.page}>
       <header className={styles.nav}>
-        <Link href="/" aria-label="Spendly home">
+        <Link href="/" aria-label="Aartha home">
           <Brand size="lg" />
         </Link>
         <nav className={styles.desktopNav} aria-label="Main navigation">
@@ -315,7 +315,7 @@ export function LandingHero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", bounce: 0, duration: 0.6 }}
           >
-            <p className={styles.eyebrow}>Introducing Spendly</p>
+            <p className={styles.eyebrow}>Introducing Aartha</p>
             <h1>
               Know what you can <span>safely spend</span> today.
             </h1>
@@ -372,7 +372,7 @@ export function LandingHero() {
               Your bank balance doesn’t tell the <span>whole story.</span>
             </h2>
             <p>
-              ₹85,000 may be in your account, but some of it already has a job. Spendly reveals what
+              ₹85,000 may be in your account, but some of it already has a job. Aartha reveals what
               is actually yours to use today.
             </p>
           </Reveal>
@@ -405,8 +405,8 @@ export function LandingHero() {
 
         <section id="how-it-works" className={styles.section}>
           <SectionHeading
-            eyebrow="How Spendly works"
-            copy="Tell us when you get paid and what matters. Spendly keeps the rest clear."
+            eyebrow="How Aartha works"
+            copy="Tell us when you get paid and what matters. Aartha keeps the rest clear."
           >
             From payday to payday, <span>your money stays paced.</span>
           </SectionHeading>
@@ -469,7 +469,7 @@ export function LandingHero() {
         <section id="features" className={styles.section}>
           <SectionHeading
             eyebrow="Everything that affects spending"
-            copy="Your salary has more than one job. Spendly keeps track of each one."
+            copy="Your salary has more than one job. Aartha keeps track of each one."
           >
             Everything is accounted for. <span>Nothing is hidden.</span>
           </SectionHeading>
@@ -499,14 +499,14 @@ export function LandingHero() {
           </SectionHeading>
           <div className={styles.compareGrid}>
             <Reveal className={`${styles.comparePanel} ${styles.beforePanel}`}>
-              <p>Without Spendly</p>
+              <p>Without Aartha</p>
               <strong>₹85,000</strong>
               <span>Rent is due soon…</span>
               <span>How much should I save?</span>
               <span>Will I have enough?</span>
             </Reveal>
             <Reveal className={`${styles.comparePanel} ${styles.afterPanel}`}>
-              <p>With Spendly</p>
+              <p>With Aartha</p>
               <DailyNumber compact />
             </Reveal>
           </div>
@@ -571,7 +571,7 @@ export function LandingHero() {
             eyebrow="Start in minutes"
             copy="No complicated budget. Add your salary, payday, and regular commitments once."
           >
-            Set it up once. <span>Let Spendly do the math.</span>
+            Set it up once. <span>Let Aartha do the math.</span>
           </SectionHeading>
           <div className={styles.setupGrid}>
             <Reveal className={styles.setupCard}>
@@ -604,7 +604,7 @@ export function LandingHero() {
         <section id="privacy" className={styles.privacySection}>
           <SectionHeading
             eyebrow="Your money. Your privacy."
-            copy="You decide what information you add, what you track, and how you use Spendly."
+            copy="You decide what information you add, what you track, and how you use Aartha."
           >
             Your financial life is personal. <span>We treat it that way.</span>
           </SectionHeading>
@@ -701,7 +701,7 @@ export function LandingHero() {
           <a href="#privacy">Privacy</a>
           <a href="#faq">FAQ</a>
         </nav>
-        <p>© 2026 Spendly. All rights reserved.</p>
+        <p>© 2026 Aartha. All rights reserved.</p>
       </footer>
     </div>
   );

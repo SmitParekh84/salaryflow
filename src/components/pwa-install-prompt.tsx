@@ -45,7 +45,7 @@ export function PwaInstallSection() {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
             <Smartphone className="h-7 w-7 text-primary" />
           </div>
-          <h2 className="text-xl font-semibold tracking-tight">Add Spendly to your home screen</h2>
+          <h2 className="text-xl font-semibold tracking-tight">Add Aartha to your home screen</h2>
           <p className="mt-2 text-sm text-muted">
             Install the app for instant access, offline support, and a native feel — no App Store
             required.
@@ -136,7 +136,7 @@ export function PwaInstallSection() {
                 </IosStep>
                 <IosStep number={4}>
                   Tap <strong className="font-semibold text-foreground">Add</strong> in the top
-                  right corner. Spendly will appear on your home screen instantly.
+                  right corner. Aartha will appear on your home screen instantly.
                 </IosStep>
               </ol>
 

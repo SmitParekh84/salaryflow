@@ -30,7 +30,7 @@ export function createOtpEmail({ code, purpose, expiresInMinutes }: Omit<OtpEmai
 
   const heading = isRegistration ? "Verify your email" : "Reset your password";
   const lead = isRegistration
-    ? "Enter this code to finish creating your Spendly account."
+    ? "Enter this code to finish creating your Aartha account."
     : "Enter this code to choose a new password.";
   const reassurance = isRegistration
     ? "Didn&rsquo;t request this? Ignore this email &mdash; no account was created."
@@ -48,8 +48,8 @@ export function createOtpEmail({ code, purpose, expiresInMinutes }: Omit<OtpEmai
 
   return {
     subject: isRegistration
-      ? `${code} is your Spendly verification code`
-      : `${code} is your Spendly reset code`,
+      ? `${code} is your Aartha verification code`
+      : `${code} is your Aartha reset code`,
     // Leads with the code so it is readable from the notification or inbox list
     // without opening the message at all.
     text: [
@@ -62,10 +62,10 @@ export function createOtpEmail({ code, purpose, expiresInMinutes }: Omit<OtpEmai
         ? "Didn't request this? Ignore this email — no account was created."
         : "Didn't request this? Ignore this email — your password is unchanged.",
       "",
-      "Spendly — Spend with clarity.",
+      "Aartha — Spend with clarity.",
     ].join("\n"),
     html: renderShell({
-      title: `${heading} · Spendly`,
+      title: `${heading} · Aartha`,
       preheader: `${code} · ${expiry}.`,
       content,
     }),

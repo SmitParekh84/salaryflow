@@ -15,7 +15,7 @@ import { mergeCollection } from "./sync-merge";
  * the suite writes and deletes rows for its own scratch user.
  */
 const URI = process.env.MONGODB_TEST_URI;
-const USER = "sync-merge-test@spendly.local";
+const USER = "sync-merge-test@aartha.local";
 
 const suite = URI ? describe : describe.skip;
 
