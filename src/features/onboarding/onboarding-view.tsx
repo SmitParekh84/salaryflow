@@ -2,11 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Input, Label, Select } from "@/components/ui/input";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
+import { parseAmount } from "@/lib/number-input";
 import { useFinanceStore } from "@/lib/store";
 import type { SalaryCycle, SalaryProfile } from "@/lib/types";
+import { currencySymbol } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -40,9 +43,28 @@ export function OnboardingView() {
     investmentAmount: 0,
   });
 
+  /**
+   * Money is drafted as strings so a cleared field stays blank rather than
+   * collapsing to 0, which the numeric profile shape cannot represent.
+   */
+  const [money, setMoney] = useState({
+    amount: "",
+    salaryDay: "1",
+    savingsGoal: "",
+    emergencyFundGoal: "",
+    investmentAmount: "",
+  });
+  const enteredMoney = {
+    amount: parseAmount(money.amount),
+    salaryDay: parseAmount(money.salaryDay),
+    savingsGoal: parseAmount(money.savingsGoal),
+    emergencyFundGoal: parseAmount(money.emergencyFundGoal),
+    investmentAmount: parseAmount(money.investmentAmount),
+  };
+
   // custom other items (title + amount) user can add in step 3
   const [customTitle, setCustomTitle] = useState("");
-  const [customAmount, setCustomAmount] = useState<number | "">("");
+  const [customAmount, setCustomAmount] = useState("");
   const [customItems, setCustomItems] = useState<{ id: string; title: string; amount: number }[]>(
     [],
   );
@@ -54,11 +76,9 @@ export function OnboardingView() {
   const patch = (p: Partial<SalaryProfile>) => setProfile((prev) => ({ ...prev, ...p }));
 
   function addCustom() {
-    if (!customTitle.trim() || !customAmount || Number(customAmount) <= 0) return;
-    setCustomItems((s) => [
-      { id: String(Date.now()), title: customTitle.trim(), amount: Number(customAmount) },
-      ...s,
-    ]);
+    const amount = parseAmount(customAmount);
+    if (!customTitle.trim() || amount === null || amount <= 0) return;
+    setCustomItems((s) => [{ id: String(Date.now()), title: customTitle.trim(), amount }, ...s]);
     setCustomTitle("");
     setCustomAmount("");
   }
@@ -89,7 +109,10 @@ export function OnboardingView() {
     {
       title: "Your salary",
       subtitle: "How much and when do you get paid?",
-      valid: profile.amount > 0 && profile.salaryDay >= 1,
+      valid:
+      (enteredMoney.amount ?? 0) > 0 &&
+      (enteredMoney.salaryDay ?? 0) >= 1 &&
+      (enteredMoney.salaryDay ?? 0) <= 31,
       content: (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
@@ -122,26 +145,23 @@ export function OnboardingView() {
             </div>
           </div>
           <div>
-            <Label>Salary amount</Label>
-            <Input
-              type="number"
+            <Label htmlFor="onboarding-salary">Salary amount</Label>
+            <AmountInput
+              id="onboarding-salary"
+              prefix={currencySymbol(profile.currency)}
               placeholder="85000"
-              value={profile.amount || ""}
-              onChange={(e) => patch({ amount: Number(e.target.value) })}
+              value={money.amount}
+              onChange={(amount) => setMoney({ ...money, amount })}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Salary day of month</Label>
-              <Input
-                type="number"
-                min={1}
-                max={31}
-                value={profile.salaryDay || ""}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  patch({ salaryDay: value === "" ? 0 : Math.min(31, Number(value)) });
-                }}
+              <Label htmlFor="onboarding-salary-day">Salary day of month</Label>
+              <AmountInput
+                id="onboarding-salary-day"
+                decimals={0}
+                value={money.salaryDay}
+                onChange={(salaryDay) => setMoney({ ...money, salaryDay })}
               />
             </div>
             <div>
@@ -168,30 +188,33 @@ export function OnboardingView() {
       content: (
         <div className="space-y-4">
           <div>
-            <Label>Monthly savings goal</Label>
-            <Input
-              type="number"
+            <Label htmlFor="onboarding-savingsGoal">Monthly savings goal</Label>
+            <AmountInput
+              id="onboarding-savingsGoal"
+              prefix={currencySymbol(profile.currency)}
               placeholder="15000"
-              value={profile.savingsGoal || ""}
-              onChange={(e) => patch({ savingsGoal: Number(e.target.value) })}
+              value={money.savingsGoal}
+              onChange={(savingsGoal) => setMoney({ ...money, savingsGoal })}
             />
           </div>
           <div>
-            <Label>Emergency fund target</Label>
-            <Input
-              type="number"
+            <Label htmlFor="onboarding-emergencyFundGoal">Emergency fund target</Label>
+            <AmountInput
+              id="onboarding-emergencyFundGoal"
+              prefix={currencySymbol(profile.currency)}
               placeholder="300000"
-              value={profile.emergencyFundGoal || ""}
-              onChange={(e) => patch({ emergencyFundGoal: Number(e.target.value) })}
+              value={money.emergencyFundGoal}
+              onChange={(emergencyFundGoal) => setMoney({ ...money, emergencyFundGoal })}
             />
           </div>
           <div>
-            <Label>Monthly investment amount</Label>
-            <Input
-              type="number"
+            <Label htmlFor="onboarding-investmentAmount">Monthly investment amount</Label>
+            <AmountInput
+              id="onboarding-investmentAmount"
+              prefix={currencySymbol(profile.currency)}
               placeholder="10000"
-              value={profile.investmentAmount || ""}
-              onChange={(e) => patch({ investmentAmount: Number(e.target.value) })}
+              value={money.investmentAmount}
+              onChange={(investmentAmount) => setMoney({ ...money, investmentAmount })}
             />
           </div>
 
@@ -204,11 +227,12 @@ export function OnboardingView() {
                 value={customTitle}
                 onChange={(e) => setCustomTitle(e.target.value)}
               />
-              <Input
+              <AmountInput
                 placeholder="Amount"
-                type="number"
-                value={customAmount || ""}
-                onChange={(e) => setCustomAmount(e.target.value ? Number(e.target.value) : "")}
+                aria-label="Amount"
+                prefix={currencySymbol(profile.currency)}
+                value={customAmount}
+                onChange={setCustomAmount}
               />
               <Button onClick={addCustom} className="whitespace-nowrap">
                 Add
@@ -242,12 +266,20 @@ export function OnboardingView() {
 
   const current = steps[step];
   const persistAndFinish = async () => {
-    completeOnboarding({ name }, profile);
+    const finalProfile: SalaryProfile = {
+      ...profile,
+      amount: enteredMoney.amount ?? 0,
+      salaryDay: enteredMoney.salaryDay ?? 1,
+      savingsGoal: enteredMoney.savingsGoal ?? 0,
+      emergencyFundGoal: enteredMoney.emergencyFundGoal ?? 0,
+      investmentAmount: enteredMoney.investmentAmount ?? 0,
+    };
+    completeOnboarding({ name }, finalProfile);
     for (const c of customItems) {
       addBill({
         name: c.title,
         amount: c.amount,
-        dueDay: profile.salaryDay,
+        dueDay: finalProfile.salaryDay,
         frequency: "monthly",
         category: "Other",
         paid: false,
