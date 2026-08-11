@@ -30,18 +30,25 @@
     transform: scale(.97)
 }
 
+/*
+ * Fixed rather than sticky: `.page` sets `overflow: hidden`, and an overflow
+ * ancestor stops `position: sticky` from ever sticking.
+ *
+ * Full-bleed with the content inset by padding, rather than a centred
+ * max-width box. A 1280px-wide bar would let the page scroll visibly past its
+ * left and right edges on wider screens.
+ */
 .nav {
     align-items: center;
     background: rgba(255, 255, 255, .78);
     backdrop-filter: blur(24px) saturate(160%);
+    border-bottom: 1px solid rgba(7, 24, 47, .07);
     display: flex;
     height: 72px;
     justify-content: space-between;
     left: 0;
-    margin: auto;
-    max-width: 1280px;
-    padding: 0 32px;
-    position: absolute;
+    padding: 0 max(32px, calc((100% - 1216px)/2));
+    position: fixed;
     right: 0;
     top: 0;
     z-index: 20

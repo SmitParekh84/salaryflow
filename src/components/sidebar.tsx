@@ -280,10 +280,15 @@ export function MobileNav() {
     <>
       <nav
         aria-label="Mobile navigation"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 px-1 backdrop-blur-xl lg:hidden"
       >
+        {/*
+         * The home-indicator inset is padded onto each tab rather than onto the
+         * bar. Padding the bar left a dead strip along the bottom edge that
+         * swallowed low taps, which read as the tap being ignored.
+         */}
         <div
-          className="mx-auto grid h-16 max-w-lg items-stretch"
+          className="mx-auto grid max-w-lg items-stretch"
           style={{ gridTemplateColumns: `repeat(${pinnedItems.length + 1}, 1fr)` }}
         >
           {pinnedItems.map((item) => {
@@ -297,6 +302,10 @@ export function MobileNav() {
                 aria-label={item.label}
                 aria-current={active ? "page" : undefined}
                 className="relative flex min-w-0 flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-(--ring) active:scale-[0.96]"
+                style={{
+                  height: "calc(4rem + env(safe-area-inset-bottom))",
+                  paddingBottom: "env(safe-area-inset-bottom)",
+                }}
               >
                 <TabPendingState>
                   {(pending) => {
@@ -339,6 +348,10 @@ export function MobileNav() {
               "relative flex min-w-0 flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-(--ring)",
               moreActive ? "text-primary" : "text-muted",
             )}
+            style={{
+              height: "calc(4rem + env(safe-area-inset-bottom))",
+              paddingBottom: "env(safe-area-inset-bottom)",
+            }}
           >
             {moreActive && (
               <span className="absolute top-0 inset-x-3 h-0.5 rounded-b-full bg-primary" />

@@ -20,5 +20,3 @@ export const BRAND = {
   description:
     "A salary-cycle money app that tells you exactly how much you can safely spend today, every day until your next salary.",
 } as const;
-
-export const BRAND_NAME = process.env.NEXT_PUBLIC_APP_NAME?.trim() || BRAND.name;

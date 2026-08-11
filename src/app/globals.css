@@ -2,6 +2,23 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * Restrict `hover:` to devices that actually hover.
+ *
+ * By default these compile to a bare `:hover` rule. On iOS Safari, tapping an
+ * element that has hover styles applies the hover state on the first tap and
+ * only activates on the second — so every nav item carrying `hover:bg-surface-2`
+ * needed two taps to navigate. Gating the variant on `(hover: hover)` removes
+ * the phantom first tap without changing anything on desktop.
+ */
+@custom-variant hover {
+  @media (hover: hover) {
+    &:hover {
+      @slot;
+    }
+  }
+}
+
 /* ============================================================================
    LAYER 1 — PALETTE
    The only place raw color values are allowed to live. Change a value here and
@@ -403,4 +420,17 @@ label,
     transition-duration: 0.12s !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Interactive targets opt out of double-tap-to-zoom.
+   Pinch-zoom stays available (the viewport no longer caps maximum-scale), but
+   without this a tap on a link or button waits to see whether a second tap is
+   coming, which reads on iOS as the first tap being ignored. */
+a,
+button,
+[role="button"],
+label,
+select,
+summary {
+  touch-action: manipulation;
 }
