@@ -1,5 +1,6 @@
 "use client";
 
+import { AmountInput } from "@/components/ui/amount-input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { AllocationSheet } from "@/features/goals/allocation-sheet";
 import { accountAllocated, accountFree, goalSaved, isOverAllocated } from "@/lib/allocations";
 import { creditCardUsage } from "@/lib/credit-cards";
+import { accountSchema, creditCardSchema } from "@/lib/schemas";
 import { useFinanceStore } from "@/lib/store";
 import type {
   AccountPurpose,
@@ -18,7 +20,7 @@ import type {
   BankAccountType,
   CreditCard as CreditCardType,
 } from "@/lib/types";
-import { formatDate, formatMoney, localDateInputValue } from "@/lib/utils";
+import { currencySymbol, formatDate, formatMoney, localDateInputValue } from "@/lib/utils";
 import {
   ArrowRight,
   ArrowRightLeft,
@@ -41,7 +43,7 @@ import { useState } from "react";
 const EMPTY_FORM = {
   bankName: "",
   accountType: "Savings" as BankAccountType,
-  balance: 0,
+  balance: "",
   defaultFor: [] as AccountPurpose[],
 };
 
@@ -56,8 +58,8 @@ const ACCOUNT_PURPOSES: { value: AccountPurpose; label: string }[] = [
 const EMPTY_CARD_FORM = {
   name: "",
   bankName: "",
-  creditLimit: 0,
-  statementDay: 1,
+  creditLimit: "",
+  statementDay: "1",
 };
 
 const EMPTY_TRANSFER_FORM = {
@@ -100,6 +102,8 @@ export function AccountsView() {
   const [transferForm, setTransferForm] = useState(EMPTY_TRANSFER_FORM);
   const [transferError, setTransferError] = useState("");
   const [accountError, setAccountError] = useState("");
+  const [formErrors, setFormErrors] = useState<Partial<Record<string, string>>>({});
+  const [cardErrors, setCardErrors] = useState<Partial<Record<string, string>>>({});
 
   const visibleAccounts = accounts.filter((account) => !account.hiddenFromAccounts);
   const includedBalanceAccounts = visibleAccounts.filter((account) => !account.maskBalance);
@@ -117,14 +121,26 @@ export function AccountsView() {
     setForm({
       bankName: account.bankName,
       accountType: account.accountType,
-      balance: account.balance,
+      balance: String(account.balance),
       defaultFor: account.defaultFor ?? [],
     });
     setOpen(true);
   }
 
   async function save() {
-    if (!form.bankName.trim() || form.balance < 0) return;
+    const parsed = accountSchema
+      .pick({ bankName: true, accountType: true, balance: true })
+      .safeParse(form);
+    if (!parsed.success) {
+      setFormErrors(
+        Object.fromEntries(
+          parsed.error.issues.map((issue) => [String(issue.path[0]), issue.message]),
+        ),
+      );
+      return;
+    }
+    setFormErrors({});
+    const details = { ...form, bankName: parsed.data.bankName, balance: parsed.data.balance };
 
     if (editingId) {
       for (const account of accounts) {
@@ -137,7 +153,7 @@ export function AccountsView() {
           }
         }
       }
-      updateAccount(editingId, { ...form, bankName: form.bankName.trim() });
+      updateAccount(editingId, details);
     } else {
       for (const account of accounts) {
         const retainedDefaults = account.defaultFor?.filter(
@@ -147,7 +163,7 @@ export function AccountsView() {
           updateAccount(account.id, { defaultFor: retainedDefaults });
         }
       }
-      addAccount({ ...form, bankName: form.bankName.trim(), status: "active" });
+      addAccount({ ...details, status: "active" });
     }
     setOpen(false);
     await syncWithServer();
@@ -174,19 +190,36 @@ export function AccountsView() {
     setCardForm({
       name: card.name,
       bankName: card.bankName,
-      creditLimit: card.creditLimit,
-      statementDay: card.statementDay,
+      creditLimit: String(card.creditLimit),
+      statementDay: String(card.statementDay),
     });
+    setCardErrors({});
     setCardOpen(true);
   }
 
   async function saveCard() {
-    if (!cardForm.name.trim() || !cardForm.bankName.trim() || cardForm.creditLimit <= 0) return;
+    const parsed = creditCardSchema
+      .pick({ bankName: true, creditLimit: true, statementDay: true })
+      .safeParse(cardForm);
+    if (!parsed.success || !cardForm.name.trim()) {
+      setCardErrors({
+        ...Object.fromEntries(
+          (parsed.success ? [] : parsed.error.issues).map((issue) => [
+            String(issue.path[0]),
+            issue.message,
+          ]),
+        ),
+        ...(cardForm.name.trim() ? {} : { name: "Card name is required" }),
+      });
+      return;
+    }
+    setCardErrors({});
     const card = {
-      ...cardForm,
       name: cardForm.name.trim(),
-      bankName: cardForm.bankName.trim(),
-      statementDay: Math.max(1, Math.min(31, cardForm.statementDay)),
+      bankName: parsed.data.bankName,
+      creditLimit: parsed.data.creditLimit,
+      // Range is enforced by the schema now, rather than silently clamped here.
+      statementDay: parsed.data.statementDay,
       status: "active" as const,
     };
     if (editingCardId) updateCreditCard(editingCardId, card);
@@ -691,13 +724,16 @@ export function AccountsView() {
             </div>
             <div>
               <Label htmlFor="account-balance">Current balance</Label>
-              <Input
+              <AmountInput
                 id="account-balance"
-                type="number"
-                min={0}
-                value={form.balance || ""}
-                onChange={(event) => setForm({ ...form, balance: Number(event.target.value) })}
+                prefix={currencySymbol(currency)}
+                value={form.balance}
+                invalid={Boolean(formErrors.balance)}
+                onChange={(balance) => setForm({ ...form, balance })}
               />
+              {formErrors.balance && (
+                <p className="mt-1 text-xs text-danger">{formErrors.balance}</p>
+              )}
             </div>
           </div>
           {editingId && (
@@ -912,27 +948,30 @@ export function AccountsView() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Credit limit</Label>
-              <Input
-                type="number"
-                min={1}
-                value={cardForm.creditLimit || ""}
-                onChange={(event) =>
-                  setCardForm({ ...cardForm, creditLimit: Number(event.target.value) })
-                }
+              <Label htmlFor="card-limit">Credit limit</Label>
+              <AmountInput
+                id="card-limit"
+                prefix={currencySymbol(currency)}
+                value={cardForm.creditLimit}
+                invalid={Boolean(cardErrors.creditLimit)}
+                onChange={(creditLimit) => setCardForm({ ...cardForm, creditLimit })}
               />
+              {cardErrors.creditLimit && (
+                <p className="mt-1 text-xs text-danger">{cardErrors.creditLimit}</p>
+              )}
             </div>
             <div>
-              <Label>Statement day</Label>
-              <Input
-                type="number"
-                min={1}
-                max={31}
+              <Label htmlFor="card-statement-day">Statement day</Label>
+              <AmountInput
+                id="card-statement-day"
+                decimals={0}
                 value={cardForm.statementDay}
-                onChange={(event) =>
-                  setCardForm({ ...cardForm, statementDay: Number(event.target.value) })
-                }
+                invalid={Boolean(cardErrors.statementDay)}
+                onChange={(statementDay) => setCardForm({ ...cardForm, statementDay })}
               />
+              {cardErrors.statementDay && (
+                <p className="mt-1 text-xs text-danger">{cardErrors.statementDay}</p>
+              )}
             </div>
           </div>
           <ModalFooter>
