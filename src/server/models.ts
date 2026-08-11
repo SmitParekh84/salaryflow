@@ -144,7 +144,7 @@ const BankAccountSchema = new Schema(
       default: "Savings",
     },
     balance: { type: Number, required: true, min: 0 },
-    status: { type: String, enum: ["active", "closing"], default: "active" },
+    status: { type: String, enum: ["active", "closing", "closed"], default: "active" },
     plannedTransferTo: String,
     defaultFor: [
       {

@@ -663,6 +663,31 @@ describe("finance summary", () => {
     expect(summary.savedThisCycle).toBe(5_000);
   });
 
+  it("keeps savings reserved to a goal neutral when its account closes", () => {
+    const summary = computeSummary(
+      profile,
+      [],
+      [],
+      [],
+      [],
+      [],
+      rule,
+      savingsAccounts,
+      [
+        transfer({
+          sourceAccountId: "save-a",
+          destinationAccountId: "spend",
+          amount: 5_000,
+          goalId: "bike",
+          goalAmount: 5_000,
+        }),
+      ],
+      now,
+    );
+
+    expect(summary.savedThisCycle).toBe(0);
+  });
+
   it("subtracts savings-account spending and reports evidenced savings plus SIPs", () => {
     const investments: Investment[] = [
       {
@@ -763,6 +788,29 @@ describe("credit cards", () => {
     expect(usage.outstanding).toBe(1_000);
     expect(usage.available).toBe(9_000);
     expect(usage.utilization).toBe(10);
+  });
+
+  it("keeps unpaid charges outstanding after a statement closes", () => {
+    const card: CreditCard = {
+      id: "card",
+      name: "Card",
+      bankName: "Bank",
+      creditLimit: 10_000,
+      statementDay: 26,
+      status: "active",
+    };
+    const usage = creditCardUsage(
+      card,
+      [
+        expense({ id: "previous-statement", amount: 855, accountId: "card", date: "2026-07-26T10:00:00.000Z" }),
+        expense({ id: "current-statement", amount: 1_881, accountId: "card", date: "2026-08-06T10:00:00.000Z" }),
+      ],
+      [],
+      new Date("2026-08-11T12:00:00.000Z"),
+    );
+
+    expect(usage.charges).toBe(2_736);
+    expect(usage.outstanding).toBe(2_736);
   });
 });
 

@@ -33,6 +33,9 @@ export function TransactionList({
           const categoryColor = getCategoryColor(e.category, customCategories);
           const account = accounts.find((item) => item.id === e.accountId);
           const creditCard = creditCards.find((item) => item.id === e.accountId);
+          const sourceName = account?.bankName ?? creditCard?.name;
+          const note = e.note?.trim();
+          const showNote = note && note.toLowerCase() !== sourceName?.toLowerCase();
           return (
             <motion.div
               key={e.id}
@@ -54,8 +57,8 @@ export function TransactionList({
                 <p className="truncate text-sm font-medium">{e.merchant || e.category}</p>
                 <p className="truncate text-xs text-muted">
                   {e.category} · {e.paymentMethod}
-                  {account ? ` · ${account.bankName}` : creditCard ? ` · ${creditCard.name}` : ""}
-                  {e.note ? ` · ${e.note}` : ""}
+                  {sourceName ? ` · ${sourceName}` : ""}
+                  {showNote ? ` · ${note}` : ""}
                 </p>
                 {e.shared && (
                   <p className="mt-1 flex items-center gap-1 text-xs text-primary">

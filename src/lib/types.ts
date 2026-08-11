@@ -209,7 +209,7 @@ export interface UserProfile {
 }
 
 export type BankAccountType = "Savings" | "Salary" | "Current" | "Other";
-export type BankAccountStatus = "active" | "closing";
+export type BankAccountStatus = "active" | "closing" | "closed";
 export type AccountPurpose =
   | "everyday"
   | "subscriptions"

@@ -32,15 +32,12 @@ export function creditCardUsage(
   now = new Date(),
 ) {
   const { start, end } = creditCardStatementPeriod(card, now);
-  const inPeriod = (date: string) => {
-    const value = parseFinancialDate(date);
-    return value >= start && value <= end && value <= now;
-  };
+  const isRecorded = (date: string) => parseFinancialDate(date) <= now;
   const charges = expenses
-    .filter((expense) => expense.accountId === card.id && inPeriod(expense.date))
+    .filter((expense) => expense.accountId === card.id && isRecorded(expense.date))
     .reduce((sum, expense) => sum + expense.amount, 0);
   const credits = incomes
-    .filter((income) => income.accountId === card.id && inPeriod(income.date))
+    .filter((income) => income.accountId === card.id && isRecorded(income.date))
     .reduce((sum, income) => sum + income.amount, 0);
   const outstanding = Math.max(0, charges - credits);
   return {

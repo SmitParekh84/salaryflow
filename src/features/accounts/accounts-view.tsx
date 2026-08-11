@@ -25,6 +25,7 @@ import {
   Building2,
   CalendarClock,
   Check,
+  ChevronRight,
   CreditCard,
   Eye,
   EyeOff,
@@ -34,6 +35,7 @@ import {
   Trash2,
   WalletCards,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const EMPTY_FORM = {
@@ -69,6 +71,7 @@ const EMPTY_TRANSFER_FORM = {
 };
 
 export function AccountsView() {
+  const router = useRouter();
   const accounts = useFinanceStore((state) => state.accounts);
   const goals = useFinanceStore((state) => state.goals);
   const [allocateAccountId, setAllocateAccountId] = useState<string | null>(null);
@@ -318,7 +321,23 @@ export function AccountsView() {
           {visibleAccounts.map((account) => (
             <div
               key={account.id}
-              className="grid grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 py-4 sm:flex sm:gap-3"
+              role="link"
+              tabIndex={0}
+              aria-label={`View ${account.bankName} transactions`}
+              onClick={(event) => {
+                if ((event.target as HTMLElement).closest("button, a, input, select, textarea")) {
+                  return;
+                }
+                router.push(`/accounts/bank/${encodeURIComponent(account.id)}`);
+              }}
+              onKeyDown={(event) => {
+                if (event.target !== event.currentTarget || !["Enter", " "].includes(event.key)) {
+                  return;
+                }
+                event.preventDefault();
+                router.push(`/accounts/bank/${encodeURIComponent(account.id)}`);
+              }}
+              className="group/account grid cursor-pointer grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 py-4 transition-colors hover:bg-surface-2/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:flex sm:gap-3"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <Landmark className="h-5 w-5" />
@@ -428,6 +447,7 @@ export function AccountsView() {
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
+                  <ChevronRight className="ml-1 h-4 w-4 text-muted transition-transform group-hover/account:translate-x-0.5" />
                 </div>
               </div>
             </div>
@@ -522,7 +542,31 @@ export function AccountsView() {
             {creditCards.map((card) => {
               const usage = creditCardUsage(card, expenses, incomes);
               return (
-                <Card key={card.id} className="p-4 shadow-none">
+                <Card
+                  key={card.id}
+                  role="link"
+                  tabIndex={0}
+                  aria-label={`View ${card.name} transactions`}
+                  onClick={(event) => {
+                    if (
+                      (event.target as HTMLElement).closest("button, a, input, select, textarea")
+                    ) {
+                      return;
+                    }
+                    router.push(`/accounts/card/${encodeURIComponent(card.id)}`);
+                  }}
+                  onKeyDown={(event) => {
+                    if (
+                      event.target !== event.currentTarget ||
+                      !["Enter", " "].includes(event.key)
+                    ) {
+                      return;
+                    }
+                    event.preventDefault();
+                    router.push(`/accounts/card/${encodeURIComponent(card.id)}`);
+                  }}
+                  className="group/card cursor-pointer p-4 shadow-none transition-[transform,background-color] hover:-translate-y-0.5 hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
                   <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                       <CreditCard className="h-5 w-5" />
@@ -551,6 +595,7 @@ export function AccountsView() {
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted transition-transform group-hover/card:translate-x-0.5" />
                   </div>
                   <div className="mt-4 flex items-end justify-between gap-3">
                     <div>

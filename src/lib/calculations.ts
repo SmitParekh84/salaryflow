@@ -190,7 +190,11 @@ export function computeSummary(
     completedCycleTransfers.reduce((sum, transfer) => {
       const incoming = savingsAccountIds.has(transfer.destinationAccountId) ? transfer.amount : 0;
       const outgoing = savingsAccountIds.has(transfer.sourceAccountId) ? transfer.amount : 0;
-      return sum + incoming - outgoing;
+      const retainedForGoal =
+        outgoing > 0 && incoming === 0
+          ? Math.min(transfer.goalAmount ?? 0, transfer.amount)
+          : 0;
+      return sum + incoming - outgoing + retainedForGoal;
     }, 0) +
     incomes
       .filter(

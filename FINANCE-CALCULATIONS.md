@@ -103,11 +103,11 @@ Ordinary non-shared expenses keep source-only account behavior unless a dedicate
 
 ## Credit Cards
 
-The active statement period begins the day after the previous statement date and ends on the current statement date. Future-dated records are excluded.
+The active statement period begins the day after the previous statement date and ends on the current statement date. It supplies statement timing, but closing a statement does not imply that it was paid. Future-dated records are excluded.
 
 ```text
-charges = linked expenses in statement period
-credits = linked incomes in statement period
+charges = all linked expenses recorded up to today
+credits = all linked incomes recorded up to today
 outstanding = max(0, charges - credits)
 availableCredit = max(0, creditLimit - outstanding)
 utilizationPercent = outstanding / creditLimit * 100

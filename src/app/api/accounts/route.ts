@@ -12,7 +12,7 @@ const accountSchema = z.object({
   bankName: z.string().trim().min(1),
   accountType: z.enum(["Savings", "Salary", "Current", "Other"]),
   balance: z.number().nonnegative(),
-  status: z.enum(["active", "closing"]).default("active"),
+  status: z.enum(["active", "closing", "closed"]).default("active"),
   plannedTransferTo: z.string().trim().min(1).optional(),
 });
 
