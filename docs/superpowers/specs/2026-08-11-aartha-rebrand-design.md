@@ -1,7 +1,30 @@
 # Aartha rebrand, input quality, and validation layer
 
 Date: 2026-08-11
-Status: Approved
+Status: Implemented, with the exceptions recorded under "Not done".
+
+## Corrections found during implementation
+
+Two audit findings were wrong as written. Recorded here rather than quietly
+adjusted:
+
+- **Finding E overstated the accounts view.** `saveCard` already clamped the
+  statement day to 1-31 (`accounts-view.tsx:189`), and `saveTransfer` already
+  guarded both the goal-versus-transfer amount and the same-account case. A
+  statement day of 99 was never storable there. The genuine unbounded case was
+  the rules view, which had no clamp at all and could store a 500% share. The
+  accounts clamp was still changed to a visible validation error, because
+  silently rewriting a number the user typed conflicts with the product rule
+  against inferring financial values.
+- **Finding H mis-framed the footer.** The landing page fixes its own palette
+  (`--ink`, no dark-scheme branch), so its hardcoded footer colours were
+  consistent with a deliberately theme-independent marketing page, not an
+  oversight. Making only the footer theme-reactive would have rendered a dark
+  footer beneath a permanently light hero. The rebuilt footer therefore keeps
+  the landing palette instead of adopting app tokens.
+
+A third detail: the budget rule is a **four**-bucket split (needs, wants,
+savings, investments), not three as first specified.
 
 ## Goal
 
@@ -155,6 +178,24 @@ schema layer. F is fixed during the view migrations. H is fixed by
 - `OtpInput`: paste handling, auto-advance, Backspace stepping, arrow keys.
 - Schemas: boundary cases per domain, especially `statementDay` (1-31), rule
   percentages (0-100), and non-negative amounts.
+
+## Not done
+
+Views still holding money as numbers behind `type="number"`. Each needs the
+same string-draft plus schema treatment applied elsewhere:
+
+- **Accounts transfer form** — `amount` and `goalAmount` feed interlocking
+  clamp logic at four call sites (`accounts-view.tsx` 772, 799, 824, 856).
+  Worth migrating on its own rather than as a rider.
+- `goals-view.tsx` (2 fields), `allocation-sheet.tsx` (2),
+  `funding-plan-view.tsx` (1), `salary-history/page.tsx` (1).
+- `expense-form.tsx` (7) already validates through `react-hook-form` +
+  `zodResolver`, so it needs only the `AmountInput` swap, not a validation
+  change.
+
+Also outstanding: the ~18 API routes still define their own schemas rather than
+importing from `src/lib/schemas`. The shared module exists and the client forms
+use it; pointing the routes at it is a mechanical follow-up.
 
 ## Out of scope
 
