@@ -670,9 +670,7 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
 
               <div className="border-t border-border pt-5 lg:hidden">
                 <h3 className="text-sm font-semibold">Mobile navigation</h3>
-                <p className="mt-1 text-xs text-muted">
-                  Choose how you navigate on your phone.
-                </p>
+                <p className="mt-1 text-xs text-muted">Choose how you navigate on your phone.</p>
                 <div className="mt-3">
                   <NavModeToggle />
                 </div>

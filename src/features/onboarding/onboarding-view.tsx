@@ -322,7 +322,6 @@ export function OnboardingView() {
             )}
           </div>
         </Card>
-
       </div>
     </div>
   );

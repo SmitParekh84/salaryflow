@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { Command } from "cmdk";
 import { Check, ChevronsUpDown, Search } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 export interface ComboboxOption {
   label: string;
@@ -33,7 +33,46 @@ export function Combobox({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [listElement, setListElement] = useState<HTMLDivElement | null>(null);
+  const lastTouchY = useRef<number | null>(null);
   const selected = options.find((option) => option.value === value);
+
+  useEffect(() => {
+    if (!listElement) return;
+
+    const scrollWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      listElement.scrollTop += event.deltaY;
+    };
+    const startTouch = (event: TouchEvent) => {
+      lastTouchY.current = event.touches[0]?.clientY ?? null;
+    };
+    const scrollTouch = (event: TouchEvent) => {
+      const touchY = event.touches[0]?.clientY;
+      if (touchY === undefined || lastTouchY.current === null) return;
+      event.preventDefault();
+      event.stopPropagation();
+      listElement.scrollTop += lastTouchY.current - touchY;
+      lastTouchY.current = touchY;
+    };
+    const endTouch = () => {
+      lastTouchY.current = null;
+    };
+
+    listElement.addEventListener("wheel", scrollWheel, { passive: false });
+    listElement.addEventListener("touchstart", startTouch, { passive: true });
+    listElement.addEventListener("touchmove", scrollTouch, { passive: false });
+    listElement.addEventListener("touchend", endTouch);
+    listElement.addEventListener("touchcancel", endTouch);
+    return () => {
+      listElement.removeEventListener("wheel", scrollWheel);
+      listElement.removeEventListener("touchstart", startTouch);
+      listElement.removeEventListener("touchmove", scrollTouch);
+      listElement.removeEventListener("touchend", endTouch);
+      listElement.removeEventListener("touchcancel", endTouch);
+    };
+  }, [listElement]);
 
   return (
     <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
@@ -68,7 +107,10 @@ export function Combobox({
                 className="h-10 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
               />
             </div>
-            <Command.List className="max-h-[min(16rem,var(--radix-popover-content-available-height))] touch-pan-y overflow-y-auto overscroll-contain p-1.5">
+            <Command.List
+              ref={setListElement}
+              className="max-h-[min(16rem,var(--radix-popover-content-available-height))] touch-pan-y overflow-y-auto overscroll-contain p-1.5"
+            >
               <Command.Empty className="px-3 py-6 text-center text-sm text-muted">
                 {emptyText}
               </Command.Empty>
