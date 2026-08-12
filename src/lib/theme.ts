@@ -66,14 +66,14 @@ export const FALLBACK_CATEGORY_COLOR = CATEGORY_COLORS.other;
  * Keep in sync with LAYER 1 of src/app/globals.css.
  */
 export const EMAIL_COLORS = {
-  brand: "#0b8446",
+  brand: "#087b99",
   brandOn: "#ffffff",
-  background: "#f2f2f7",
+  background: "#f3f7fa",
   surface: "#ffffff",
-  border: "#e5e5ea",
-  foreground: "#1d1d1f",
-  muted: "#6e6e73",
-  subtle: "#8e8e93",
+  border: "#dce6ec",
+  foreground: "#152333",
+  muted: "#607080",
+  subtle: "#7f8f9d",
 } as const;
 
 /**
@@ -86,14 +86,14 @@ export const EMAIL_COLORS = {
  * deep teal reads as muddy against black.
  */
 export const EMAIL_COLORS_DARK = {
-  brand: "#2fd977",
-  brandOn: "#042415",
-  background: "#000000",
-  surface: "#1c1c1e",
-  border: "#38383a",
-  foreground: "#f5f5f7",
-  muted: "#a1a1a6",
-  subtle: "#8e8e93",
+  brand: "#70d2df",
+  brandOn: "#031b2a",
+  background: "#020912",
+  surface: "#071321",
+  border: "#26384a",
+  foreground: "#f2f7fa",
+  muted: "#9aabba",
+  subtle: "#8295a6",
 } as const;
 
 /**
@@ -104,6 +104,6 @@ export const PICKER_DEFAULT_COLOR = "#0ea5e9";
 
 /** Browser/OS chrome colour per theme. Must be literal hex. */
 export const THEME_COLORS = {
-  light: "#f2f2f7",
-  dark: "#000000",
+  light: "#f3f7fa",
+  dark: "#020912",
 } as const;

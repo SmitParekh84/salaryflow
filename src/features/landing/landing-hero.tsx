@@ -312,8 +312,8 @@ export function LandingHero() {
           <div className={styles.heroGlow} />
           <motion.div
             className={styles.heroCopy}
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ y: 22 }}
+            animate={{ y: 0 }}
             transition={{ type: "spring", bounce: 0, duration: 0.6 }}
           >
             <p className={styles.eyebrow}>Introducing Aartha</p>
@@ -345,8 +345,8 @@ export function LandingHero() {
           </motion.div>
           <motion.div
             className={styles.heroVisual}
-            initial={{ opacity: 0, scale: 0.96, y: 24 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
+            initial={{ scale: 0.96, y: 24 }}
+            animate={{ scale: 1, y: 0 }}
             transition={{ type: "spring", bounce: 0, duration: 0.7, delay: 0.12 }}
           >
             <DailyNumber />

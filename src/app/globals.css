@@ -28,37 +28,39 @@
    src/lib/theme.ts (EMAIL_COLORS). Update that file alongside this block.
    ============================================================================ */
 :root {
-  /* Brand — green, taken from the Aartha mark's swoosh.
-     600 is the light-mode primary and carries white text: #0b8446 holds
-     4.77:1, so it clears AA. 400 is the dark-mode primary and carries
-     --primary-foreground below at 8.9:1. Do not lighten either without
-     rechecking those two pairings. */
-  --brand-50: #eafaf1;
-  --brand-100: #c9f2dc;
-  --brand-200: #93e6b8;
-  --brand-300: #57d68d;
-  --brand-400: #2fd977;
-  --brand-500: #12a65c;
-  --brand-600: #0b8446;
-  --brand-700: #0a6f3b;
-  --brand-800: #08562e;
-  --brand-900: #063d21;
+    /* Brand — the moving cyan ribbon in the Aartha mark. Deeper steps carry
+      product actions; brighter cyan belongs to dark mode and highlights. */
+    --brand-50: #edf9fc;
+    --brand-100: #d5f2f7;
+    --brand-200: #abe4ed;
+    --brand-300: #70d2df;
+    --brand-400: #27bccd;
+    --brand-500: #079db5;
+    --brand-600: #087b99;
+    --brand-700: #09637d;
+    --brand-800: #094f66;
+    --brand-900: #07394b;
+
+    /* Teal communicates saved/protected money. Lime is a sparse terminal
+      highlight, mirroring the tip of the logo ribbon. */
+    --flow-teal: #08a985;
+    --flow-lime: #78d84b;
 
   /* Brand ink — navy from the app icon backplate */
-  --ink-700: #102746;
-  --ink-800: #07182f;
-  --ink-900: #041327;
+  --ink-700: #0a376c;
+  --ink-800: #062957;
+  --ink-900: #031b3d;
 
   /* Neutrals — iOS system greys */
   --grey-0: #ffffff;
-  --grey-50: #f2f2f7;
-  --grey-500: #6e6e73;
-  --grey-900: #1d1d1f;
-  --grey-dark-0: #000000;
-  --grey-dark-50: #1c1c1e;
-  --grey-dark-100: #2c2c2e;
-  --grey-dark-500: #a1a1a6;
-  --grey-dark-900: #f5f5f7;
+  --grey-50: #f3f7fa;
+  --grey-500: #607080;
+  --grey-900: #152333;
+  --grey-dark-0: #020912;
+  --grey-dark-50: #071321;
+  --grey-dark-100: #102133;
+  --grey-dark-500: #9aabba;
+  --grey-dark-900: #f2f7fa;
 
   /* Status */
   --green-500: #16a34a;
@@ -106,14 +108,14 @@
   --muted: var(--grey-500);
   --border: rgba(60, 60, 67, 0.14);
 
-  /* brand-600, not brand-500: it clears 4.5:1 against white for button labels
-     and inline links, where the lighter logo green does not. */
+    /* Deep flow cyan carries actions with white text; brighter ribbon colors are
+      reserved for dark mode and non-text highlights. */
   --primary: var(--brand-600);
   --primary-foreground: var(--grey-0);
   --primary-hover: var(--brand-700);
   --accent: var(--brand-500);
 
-  --success: var(--green-500);
+  --success: #078b6d;
   --warning: var(--amber-500);
   --danger: var(--red-500);
   --ring: color-mix(in srgb, var(--brand-600) 35%, transparent);
@@ -123,8 +125,8 @@
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 8px rgba(0, 0, 0, 0.035);
 
   /* Gradients */
-  --brand-gradient: linear-gradient(90deg, var(--brand-600), var(--brand-400));
-  --success-gradient: linear-gradient(90deg, var(--success), var(--brand-400));
+  --brand-gradient: linear-gradient(100deg, var(--ink-700), var(--brand-500) 62%, var(--flow-teal));
+  --success-gradient: linear-gradient(90deg, var(--success), var(--flow-lime));
 
   /* Auth surfaces */
   --auth-glow: color-mix(in srgb, var(--brand-400) 16%, transparent);
@@ -180,14 +182,13 @@
   --muted: var(--grey-dark-500);
   --border: rgba(84, 84, 88, 0.5);
 
-  /* Apple's dark-mode pattern: the accent gets brighter, its label goes dark.
-     A darker green would read as muddy against a black ground. */
+    /* The cyan ribbon brightens in dark mode while retaining dark label ink. */
   --primary: var(--brand-400);
-  --primary-foreground: #042415;
+    --primary-foreground: #031b2a;
   --primary-hover: var(--brand-300);
   --accent: var(--brand-400);
 
-  --success: var(--green-400);
+  --success: #34d6a2;
   --warning: var(--amber-400);
   --danger: var(--red-400);
   --ring: color-mix(in srgb, var(--brand-400) 40%, transparent);
@@ -196,8 +197,8 @@
   --glass-border: transparent;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 4px 8px rgba(0, 0, 0, 0.2);
 
-  --brand-gradient: linear-gradient(90deg, var(--brand-400), var(--brand-200));
-  --success-gradient: linear-gradient(90deg, var(--success), var(--brand-300));
+  --brand-gradient: linear-gradient(100deg, #1d77bb, var(--brand-300) 62%, #43d7b0);
+  --success-gradient: linear-gradient(90deg, var(--success), #9bea68);
 
   --auth-glow: color-mix(in srgb, var(--brand-500) 22%, transparent);
   --auth-wash-warm: color-mix(in srgb, var(--surface) 88%, var(--brand-900));

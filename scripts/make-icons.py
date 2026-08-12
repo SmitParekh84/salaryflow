@@ -6,18 +6,16 @@ as supplied — no keying, no trimming, no re-deriving transparency. They are
 only padded to 1:1 and resized. Nothing is cropped.
 
 Sources:
-* BRAND_MARK — green glow mark, shown beside the wordmark in the app.
-* FAVICON    — blue glow mark, used for browser favicons.
-* TILE       — finished rounded app tile for PWA / apple-touch icons.
+* MARK — transparent logo mark, used beside the wordmark in the app.
+* TILE — finished rounded app tile, used for PWA, Apple, and browser icons.
 
 Run: python scripts/make-icons.py
 """
 
 from PIL import Image
 
-BRAND_MARK = "C:/Users/LENOVO/Downloads/aartha.png"
-FAVICON = "C:/Users/LENOVO/Downloads/ChatGPT Image Aug 11, 2026, 02_06_35 PM.png"
-TILE = "C:/Users/LENOVO/Downloads/app new.png"
+MARK = "C:/Users/LENOVO/Downloads/new icon.png"
+TILE = "C:/Users/LENOVO/Downloads/app icon.png"
 OUT = "public/icons"
 
 
@@ -50,12 +48,17 @@ emit(
     "app tile:",
 )
 
-favicon = to_square(Image.open(FAVICON))
 emit(
-    favicon,
+    tile,
     [("favicon-64.png", 64), ("favicon-32.png", 32), ("favicon-16.png", 16)],
     "favicon:",
 )
+tile.resize((512, 512), Image.LANCZOS).save(
+    f"{OUT}/favicon.ico",
+    "ICO",
+    sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)],
+)
+print("favicon:   ", "favicon.ico", "16-256 (512 source)")
 
-mark = to_square(Image.open(BRAND_MARK))
+mark = to_square(Image.open(MARK))
 emit(mark, [("brand-mark.png", 256), ("logo-mark.png", 512)], "brand mark:")

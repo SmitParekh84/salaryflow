@@ -1,8 +1,17 @@
 .page {
-    --ink: #07182f;
-    --muted: #526078;
-    --green: #078b6d;
-    --mint: #e6f7f1;
+    --ink: #031b3d;
+    --muted: #52667a;
+    --green: #009c83;
+    --green-hover: #007f70;
+    --cyan: #00cfd1;
+    --flow: #00b894;
+    --lime: #88e84d;
+    --ribbon-gradient: linear-gradient(105deg, var(--cyan) 0%, var(--flow) 58%, var(--lime) 100%);
+    --mint: #e8f8f4;
+    --wash: #f3f7fa;
+    --wash-blue: #edf9fc;
+    --border-soft: #dce6ec;
+    --navy: #031b3d;
     background: #fff;
     color: var(--ink);
     min-height: 100vh;
@@ -22,7 +31,7 @@
 
 .page h1,
 .page h2 {
-    letter-spacing: -.035em
+    letter-spacing: 0
 }
 
 .page button:active,
@@ -70,9 +79,9 @@
 }
 
 .navCta {
-    background: var(--green);
+    background: var(--ribbon-gradient);
     border-radius: 10px;
-    color: #fff !important;
+    color: var(--navy) !important;
     padding: 12px 18px
 }
 
@@ -94,7 +103,7 @@
 }
 
 .heroGlow {
-    background: radial-gradient(circle, rgba(33, 217, 170, .17), transparent 67%);
+    background: radial-gradient(circle, rgba(0, 207, 209, .24), transparent 67%);
     height: 680px;
     position: absolute;
     right: -250px;
@@ -126,7 +135,9 @@
 .hero h1 span,
 .page h2 span,
 .green {
-    color: #08a77f
+    background: var(--ribbon-gradient);
+    background-clip: text;
+    color: transparent
 }
 
 .heroLead {
@@ -149,7 +160,7 @@
 
 .waitlistForm {
     background: #fff;
-    border: 1px solid #d8e1e8;
+    border: 1px solid var(--border-soft);
     border-radius: 14px;
     box-shadow: 0 12px 35px rgba(9, 31, 55, .08);
     display: flex;
@@ -169,10 +180,10 @@
 
 .waitlistForm button {
     align-items: center;
-    background: var(--green);
+    background: var(--ribbon-gradient);
     border: 0;
     border-radius: 10px;
-    color: #fff;
+    color: var(--navy);
     cursor: pointer;
     display: flex;
     font-size: 14px;
@@ -185,7 +196,7 @@
 }
 
 .waitlistForm button:hover {
-    background: #06745c
+    filter: saturate(1.16) brightness(.96)
 }
 
 .waitlistForm button:disabled {
@@ -278,7 +289,7 @@
 
 .dailyNumber {
     background: #fff;
-    border: 1px solid #e0e7eb;
+    border: 1px solid var(--border-soft);
     border-radius: 22px;
     box-shadow: 0 28px 70px rgba(6, 35, 58, .14);
     max-width: 560px;
@@ -288,7 +299,7 @@
 
 .cardTopline {
     align-items: center;
-    color: #079875;
+    color: var(--green);
     display: flex;
     font-size: 13px;
     font-weight: 750;
@@ -312,17 +323,19 @@
 }
 
 .livePill i {
-    background: #0bad84;
+    background: var(--lime);
     border-radius: 50%;
     height: 6px;
     width: 6px
 }
 
 .dailyNumber>strong {
-    color: #069d78;
+    background: var(--ribbon-gradient);
+    background-clip: text;
+    color: transparent;
     display: block;
     font-size: clamp(4.2rem, 7vw, 6.6rem);
-    letter-spacing: -.06em;
+    letter-spacing: 0;
     line-height: 1;
     margin-top: 26px
 }
@@ -358,12 +371,12 @@
 }
 
 .dailyChecks svg {
-    color: #08a77f
+    color: var(--flow)
 }
 
 .onTrack {
     align-items: center;
-    background: #e9f8f3;
+    background: var(--mint);
     border-radius: 10px;
     color: #07876b;
     display: flex;
@@ -408,9 +421,9 @@
 }
 
 .moneyFlow span svg {
-    background: #e7f7f2;
+    background: var(--wash-blue);
     border-radius: 50%;
-    color: #079875;
+    color: var(--flow);
     height: 52px;
     padding: 14px;
     width: 52px
@@ -431,7 +444,7 @@
 
 .problemSection {
     align-items: center;
-    background: #f7faf9;
+    background: var(--wash);
     gap: 6%;
     margin: 0 auto;
     max-width: 1440px;
@@ -525,7 +538,7 @@
 }
 
 .commitmentStack svg {
-    color: #079875;
+    color: var(--flow);
     height: 22px;
     width: 22px
 }
@@ -535,15 +548,15 @@
 }
 
 .answerCard {
-    border-color: #13a782
+    border-color: var(--cyan)
 }
 
 .answerCard strong {
-    color: #079875
+    color: var(--flow)
 }
 
 .storyArrow {
-    color: #09a780
+    color: var(--cyan)
 }
 
 .section,
@@ -584,16 +597,16 @@
 }
 
 .stepCard {
-    border: 1px solid #dfe7eb;
+    border: 1px solid var(--border-soft);
     border-radius: 16px;
     min-height: 280px;
     padding: 28px
 }
 
 .stepCard>svg {
-    background: var(--mint);
+    background: var(--wash-blue);
     border-radius: 50%;
-    color: #079875;
+    color: var(--flow);
     height: 70px;
     margin-top: 28px;
     padding: 18px;
@@ -601,7 +614,7 @@
 }
 
 .stepNumber {
-    color: #089a77;
+    color: var(--flow);
     font-size: 13px;
     font-weight: 750
 }
@@ -619,7 +632,7 @@
 
 .productSection {
     align-items: center;
-    background: #f5faf8;
+    background: var(--wash-blue);
     gap: 7%;
     margin: auto;
     max-width: 1440px;
@@ -632,7 +645,7 @@
 
 .dashboardMockup {
     background: #fff;
-    border: 1px solid #dce5e9;
+    border: 1px solid var(--border-soft);
     border-radius: 24px;
     box-shadow: 0 30px 70px rgba(7, 34, 56, .12);
     display: grid;
@@ -670,7 +683,7 @@
 
 .avatar {
     align-items: center;
-    background: #08213e;
+    background: var(--navy);
     border-radius: 50%;
     color: #fff;
     display: flex;
@@ -680,12 +693,12 @@
 }
 
 .mockMain .dailyNumber {
-    background: #071d38;
+    background: var(--navy);
     color: #fff
 }
 
 .mockMain .dailyNumber .onTrack {
-    background: rgba(8, 167, 127, .16)
+    background: rgba(8, 169, 133, .18)
 }
 
 .summaryRows {
@@ -703,7 +716,7 @@
 }
 
 .summaryRows svg {
-    color: #079875;
+    color: var(--flow);
     height: 18px;
     width: 18px
 }
@@ -720,7 +733,7 @@
 
 .featureCard {
     align-items: center;
-    border: 1px solid #dde6ea;
+    border: 1px solid var(--border-soft);
     border-radius: 16px;
     display: grid;
     gap: 20px;
@@ -748,8 +761,8 @@
 }
 
 .mint {
-    background: #e9f8f3;
-    color: #078b6d
+    background: var(--mint);
+    color: var(--flow)
 }
 
 .lilac {
@@ -763,7 +776,7 @@
 }
 
 .featureCard small {
-    color: #079875;
+    color: var(--green);
     font-weight: 750
 }
 
@@ -785,7 +798,7 @@
 }
 
 .calmSection {
-    background: #f8fafb;
+    background: var(--wash);
     max-width: 1440px
 }
 
@@ -831,8 +844,8 @@
 }
 
 .afterPanel {
-    background: #edf9f5;
-    border: 1px solid #d3eee5
+    background: var(--wash-blue);
+    border: 1px solid #cceaf0
 }
 
 .afterPanel>.dailyNumber {
@@ -846,8 +859,8 @@
 
 .cycleTrack {
     align-items: stretch;
-    background: #f8fbfa;
-    border: 1px solid #dce7e4;
+    background: var(--wash);
+    border: 1px solid var(--border-soft);
     border-radius: 18px;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -870,7 +883,7 @@
 }
 
 .cycleTrack svg {
-    color: #089a77;
+    color: var(--flow);
     height: 36px;
     width: 36px
 }
@@ -885,17 +898,17 @@
 }
 
 .cycleToday {
-    background: #078b6d;
+    background: var(--ribbon-gradient);
     border: 0 !important;
     border-radius: 14px;
-    box-shadow: 0 15px 30px rgba(7, 139, 109, .22);
-    color: #fff;
+    box-shadow: 0 15px 30px rgba(0, 184, 148, .24);
+    color: var(--navy);
     transform: scale(1.04)
 }
 
 .cycleToday svg,
 .cycleToday span {
-    color: #fff
+    color: var(--navy)
 }
 
 .allocationBoard {
@@ -910,7 +923,7 @@
 
 .salaryBlock {
     align-items: center;
-    border: 1px solid #10a782;
+    border: 1px solid var(--flow);
     border-radius: 14px;
     display: flex;
     flex-direction: column;
@@ -919,7 +932,7 @@
 }
 
 .salaryBlock svg {
-    color: #079875;
+    color: var(--flow);
     height: 38px;
     width: 38px
 }
@@ -940,7 +953,7 @@
 
 .allocationBars span {
     align-items: center;
-    background: linear-gradient(90deg, #dff5ee var(--bar), #f1f4f5 var(--bar));
+    background: linear-gradient(90deg, #d5f2f7 var(--bar), #f1f5f7 var(--bar));
     border-radius: 8px;
     display: flex;
     font-size: 13px;
@@ -956,7 +969,7 @@
 }
 
 .setupSection {
-    background: #f7faf9;
+    background: var(--wash);
     max-width: 1440px;
     text-align: center
 }
@@ -970,7 +983,7 @@
 
 .setupCard {
     background: #fff;
-    border: 1px solid #dce5e9;
+    border: 1px solid var(--border-soft);
     border-radius: 16px;
     min-height: 260px;
     padding: 28px;
@@ -978,12 +991,12 @@
 }
 
 .setupCard>span {
-    color: #078b6d;
+    color: var(--green);
     font-weight: 750
 }
 
 .setupCard svg {
-    color: #079875;
+    color: var(--flow);
     display: block;
     height: 42px;
     margin: 28px 0 18px;
@@ -1036,9 +1049,9 @@
 }
 
 .privacyPoints svg {
-    background: #e8f7f2;
+    background: var(--mint);
     border-radius: 50%;
-    color: #078b6d;
+    color: var(--flow);
     height: 56px;
     padding: 15px;
     width: 56px
@@ -1059,7 +1072,7 @@
 }
 
 .privacyVisual {
-    background: #f7faf9;
+    background: var(--wash);
     border: 1px solid #dbe6e2;
     border-radius: 20px;
     padding: 32px;
@@ -1067,7 +1080,7 @@
 }
 
 .privacyVisual>svg {
-    color: #079875;
+    color: var(--flow);
     height: 60px;
     position: absolute;
     right: 26px;
@@ -1090,7 +1103,7 @@
 }
 
 .privacyVisual>span b {
-    color: #078b6d;
+    color: var(--flow);
     margin-left: auto
 }
 
@@ -1118,7 +1131,7 @@
 }
 
 .faqList details {
-    background: #f8faf9;
+    background: var(--wash);
     border: 1px solid #e0e7e5;
     border-radius: 14px;
     padding: 0 24px
@@ -1140,7 +1153,7 @@
 }
 
 .faqList summary svg {
-    color: #078b6d;
+    color: var(--flow);
     height: 20px;
     transition: transform .2s ease;
     width: 20px
@@ -1157,7 +1170,7 @@
 }
 
 .finalCta {
-    background: #f4faf7;
+    background: var(--wash-blue);
     padding: 100px 32px
 }
 
