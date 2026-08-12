@@ -28,23 +28,23 @@
    src/lib/theme.ts (EMAIL_COLORS). Update that file alongside this block.
    ============================================================================ */
 :root {
-    /* Brand — the moving cyan ribbon in the Aartha mark. Deeper steps carry
+  /* Brand — the moving cyan ribbon in the Aartha mark. Deeper steps carry
       product actions; brighter cyan belongs to dark mode and highlights. */
-    --brand-50: #edf9fc;
-    --brand-100: #d5f2f7;
-    --brand-200: #abe4ed;
-    --brand-300: #70d2df;
-    --brand-400: #27bccd;
-    --brand-500: #079db5;
-    --brand-600: #087b99;
-    --brand-700: #09637d;
-    --brand-800: #094f66;
-    --brand-900: #07394b;
+  --brand-50: #edf9fc;
+  --brand-100: #d5f2f7;
+  --brand-200: #abe4ed;
+  --brand-300: #70d2df;
+  --brand-400: #27bccd;
+  --brand-500: #079db5;
+  --brand-600: #087b99;
+  --brand-700: #09637d;
+  --brand-800: #094f66;
+  --brand-900: #07394b;
 
-    /* Teal communicates saved/protected money. Lime is a sparse terminal
+  /* Teal communicates saved/protected money. Lime is a sparse terminal
       highlight, mirroring the tip of the logo ribbon. */
-    --flow-teal: #08a985;
-    --flow-lime: #78d84b;
+  --flow-teal: #08a985;
+  --flow-lime: #78d84b;
 
   /* Brand ink — navy from the app icon backplate */
   --ink-700: #0a376c;
@@ -108,7 +108,7 @@
   --muted: var(--grey-500);
   --border: rgba(60, 60, 67, 0.14);
 
-    /* Deep flow cyan carries actions with white text; brighter ribbon colors are
+  /* Deep flow cyan carries actions with white text; brighter ribbon colors are
       reserved for dark mode and non-text highlights. */
   --primary: var(--brand-600);
   --primary-foreground: var(--grey-0);
@@ -182,9 +182,9 @@
   --muted: var(--grey-dark-500);
   --border: rgba(84, 84, 88, 0.5);
 
-    /* The cyan ribbon brightens in dark mode while retaining dark label ink. */
+  /* The cyan ribbon brightens in dark mode while retaining dark label ink. */
   --primary: var(--brand-400);
-    --primary-foreground: #031b2a;
+  --primary-foreground: #031b2a;
   --primary-hover: var(--brand-300);
   --accent: var(--brand-400);
 

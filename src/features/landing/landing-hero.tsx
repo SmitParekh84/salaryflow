@@ -176,11 +176,7 @@ function WaitlistForm({ id, compact = false }: { id: string; compact?: boolean }
   }
   return (
     <div className={compact ? styles.waitlistCompact : styles.waitlistBlock}>
-      <form
-        onSubmit={submit}
-        className={styles.waitlistForm}
-        aria-label="Join the Aartha waitlist"
-      >
+      <form onSubmit={submit} className={styles.waitlistForm} aria-label="Join the Aartha waitlist">
         <label htmlFor={id} className="sr-only">
           Email address
         </label>

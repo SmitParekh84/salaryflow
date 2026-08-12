@@ -8,6 +8,7 @@ export const BRAND = {
   name: "Aartha",
   domain: "aartha.app",
   url: "https://aartha.app",
+  linkedin: "https://www.linkedin.com/company/aartha-app",
 
   /** Hero, page title, manifest, email footer. */
   brandline: "Know what's safe to spend today.",

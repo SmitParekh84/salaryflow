@@ -72,7 +72,20 @@ export function SiteFooter() {
         <p>
           © {new Date().getFullYear()} {BRAND.name}. All rights reserved.
         </p>
-        <p className={styles.footerDomain}>{BRAND.domain}</p>
+        <div className={styles.footerMeta}>
+          <a
+            className={styles.footerSocial}
+            href={BRAND.linkedin}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM2.4 21.5h5.16V9.75H2.4V21.5Zm7.7-11.75h4.95v1.6h.07a5.43 5.43 0 0 1 4.88-2.68c5.22 0 6.18 3.44 6.18 7.9v6.93h-5.15v-6.14c0-1.47-.03-3.35-2.04-3.35-2.05 0-2.36 1.6-2.36 3.25v6.24H10.1V9.75Z" />
+            </svg>
+            LinkedIn
+          </a>
+          <p className={styles.footerDomain}>{BRAND.domain}</p>
+        </div>
       </div>
     </footer>
   );

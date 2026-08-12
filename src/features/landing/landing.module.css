@@ -1302,6 +1302,38 @@
     font-size: 12px
 }
 
+.footerMeta {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px
+}
+
+.footerSocial {
+    align-items: center;
+    border-radius: 6px;
+    color: #e8eef3;
+    display: inline-flex;
+    font-size: 13px;
+    gap: 7px;
+    text-decoration: none;
+    transition: color .15s ease
+}
+
+.footerSocial svg {
+    height: 15px;
+    width: 15px
+}
+
+.footerSocial:hover {
+    color: #fff
+}
+
+.footerSocial:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px
+}
+
 .footerDomain {
     font-weight: 500;
     letter-spacing: .01em
