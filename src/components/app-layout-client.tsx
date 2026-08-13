@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthReady } from "@/components/auth-provider";
 import { HamburgerDrawer, MobileNav, Sidebar } from "@/components/sidebar";
 import { TopBar } from "@/components/topbar";
 import { useHydrated } from "@/hooks/use-hydrated";
@@ -39,6 +40,7 @@ export default function AppLayoutClient({ children }: { children: React.ReactNod
   const router = useRouter();
   const searchParams = useSearchParams();
   const hydrated = useHydrated();
+  const authReady = useAuthReady();
   const onboarded = useFinanceStore((s) => s.user.onboarded);
   const navMode = useFinanceStore((s) => s.user.navMode ?? "bottom");
   const [hamburgerOpen, setHamburgerOpen] = useState(false);
@@ -99,7 +101,11 @@ export default function AppLayoutClient({ children }: { children: React.ReactNod
       ?.label ??
     "Aartha";
 
-  if (!hydrated) {
+  // `authReady` is the wait that AuthProvider used to impose on the whole app.
+  // It belongs here: this shell is the only surface that would flash empty
+  // balances before the session store hydrates, and gating it globally cost
+  // every public page its server-rendered HTML.
+  if (!hydrated || !authReady) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
