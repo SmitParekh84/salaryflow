@@ -1,6 +1,9 @@
 import { BrandMark } from "@/components/brand";
 import { BRAND } from "@/lib/brand";
 import Link from "next/link";
+// lucide-react ships no brand marks, so the LinkedIn glyph comes from
+// react-icons rather than a hand-drawn path.
+import { FaLinkedinIn } from "react-icons/fa6";
 import styles from "./landing.module.css";
 
 /**
@@ -95,11 +98,10 @@ export function SiteFooter() {
             href={BRAND.linkedin}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={`${BRAND.name} on LinkedIn`}
+            title="LinkedIn"
           >
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM2.4 21.5h5.16V9.75H2.4V21.5Zm7.7-11.75h4.95v1.6h.07a5.43 5.43 0 0 1 4.88-2.68c5.22 0 6.18 3.44 6.18 7.9v6.93h-5.15v-6.14c0-1.47-.03-3.35-2.04-3.35-2.05 0-2.36 1.6-2.36 3.25v6.24H10.1V9.75Z" />
-            </svg>
-            LinkedIn
+            <FaLinkedinIn aria-hidden="true" focusable="false" />
           </a>
           <p className={styles.footerDomain}>{BRAND.domain}</p>
         </div>

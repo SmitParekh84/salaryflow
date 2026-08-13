@@ -1311,23 +1311,31 @@
     gap: 8px 18px
 }
 
+/* A round icon button rather than icon-plus-label: the mark is recognisable on
+   its own, and at 40px it clears the touch-target floor that a 15px glyph beside
+   13px text never did. The name lives in aria-label instead. */
 .footerSocial {
     align-items: center;
-    border-radius: 6px;
+    background: hsla(0, 0%, 100%, .07);
+    border: 1px solid hsla(0, 0%, 100%, .14);
+    border-radius: 50%;
     color: #e8eef3;
     display: inline-flex;
-    font-size: 13px;
-    gap: 7px;
+    height: 40px;
+    justify-content: center;
     text-decoration: none;
-    transition: color .15s ease
+    transition: background .16s ease, border-color .16s ease, color .16s ease;
+    width: 40px
 }
 
 .footerSocial svg {
-    height: 15px;
-    width: 15px
+    height: 17px;
+    width: 17px
 }
 
 .footerSocial:hover {
+    background: hsla(0, 0%, 100%, .14);
+    border-color: hsla(0, 0%, 100%, .3);
     color: #fff
 }
 

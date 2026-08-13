@@ -7,9 +7,11 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Modal, ModalFooter } from "@/components/ui/modal";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useFinanceStore } from "@/lib/store";
 import {
   ArrowLeft,
   CheckCircle2,
+  LogOut,
   RefreshCw,
   Search,
   Shield,
@@ -20,6 +22,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type AdminUser = {
@@ -58,6 +61,30 @@ export default function AdminPage() {
   const [status, setStatus] = useState<number | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<UserFilter>("all");
+  const [signingOut, setSigningOut] = useState(false);
+  const router = useRouter();
+  const resetAll = useFinanceStore((state) => state.resetAll);
+
+  /**
+   * Ends the console session.
+   *
+   * The console shares the `sf_session` cookie with the app, so this is the
+   * same endpoint the product uses — but it returns to `/admin/login` rather
+   * than `/login`. Sending an operator to the app's sign-in would land them in
+   * the product instead of the console, which is the distinction the proxy
+   * already makes for console paths.
+   *
+   * `resetAll()` matters even here: the store is hydrated globally, so an
+   * operator who also uses the product would otherwise leave their own figures
+   * cached in the browser for whoever signs in next.
+   */
+  async function signOut() {
+    setSigningOut(true);
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" }).catch(() => null);
+    resetAll();
+    router.replace("/admin/login");
+    router.refresh();
+  }
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
@@ -188,6 +215,18 @@ export default function AdminPage() {
                 <ArrowLeft className="h-4 w-4" />
                 <span className="hidden sm:inline">Back to app</span>
               </Link>
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={signOut}
+              disabled={signingOut}
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">
+                {signingOut ? "Signing out…" : "Sign out"}
+              </span>
             </Button>
           </div>
         </div>
