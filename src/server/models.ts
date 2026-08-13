@@ -261,6 +261,12 @@ const UserSchema = new Schema(
     onboardingCompleted: { type: Boolean, default: false },
     isAdmin: { type: Boolean, default: false },
     sessionVersion: { type: Number, default: 0, select: false },
+    /**
+     * Demo account only. When the shared demo data was last rebuilt — the demo
+     * login re-seeds only once this goes stale, so the common case is a single
+     * indexed write instead of a full wipe-and-insert. See src/server/demo-seed.ts.
+     */
+    demoSeededAt: { type: Date },
   },
   { timestamps: true },
 );
