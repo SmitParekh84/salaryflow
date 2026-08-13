@@ -137,7 +137,10 @@ docker run -p 3000:3000 --env-file .env.local aartha
 
 ## 🚢 Deployment
 
-- **Vercel** (recommended): import the repo, add env vars, deploy.
+- **AWS**: see **[DEPLOYMENT.md](DEPLOYMENT.md)** — Lightsail Micro at $10/mo
+  flat is the recommended target, with costs, alternatives, and the two
+  Dockerfile blockers you have to fix first.
+- **Vercel**: import the repo, add env vars, deploy.
 - **Docker**: build the image above and run on any container host.
 - Set `MONGODB_URI` and `AUTH_SECRET` in your host's environment.
 

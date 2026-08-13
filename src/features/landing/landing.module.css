@@ -334,7 +334,7 @@
     background-clip: text;
     color: transparent;
     display: block;
-    font-size: clamp(4.2rem, 7vw, 6.6rem);
+    font-size: clamp(4.2rem, 7vw, 6rem);
     letter-spacing: 0;
     line-height: 1;
     margin-top: 26px
@@ -1346,11 +1346,16 @@
         display: none
     }
 
+    /* 8px around a 24px icon is a 40px target. WCAG 2.5.5 wants 44. */
     .menuButton {
+        align-items: center;
         background: transparent;
         border: 0;
         color: var(--ink);
-        display: block;
+        display: flex;
+        justify-content: center;
+        min-height: 44px;
+        min-width: 44px;
         padding: 8px
     }
 
@@ -1362,24 +1367,38 @@
         display: grid;
         padding: 10px;
         position: absolute;
-        right: 24px;
-        top: 64px;
+        /* Matches the header's own horizontal padding so the panel lines up
+           with the menu button that opened it. */
+        right: 32px;
+        /* Was a hard 64px against a 72px-tall header, so the panel overlapped
+           it. Anchoring to the header's height keeps the 8px gap at both
+           breakpoints. */
+        top: calc(100% + 8px);
         width: 210px
     }
 
     .mobileNav a {
+        align-items: center;
         border-radius: 8px;
         color: var(--ink);
+        display: flex;
         font-size: 14px;
         font-weight: 650;
-        padding: 12px;
+        /* 12px padding on a 14px line is ~41px; the floor takes it to 44. */
+        min-height: 44px;
+        padding: 0 12px;
         text-decoration: none
     }
 
     .hero {
         gap: 60px;
         grid-template-columns: 1fr;
-        padding-top: 140px
+        padding-top: 140px;
+        /* The 810px floor is a desktop device. Once the hero stacks, its own
+           content sets the height — and a phone held landscape (844x390) is
+           wider than the phone breakpoint, so it would otherwise inherit an
+           810px hero on a 390px-tall screen. */
+        min-height: auto
     }
 
     .heroCopy {
@@ -1412,6 +1431,13 @@
         grid-template-columns: 1fr
     }
 
+    /* Same reasoning as the hero: these floors were sized for a two-column
+       desktop layout and only trap height once the columns stack. */
+    .problemSection,
+    .productSection {
+        min-height: auto
+    }
+
     .problemCopy,
     .productCopy {
         text-align: center
@@ -1436,6 +1462,33 @@
         max-width: 420px
     }
 
+    /* Three cards across a tablet leaves ~200px each, and 56px of that is the
+       card's own padding. Two columns keeps the copy readable; the phone
+       breakpoint below takes it to one. */
+    .stepsGrid,
+    .setupGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr))
+    }
+
+    /* The five-step cycle is the tightest thing on the page: at 768px each
+       column gets ~129px for a 36px icon plus two lines of label. It reads as a
+       vertical sequence instead, which is what the phone layout already did —
+       the rule just starts one breakpoint earlier. */
+    .cycleTrack {
+        gap: 18px;
+        grid-template-columns: 1fr
+    }
+
+    .cycleTrack>div {
+        border-bottom: 1px dashed #b9d8ce;
+        border-right: 0;
+        min-height: 120px
+    }
+
+    .cycleTrack>div:last-child {
+        border-bottom: 0
+    }
+
     .footerTop {
         gap: 40px;
         grid-template-columns: 1fr
@@ -1446,6 +1499,10 @@
     .nav {
         height: 64px;
         padding: 0 18px
+    }
+
+    .mobileNav {
+        right: 18px
     }
 
     .hero {
@@ -1601,20 +1658,10 @@
         font-size: 10px
     }
 
+    /* Stacking and the dashed separators are handled at the tablet breakpoint
+       above; only the padding tightens further here. */
     .cycleTrack {
-        gap: 18px;
-        grid-template-columns: 1fr;
         padding: 18px
-    }
-
-    .cycleTrack>div {
-        border-bottom: 1px dashed #b9d8ce;
-        border-right: 0;
-        min-height: 120px
-    }
-
-    .cycleTrack>div:last-child {
-        border-bottom: 0
     }
 
     .allocationBoard {
@@ -1705,5 +1752,20 @@
     .nav {
         background: #fff;
         backdrop-filter: none
+    }
+}
+
+/* Gradient-clipped text paints the letterforms with a background image and sets
+   `color: transparent`. Forced-colors mode strips background images but honours
+   the transparent color, so the accented words in the headlines and the daily
+   number itself would render invisible. Repaint them with a system color. */
+@media(forced-colors:active) {
+
+    .hero h1 span,
+    .page h2 span,
+    .green,
+    .dailyNumber>strong {
+        background: none;
+        color: CanvasText
     }
 }
