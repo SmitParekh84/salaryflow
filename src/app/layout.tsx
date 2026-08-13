@@ -1,5 +1,7 @@
 import { PwaRegister } from "@/components/pwa-register";
 import { ThemeProvider } from "@/components/theme-provider";
+import { BRAND } from "@/lib/brand";
+import { SITE_ORIGIN } from "@/lib/site-url";
 import { THEME_COLORS } from "@/lib/theme";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -11,10 +13,36 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 import ClientAuthWrapper from "@/components/client-auth-wrapper";
 
 export const metadata: Metadata = {
-  title: "Aartha — Know what's safe to spend today",
-  description:
-    "A salary-cycle money app that tells you exactly how much you can safely spend today, every day until your next salary.",
-  applicationName: "Aartha",
+  // Required for Open Graph and canonical URLs to resolve as absolute. Without
+  // it Next emits relative og:image paths, which every crawler rejects.
+  metadataBase: new URL(SITE_ORIGIN),
+  title: {
+    default: `${BRAND.name} — ${BRAND.brandline.replace(/\.$/, "")}`,
+    // Sub-pages set only their own name; the brand is appended here so no page
+    // has to repeat it and none is left with a bare, ambiguous title.
+    template: `%s — ${BRAND.name}`,
+  },
+  description: BRAND.description,
+  applicationName: BRAND.name,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: BRAND.name,
+    title: `${BRAND.name} — ${BRAND.brandline.replace(/\.$/, "")}`,
+    description: BRAND.description,
+    url: "/",
+    locale: "en_IN",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${BRAND.name} — ${BRAND.brandline.replace(/\.$/, "")}`,
+    description: BRAND.description,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+  },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

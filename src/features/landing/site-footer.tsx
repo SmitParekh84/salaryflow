@@ -12,7 +12,7 @@ import styles from "./landing.module.css";
  * palette instead, and stays out of the authenticated app shell.
  *
  * Every link here points at something that exists — the four landing sections,
- * and the three real routes.
+ * the account routes, and the company pages.
  */
 
 const SECTION_LINKS = [
@@ -26,6 +26,12 @@ const ROUTE_LINKS = [
   { href: "/download", label: "Install the app" },
   { href: "/register", label: "Create an account" },
   { href: "/login", label: "Sign in" },
+];
+
+const COMPANY_LINKS = [
+  { href: "/about", label: "About" },
+  { href: "/privacy", label: "Privacy Policy" },
+  { href: "/terms", label: "Terms of Service" },
 ];
 
 export function SiteFooter() {
@@ -59,6 +65,17 @@ export function SiteFooter() {
             <h2 className={styles.footerHeading}>Get started</h2>
             <ul>
               {ROUTE_LINKS.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href}>{link.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className={styles.footerGroup}>
+            <h2 className={styles.footerHeading}>Company</h2>
+            <ul>
+              {COMPANY_LINKS.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href}>{link.label}</Link>
                 </li>

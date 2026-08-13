@@ -2,7 +2,7 @@ import { AuthPage } from "@/features/auth/auth-page";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Sign in | Aartha",
+  title: "Sign in",
   description:
     "Sign in securely to Aartha and continue managing your salary cycle, expenses, bills, and safe-to-spend amount.",
   alternates: { canonical: "/login" },

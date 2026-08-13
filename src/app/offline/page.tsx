@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const metadata = { title: "Offline — Aartha" };
+export const metadata = { title: "Offline", robots: { index: false, follow: false } };
 
 export default function Offline() {
   return (
