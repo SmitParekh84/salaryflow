@@ -6,6 +6,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { Checkbox, Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Modal, ModalFooter } from "@/components/ui/modal";
 import { CATEGORIES, PAYMENT_METHODS } from "@/lib/constants";
+import { EXPENSE_AMOUNT_MESSAGE, expenseAmountIsValid } from "@/lib/schemas";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
 import { dateInputToIso, localDateInputValue, parseFinancialDate } from "@/lib/utils";
@@ -16,7 +17,7 @@ import { z } from "zod";
 
 const schema = z
   .object({
-    amount: z.coerce.number().positive("Enter an amount greater than 0"),
+    amount: z.coerce.number(),
     category: z.string().min(1),
     merchant: z.string().optional(),
     paymentMethod: z.string().min(1),
@@ -34,6 +35,9 @@ const schema = z
     inviteRequested: z.boolean().optional(),
   })
   .superRefine((values, context) => {
+    if (!expenseAmountIsValid(values.amount, Boolean(values.sharedEnabled))) {
+      context.addIssue({ code: "custom", path: ["amount"], message: EXPENSE_AMOUNT_MESSAGE });
+    }
     if (values.planNextPayment && !values.recurrenceDays) {
       context.addIssue({
         code: "custom",

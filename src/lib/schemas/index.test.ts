@@ -4,6 +4,7 @@ import {
   billSchema,
   budgetRuleSchema,
   creditCardSchema,
+  expenseAmountIsValid,
   goalSchema,
   investmentSchema,
   otpSchema,
@@ -169,5 +170,24 @@ describe("otpSchema", () => {
   it("rejects a short or non-numeric code", () => {
     expect(firstError(otpSchema, "4183")).toBe("Enter the 6-digit verification code");
     expect(firstError(otpSchema, "41830a")).toBe("Enter the 6-digit verification code");
+  });
+});
+
+describe("expenseAmountIsValid", () => {
+  it("accepts a zero share when a friend covered the whole bill", () => {
+    expect(expenseAmountIsValid(0, true)).toBe(true);
+  });
+
+  it("rejects a zero amount on an ordinary expense", () => {
+    expect(expenseAmountIsValid(0, false)).toBe(false);
+  });
+
+  it("accepts a positive amount either way", () => {
+    expect(expenseAmountIsValid(1_000, true)).toBe(true);
+    expect(expenseAmountIsValid(1_000, false)).toBe(true);
+  });
+
+  it("rejects a negative amount even on a split", () => {
+    expect(expenseAmountIsValid(-1, true)).toBe(false);
   });
 });

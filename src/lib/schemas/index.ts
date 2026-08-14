@@ -23,6 +23,21 @@ import {
  * that reached `Number()` bypassed them entirely.
  */
 
+export const EXPENSE_AMOUNT_MESSAGE = "Enter an amount greater than 0";
+
+/**
+ * Whether an expense amount is recordable.
+ *
+ * Your share of a split may legitimately be zero: a friend can cover the whole
+ * bill, or pay you back in full, and the group spend is still worth keeping on
+ * the Shared page. Requiring a positive amount everywhere made those bills
+ * impossible to enter at all. Every other expense must still be above zero —
+ * a blank amount is a mistake, not a record.
+ */
+export function expenseAmountIsValid(amount: number, isShared: boolean) {
+  return isShared ? amount >= 0 : amount > 0;
+}
+
 export const ACCOUNT_TYPES = ["Savings", "Salary", "Current", "Other"] as const;
 export const ACCOUNT_STATUSES = ["active", "closing", "closed"] as const;
 

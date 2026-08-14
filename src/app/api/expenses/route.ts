@@ -1,5 +1,6 @@
 import { getAuthenticatedContext, isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
 import { connectDB } from "@/server/db";
+import { EXPENSE_AMOUNT_MESSAGE, expenseAmountIsValid } from "@/lib/schemas";
 import { ExpenseModel } from "@/server/models";
 import { Types } from "mongoose";
 import { NextResponse } from "next/server";
@@ -18,7 +19,7 @@ const sharedSchema = z.object({
 });
 
 const expenseFields = z.object({
-  amount: z.number().positive(),
+  amount: z.number(),
   category: z.string().min(1),
   merchant: z.string().optional(),
   paymentMethod: z.string().default("UPI"),
@@ -37,6 +38,9 @@ const expenseFields = z.object({
 });
 
 const createSchema = expenseFields.superRefine((expense, context) => {
+  if (!expenseAmountIsValid(expense.amount, Boolean(expense.shared))) {
+    context.addIssue({ code: "custom", path: ["amount"], message: EXPENSE_AMOUNT_MESSAGE });
+  }
   if (!expense.shared) return;
   if (
     Math.abs(expense.shared.userPaid + expense.shared.friendPaid - expense.shared.totalAmount) >
