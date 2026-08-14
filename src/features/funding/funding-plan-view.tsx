@@ -44,6 +44,7 @@ export function FundingPlanView() {
     { month: localDateInputValue().slice(0, 7), amount: 0 },
   ]);
   const [saving, setSaving] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const confirmedSalary = newestFirst(
     salaryHistory.filter((entry): entry is typeof entry & { date: string } =>
       Boolean(entry.confirmed && entry.date),
@@ -65,6 +66,7 @@ export function FundingPlanView() {
 
   function openPayment(item: FundingPlanItem) {
     if (!item.billId) return;
+    setPaymentError(null);
     setPayingItem(item);
     setPaymentAccountId(item.destinationAccountId ?? "");
     setPaymentRows([
@@ -89,7 +91,7 @@ export function FundingPlanView() {
       );
       if (duplicate) continue;
       const [year, month] = row.month.split("-").map(Number);
-      addExpense({
+      const recorded = addExpense({
         amount: row.amount,
         category:
           payingItem.kind === "rent"
@@ -110,7 +112,19 @@ export function FundingPlanView() {
         billId: payingItem.billId,
         billingMonth: row.month,
       });
+      // Each payment now debits the chosen account, so a later row can be
+      // refused once the earlier ones have drained it. Stop and say so rather
+      // than closing the dialog on a half-recorded payment.
+      if (!recorded) {
+        setPaymentError(
+          `${account?.bankName ?? "That account"} only has ${formatMoney(account?.balance ?? 0, currency)} left, so the ${row.month} payment was not recorded.`,
+        );
+        setSaving(false);
+        await syncWithServer();
+        return;
+      }
     }
+    setPaymentError(null);
     await syncWithServer();
     setSaving(false);
     setPayingItem(null);
@@ -287,9 +301,10 @@ export function FundingPlanView() {
             </Button>
           )}
           <p className="text-xs text-muted">
-            Saving creates the matching expense and updates this month&apos;s plan. Your account
-            balance is not changed automatically.
+            Saving creates the matching expense, updates this month&apos;s plan and deducts the
+            amount from the selected account.
           </p>
+          {paymentError && <p className="text-xs text-danger">{paymentError}</p>}
           <ModalFooter>
             <Button variant="secondary" onClick={() => setPayingItem(null)}>
               Cancel

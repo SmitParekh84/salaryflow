@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { accountDeletionBlocker, goalRestoreBlocker } from "./account-references";
 import {
   applyAllocation,
@@ -535,6 +535,95 @@ describe("shared expense balance reversal", () => {
     expect(useFinanceStore.getState().accounts.map((account) => account.balance)).toEqual([
       10_000, 3_800,
     ]);
+  });
+});
+
+describe("ordinary expense balance deduction", () => {
+  const account = {
+    id: "icici",
+    bankName: "ICICI Bank",
+    accountType: "Savings" as const,
+    balance: 5_000,
+    status: "active" as const,
+  };
+
+  const card = {
+    id: "icici-card",
+    name: "ICICI Credit Card",
+    bankName: "ICICI Bank",
+    creditLimit: 50_000,
+    statementDay: 5,
+    dueDay: 20,
+    status: "active" as const,
+  };
+
+  const spend = {
+    amount: 1_500,
+    category: "Fuel",
+    merchant: "Narnarayan Fuel Point",
+    paymentMethod: "UPI",
+    date: "2026-08-13T12:00:00.000Z",
+  } as Omit<Expense, "id">;
+
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+    useFinanceStore.setState({
+      accounts: [{ ...account }],
+      creditCards: [{ ...card }],
+      expenses: [],
+      recycleBin: [],
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("reduces the bank balance for a plain expense paid from that account", () => {
+    expect(useFinanceStore.getState().addExpense({ ...spend, accountId: "icici" })).toBe(true);
+    expect(useFinanceStore.getState().accounts[0].balance).toBe(3_500);
+    expect(useFinanceStore.getState().expenses[0].balanceApplied).toBe(true);
+  });
+
+  it("refunds the account when that expense is deleted", () => {
+    useFinanceStore.getState().addExpense({ ...spend, accountId: "icici" });
+    useFinanceStore.getState().deleteExpense(useFinanceStore.getState().expenses[0].id);
+    expect(useFinanceStore.getState().accounts[0].balance).toBe(5_000);
+  });
+
+  it("moves the deduction when the expense is repointed at another account", () => {
+    useFinanceStore.setState({
+      accounts: [
+        { ...account },
+        {
+          id: "bob",
+          bankName: "Bank of Baroda",
+          accountType: "Savings",
+          balance: 9_000,
+          status: "active",
+        },
+      ],
+    });
+    useFinanceStore.getState().addExpense({ ...spend, accountId: "icici" });
+    const id = useFinanceStore.getState().expenses[0].id;
+
+    expect(useFinanceStore.getState().updateExpense(id, { accountId: "bob" })).toBe(true);
+    expect(useFinanceStore.getState().accounts.map((entry) => entry.balance)).toEqual([
+      5_000, 7_500,
+    ]);
+  });
+
+  it("leaves every bank balance alone when a credit card paid", () => {
+    expect(useFinanceStore.getState().addExpense({ ...spend, accountId: "icici-card" })).toBe(true);
+    expect(useFinanceStore.getState().accounts[0].balance).toBe(5_000);
+    expect(useFinanceStore.getState().expenses[0].balanceApplied).toBe(false);
+  });
+
+  it("refuses an expense the selected account cannot cover", () => {
+    expect(useFinanceStore.getState().addExpense({ ...spend, amount: 6_000, accountId: "icici" }))
+      .toBe(false);
+    expect(useFinanceStore.getState().accounts[0].balance).toBe(5_000);
+    expect(useFinanceStore.getState().expenses).toHaveLength(0);
   });
 });
 

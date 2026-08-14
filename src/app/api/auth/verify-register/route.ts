@@ -1,6 +1,10 @@
 import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
 import { clearRateLimit, consumeRateLimit, getClientIp } from "@/lib/rate-limit";
-import { setSessionCookie } from "@/lib/session-cookie";
+import {
+  REMEMBERED_TTL_SECONDS,
+  sessionTokenExpiry,
+  setSessionCookie,
+} from "@/lib/session-cookie";
 import { hashOtp, hashPassword, signJwt } from "@/server/auth";
 import { connectDB } from "@/server/db";
 import { OtpModel, UserModel } from "@/server/models";
@@ -75,7 +79,10 @@ export async function POST(req: Request) {
     onboardingCompleted: false,
   });
 
-  const token = signJwt({ sub: String(created._id), email: created.email, sv: 0 }, "7d");
+  const token = signJwt(
+    { sub: String(created._id), email: created.email, sv: 0 },
+    sessionTokenExpiry(REMEMBERED_TTL_SECONDS),
+  );
   const res = NextResponse.json(
     {
       data: {
@@ -87,7 +94,7 @@ export async function POST(req: Request) {
     },
     { status: 201 },
   );
-  setSessionCookie(res, token, true);
+  setSessionCookie(res, token, REMEMBERED_TTL_SECONDS);
   await clearRateLimit("register-verify-email", parsed.data.email);
   return res;
 }

@@ -1,6 +1,6 @@
 import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
 import { clearRateLimit, consumeRateLimit, getClientIp } from "@/lib/rate-limit";
-import { setSessionCookie } from "@/lib/session-cookie";
+import { sessionTokenExpiry, sessionTtlSeconds, setSessionCookie } from "@/lib/session-cookie";
 import { signJwt, verifyPassword } from "@/server/auth";
 import { connectDB } from "@/server/db";
 import { UserModel } from "@/server/models";
@@ -64,9 +64,10 @@ export async function POST(req: Request) {
   }
 
   const remember = !!parsed.data.remember;
+  const maxAge = sessionTtlSeconds(remember);
   const token = signJwt(
     { sub: String(user._id), email: user.email, sv: Number(user.sessionVersion ?? 0) },
-    remember ? "7d" : "12h",
+    sessionTokenExpiry(maxAge),
   );
 
   const onboardingCompleted =
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
   const res = NextResponse.json({
     data: { id: user._id, email: user.email, name: user.name, onboardingCompleted },
   });
-  setSessionCookie(res, token, remember);
+  setSessionCookie(res, token, maxAge);
   await clearRateLimit("login-account", parsed.data.email);
   return res;
 }

@@ -53,7 +53,9 @@ function AuthContent({ mode }: { mode: AuthMode }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [otp, setOtp] = useState("");
-  const [remember, setRemember] = useState(false);
+  // On by default: Aartha is used as an installed phone app, where being asked
+  // to sign in again is the annoyance, not the safeguard.
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);

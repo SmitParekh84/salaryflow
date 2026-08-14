@@ -1,6 +1,6 @@
 import { isSameOriginRequest } from "@/lib/api-security";
 import { consumeRateLimit, getClientIp } from "@/lib/rate-limit";
-import { setSessionCookie } from "@/lib/session-cookie";
+import { SESSION_TTL_SECONDS, sessionTokenExpiry, setSessionCookie } from "@/lib/session-cookie";
 import { signJwt } from "@/server/auth";
 import { connectDB } from "@/server/db";
 import { DEMO_EMAIL, ensureDemoUser, reseedDemoAccount } from "@/server/demo-seed";
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
 
   const token = signJwt(
     { sub: String(user._id), email: user.email, sv: Number(user.sessionVersion ?? 0) },
-    "12h",
+    sessionTokenExpiry(SESSION_TTL_SECONDS),
   );
   const response = NextResponse.json({
     data: { id: user._id, email: user.email, name: user.name, onboardingCompleted: true },

@@ -49,6 +49,8 @@ export function BillsView() {
     intervalDays: "90",
   });
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
+  /** Bill id -> why its "mark paid" could not be recorded. */
+  const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({});
 
   const sorted = useMemo(() => {
     return [...bills].sort((first, second) => {
@@ -139,7 +141,7 @@ export function BillsView() {
     const cycle = billCycle(bill, expenses);
     if (cycle.isPaid) return;
     const account = accounts.find((candidate) => candidate.id === bill.accountId);
-    addExpense({
+    const recorded = addExpense({
       amount: cycle.remainingAmount,
       category: bill.category,
       merchant: bill.name,
@@ -150,6 +152,22 @@ export function BillsView() {
       accountId: bill.accountId,
       billId: bill.id,
       billingMonth: cycle.billingMonth,
+    });
+    // Paying a bill now moves the linked account's balance, so it can be
+    // refused. Without this the button looked like it worked and the bill
+    // quietly stayed unpaid.
+    if (!recorded) {
+      setPaymentErrors((current) => ({
+        ...current,
+        [bill.id]: `${account?.bankName ?? "That account"} only has ${formatMoney(account?.balance ?? 0, currency)}.`,
+      }));
+      return;
+    }
+    setPaymentErrors((current) => {
+      if (!current[bill.id]) return current;
+      const rest = { ...current };
+      delete rest[bill.id];
+      return rest;
     });
     await syncWithServer();
   };
@@ -210,6 +228,9 @@ export function BillsView() {
                           : dateLabel}
                       {account ? ` · ${account.bankName}` : ""}
                     </span>
+                    {paymentErrors[b.id] && (
+                      <span className="text-xs text-danger">{paymentErrors[b.id]}</span>
+                    )}
                     {isFutureInterval ? (
                       <Badge color="var(--primary)">Saving</Badge>
                     ) : isFutureYear ? (

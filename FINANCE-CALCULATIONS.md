@@ -87,19 +87,21 @@ Bindings:
 
 ### Account Balance
 
-When a shared expense is paid from a bank account:
+Every expense paid from a bank account reduces that account:
 
 ```text
-newAccountBalance = oldAccountBalance - userPaid
+newAccountBalance = oldAccountBalance - Expense.amount
 ```
 
-Only `userPaid` is deducted. The friend's payment is never deducted from the current user's account.
+Splitting a bill changes only how much of it is the user's, never whether the payment left their account. For a shared expense `Expense.amount` is `userPaid`, so only `userPaid` is deducted. The friend's payment is never deducted from the current user's account.
 
-The `balanceApplied` marker records that Aartha performed the deduction. It allows edit, delete, and recycle-bin restore operations to reverse or reapply the amount exactly once.
+The deduction applies wherever the expense is created — the expense form, marking a bill paid, and Salary Plan payments all go through the same write.
+
+An expense is refused when the selected account cannot cover it. Recording it would drive a tracked balance negative, so the caller surfaces the shortfall instead of saving.
+
+The `balanceApplied` marker records that Aartha performed the deduction. It allows edit, delete, and recycle-bin restore operations to reverse or reapply the amount exactly once. Rows written before this rule existed carry `balanceApplied: false` and are left alone: their accounts already hold hand-maintained balances, and reapplying history would double-count.
 
 When the selected source is a credit card, no bank balance is reduced. The expense becomes part of credit-card usage.
-
-Ordinary non-shared expenses keep source-only account behavior unless a dedicated payment workflow explicitly applies a balance mutation.
 
 ## Credit Cards
 

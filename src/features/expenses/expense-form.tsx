@@ -287,7 +287,7 @@ export function ExpenseForm({
             <p className="mt-1 text-xs text-muted">
               {isSharedForm
                 ? "Your payment reduces the selected bank-account balance. Credit cards track usage instead."
-                : "Records the payment source. Credit-card purchases appear in card usage."}
+                : "The amount is deducted from the selected bank account. Credit-card purchases appear in card usage instead."}
             </p>
           </div>
         )}

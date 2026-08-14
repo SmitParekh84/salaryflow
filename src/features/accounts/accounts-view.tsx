@@ -491,8 +491,8 @@ export function AccountsView() {
       <Card className="flex items-start gap-3 p-4 shadow-none">
         <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <p className="text-xs leading-relaxed text-muted">
-          Account balances are tracked separately from salary and spending, so transfers between
-          your own banks do not change income.
+          Spending paid from an account reduces its balance. Transfers between your own banks move
+          money without changing income.
         </p>
       </Card>
 

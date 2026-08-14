@@ -1,6 +1,6 @@
 import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
 import { clearRateLimit, consumeRateLimit, getClientIp } from "@/lib/rate-limit";
-import { setSessionCookie } from "@/lib/session-cookie";
+import { ADMIN_TTL_SECONDS, sessionTokenExpiry, setSessionCookie } from "@/lib/session-cookie";
 import { signJwt, verifyPassword } from "@/server/auth";
 import { connectDB } from "@/server/db";
 import { UserModel } from "@/server/models";
@@ -78,13 +78,13 @@ export async function POST(req: Request) {
 
   const token = signJwt(
     { sub: String(user._id), email: user.email, sv: Number(user.sessionVersion ?? 0) },
-    "12h",
+    sessionTokenExpiry(ADMIN_TTL_SECONDS),
   );
 
   const res = NextResponse.json({
     data: { id: user._id, email: user.email, name: user.name },
   });
-  setSessionCookie(res, token, false);
+  setSessionCookie(res, token, ADMIN_TTL_SECONDS);
   await clearRateLimit("admin-login-account", parsed.data.email);
   return res;
 }

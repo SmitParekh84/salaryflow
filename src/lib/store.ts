@@ -274,7 +274,13 @@ export const useFinanceStore = create<FinanceState>()(
         const account = expense.accountId
           ? get().accounts.find((candidate) => candidate.id === expense.accountId)
           : undefined;
-        const balanceApplied = Boolean(account && expense.shared);
+        // Any expense funded by a bank account moves that account's money —
+        // splitting the bill with a friend only changes *how much* of it is
+        // yours, never whether the payment happened. Gating this on
+        // `expense.shared` is why a plain ICICI spend left the balance untouched.
+        // Credit cards are absent from `accounts`, so a card-funded expense
+        // still finds no account here and stays out of cash balances.
+        const balanceApplied = Boolean(account);
         if (balanceApplied && account!.balance < expense.amount) return false;
         set((state) => ({
           expenses: [{ ...expense, balanceApplied, id: uid("exp") }, ...state.expenses],
@@ -301,7 +307,7 @@ export const useFinanceStore = create<FinanceState>()(
               ? existing.amount
               : 0)
           : 0;
-        const shouldApplyBalance = Boolean(nextAccount && updated.shared);
+        const shouldApplyBalance = Boolean(nextAccount);
         if (shouldApplyBalance && restoredBalance < updated.amount) return false;
 
         set((state) => ({
