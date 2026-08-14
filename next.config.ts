@@ -18,6 +18,22 @@ const contentSecurityPolicy = [
 const nextConfig: NextConfig = {
   devIndicators: false,
   poweredByHeader: false,
+  experimental: {
+    /**
+     * Every page in the app group is a client component reading from the
+     * device's own store — the server contributes no figures to them. With the
+     * `dynamic` default of 0 seconds, returning to a page you were just on
+     * still cost a round trip for a payload that cannot have changed.
+     *
+     * Caching those segments makes back-and-forth navigation instant and
+     * offline-tolerant. It cannot serve stale money: the numbers are rendered
+     * on the client from state that syncs independently.
+     */
+    staleTimes: {
+      dynamic: 180,
+      static: 300,
+    },
+  },
   async headers() {
     const securityHeaders = [
       { key: "Content-Security-Policy", value: contentSecurityPolicy },

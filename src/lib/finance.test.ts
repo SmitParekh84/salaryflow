@@ -427,6 +427,89 @@ describe("goal restoration", () => {
   });
 });
 
+describe("sync traffic", () => {
+  function syncResponse() {
+    return {
+      ok: true,
+      json: async () => ({ data: null, syncedAt: "2026-08-14T12:00:00.000Z" }),
+    };
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("sends nothing when the state has not changed since the last push", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(syncResponse());
+    vi.stubGlobal("fetch", fetchMock);
+    useFinanceStore.getState().resetAll();
+    useFinanceStore.setState({ expenses: [], accounts: [] });
+
+    await useFinanceStore.getState().syncWithServer();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // Opening a page or re-saving an unchanged form used to cost a full
+    // upload and a full download back.
+    await useFinanceStore.getState().syncWithServer();
+    await useFinanceStore.getState().syncWithServer();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends again once something actually changes", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(syncResponse());
+    vi.stubGlobal("fetch", fetchMock);
+    useFinanceStore.getState().resetAll();
+
+    await useFinanceStore.getState().syncWithServer();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    useFinanceStore.getState().addExpense({
+      amount: 200,
+      category: "Food",
+      paymentMethod: "UPI",
+      date: "2026-08-14T12:00:00.000Z",
+    } as Omit<Expense, "id">);
+
+    await useFinanceStore.getState().syncWithServer();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not let a slow pull overwrite an edit made while it was in flight", async () => {
+    let releasePull: (value: unknown) => void = () => {};
+    const pull = new Promise((resolve) => {
+      releasePull = resolve;
+    });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => {
+        await pull;
+        return {
+          ok: true,
+          json: async () => ({ data: { expenses: [] }, syncedAt: "2026-08-14T12:00:00.000Z" }),
+        };
+      }),
+    );
+
+    useFinanceStore.getState().resetAll();
+    const loading = useFinanceStore.getState().loadFromServer();
+
+    useFinanceStore.getState().addExpense({
+      amount: 500,
+      category: "Food",
+      merchant: "Recorded mid-pull",
+      paymentMethod: "UPI",
+      date: "2026-08-14T12:00:00.000Z",
+    } as Omit<Expense, "id">);
+
+    releasePull(null);
+    await loading;
+
+    expect(useFinanceStore.getState().expenses).toHaveLength(1);
+    expect(useFinanceStore.getState().expenses[0].merchant).toBe("Recorded mid-pull");
+  });
+});
+
 describe("shared expense balance reversal", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
