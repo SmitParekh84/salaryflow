@@ -123,11 +123,15 @@ Cash saved is evidence of new savings activity, not the current balance of a sav
 netSavingsAccountFlow =
     completed transfers into savings accounts
   - completed transfers out of savings accounts
-  + incomes deposited directly into savings accounts
+  + qualifying incomes deposited directly into savings accounts
   - expenses paid from savings accounts
 
 cashSavedThisCycle = max(0, netSavingsAccountFlow)
 ```
+
+Reimbursements and cashback are not qualifying deposits. A reimbursement is the back half of a spend that already happened, and the matching outflow usually left a different account, so counting the inflow on its own invents savings that were never made. Cashback is excluded from earned income, and crediting it here would inflate the savings rate against an income figure that leaves it out.
+
+Salary paid into a savings account does qualify. It is absent from earned income only because profile or confirmed salary history is the salary source of truth, not because it fails to be saved.
 
 Savings accounts include accounts explicitly marked for savings and accounts that directly back a
 goal through `balanceAccountId`. A transfer into an Emergency Fund account therefore counts as cash
@@ -137,6 +141,7 @@ saved even when that bank account has no separate savings-purpose tag.
 
 The following contribute exactly zero to `cashSavedThisCycle`:
 
+- Reimbursements and cashback, wherever they are deposited.
 - All goal contributions, whether linked or unlinked.
 - Migrated opening goal balances.
 - Existing savings-account balances.

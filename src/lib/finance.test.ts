@@ -829,6 +829,60 @@ describe("finance summary", () => {
     expect(summary.savedThisCycle).toBe(5_000);
   });
 
+  it("ignores a reimbursement landing in a savings account", () => {
+    const summary = computeSummary(
+      profile,
+      [],
+      [
+        {
+          id: "friend-repayment",
+          amount: 1_000,
+          type: "Reimbursement",
+          source: "Swarali",
+          date: now.toISOString(),
+          accountId: "save-a",
+        },
+      ],
+      [],
+      [],
+      [],
+      rule,
+      savingsAccounts,
+      [transfer()],
+      now,
+    );
+
+    // The transfer alone. Being paid back for something already spent is the
+    // back half of an outflow, not new money set aside.
+    expect(summary.savedThisCycle).toBe(5_000);
+  });
+
+  it("still counts a real deposit into a savings account", () => {
+    const summary = computeSummary(
+      profile,
+      [],
+      [
+        {
+          id: "bonus",
+          amount: 1_000,
+          type: "Bonus",
+          source: "Diwali bonus",
+          date: now.toISOString(),
+          accountId: "save-a",
+        },
+      ],
+      [],
+      [],
+      [],
+      rule,
+      savingsAccounts,
+      [transfer()],
+      now,
+    );
+
+    expect(summary.savedThisCycle).toBe(6_000);
+  });
+
   it("keeps savings reserved to a goal neutral when its account closes", () => {
     const summary = computeSummary(
       profile,

@@ -133,6 +133,23 @@ export function countsAsEarnedIncome(income: Income) {
   return !["Salary", "Reimbursement", "Cashback"].includes(income.type);
 }
 
+/**
+ * Whether money arriving in a savings account is evidence of new saving.
+ *
+ * A reimbursement is the back half of a spend that already happened, and the
+ * matching outflow usually left a different account — so counting the inflow
+ * alone invents savings that were never made. Cashback is likewise never
+ * counted as earned income, and crediting it here would inflate the savings
+ * rate against an income figure that excludes it.
+ *
+ * Salary deliberately stays in. It is left out of `countsAsEarnedIncome` only
+ * because profile or confirmed salary is the source of truth for earnings, not
+ * because a salary paid into a savings account fails to be saved.
+ */
+export function countsAsSavingsDeposit(income: Income) {
+  return !["Reimbursement", "Cashback"].includes(income.type);
+}
+
 export function computeSummary(
   profile: SalaryProfile,
   expenses: Expense[],
@@ -205,6 +222,7 @@ export function computeSummary(
         (income) =>
           income.accountId &&
           savingsAccountIds.has(income.accountId) &&
+          countsAsSavingsDeposit(income) &&
           isInCurrentCycle(income.date, profile, now),
       )
       .reduce((sum, income) => sum + income.amount, 0) -
