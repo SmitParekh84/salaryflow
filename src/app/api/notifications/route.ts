@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/server-auth";
 import type { AppNotification } from "@/lib/types";
 import { NotificationModel } from "@/server/models";
 import { Types } from "mongoose";
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -44,7 +45,7 @@ function serializeNotification(value: unknown): AppNotification | null {
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -53,14 +54,21 @@ export async function GET() {
     .limit(50)
     .lean();
 
-  return NextResponse.json(
-    {
-      data: notifications.flatMap(
-        (notification: unknown) => serializeNotification(notification) ?? [],
-      ),
-    },
-    { headers: { "Cache-Control": "no-store" } },
+  const data = notifications.flatMap(
+    (notification: unknown) => serializeNotification(notification) ?? [],
   );
+
+  // `no-cache` still revalidates on every poll, but an unchanged list now
+  // answers with an empty 304 instead of resending fifty notifications. The
+  // browser serves its stored copy, so the caller sees no difference.
+  const etag = `W/"${createHash("sha1").update(JSON.stringify(data)).digest("base64url")}"`;
+  const headers = { ETag: etag, "Cache-Control": "private, no-cache" };
+
+  if (request.headers.get("if-none-match") === etag) {
+    return new NextResponse(null, { status: 304, headers });
+  }
+
+  return NextResponse.json({ data }, { headers });
 }
 
 export async function PATCH(request: Request) {

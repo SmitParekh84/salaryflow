@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/server-auth";
+import { hasValidSessionCookie } from "@/lib/server-auth";
 import AppLayoutClient from "@/components/app-layout-client";
 import type { Metadata } from "next";
 
@@ -18,8 +18,9 @@ export const metadata: Metadata = {
 };
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
-  if (!user) {
+  // Signature-only, so navigating between pages costs no database round trip.
+  // See hasValidSessionCookie for why that is safe here.
+  if (!(await hasValidSessionCookie())) {
     // server-side redirect to login
     redirect(`/login`);
   }

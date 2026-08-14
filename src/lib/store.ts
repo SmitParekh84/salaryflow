@@ -159,6 +159,8 @@ interface FinanceState {
    */
   lastSyncedAt: string | null;
   syncWithServer: () => Promise<void>;
+  /** Debounced `syncWithServer`, for mutations that fire in bursts. */
+  queueSync: () => void;
   loadFromServer: () => Promise<void>;
   loadSeed: () => void;
   resetAll: () => void;
@@ -222,6 +224,40 @@ function normalizeServerItems<T extends { id: string }>(items: unknown, fallback
 function normalizeBudgetRules(items: unknown, fallback: BudgetRule[]): BudgetRule[] {
   return normalizeServerItems<BudgetRule>(items, fallback).map(normalizeBudgetRule);
 }
+
+/** Collections mirrored to the server, in a stable key order. */
+function syncPayload(state: FinanceState) {
+  return {
+    onboardingCompleted: state.user.onboarded,
+    profile: state.profile,
+    expenses: state.expenses,
+    incomes: state.incomes,
+    bills: state.bills,
+    goals: state.goals,
+    investments: state.investments,
+    accounts: state.accounts,
+    accountTransfers: state.accountTransfers,
+    creditCards: state.creditCards,
+    budgetRules: state.budgetRules,
+    recycleBin: state.recycleBin,
+  };
+}
+
+/** Cheap identity for a payload. Equal strings mean there is nothing to send. */
+function fingerprint(state: FinanceState) {
+  return JSON.stringify(syncPayload(state));
+}
+
+/**
+ * The state the server is known to already hold. Every mutation used to push
+ * the entire account whether or not anything had changed, so opening a page or
+ * saving the same form twice cost a full upload and a full download back.
+ */
+let syncedFingerprint: string | null = null;
+
+/** Rapid edits belong in one upload, not one upload each. */
+const SYNC_DEBOUNCE_MS = 800;
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
 
 function recycleItem(
   entityType: RecycleEntityType,
@@ -343,7 +379,7 @@ export const useFinanceStore = create<FinanceState>()(
             ...state.recycleBin,
           ],
         }));
-        void get().syncWithServer();
+        get().queueSync();
       },
       toggleFavorite: (id) =>
         set((s) => ({
@@ -358,7 +394,7 @@ export const useFinanceStore = create<FinanceState>()(
           incomes: state.incomes.filter((income) => income.id !== id),
           recycleBin: [recycleItem("income", id, item.source, item), ...state.recycleBin],
         }));
-        void get().syncWithServer();
+        get().queueSync();
       },
 
       addBill: (b) => set((s) => ({ bills: [...s.bills, { ...b, id: uid("bill") }] })),
@@ -373,7 +409,7 @@ export const useFinanceStore = create<FinanceState>()(
           bills: state.bills.filter((bill) => bill.id !== id),
           recycleBin: [recycleItem("bill", id, item.name, item), ...state.recycleBin],
         }));
-        void get().syncWithServer();
+        get().queueSync();
       },
       toggleBillPaid: (id) =>
         set((s) => ({
@@ -430,7 +466,7 @@ export const useFinanceStore = create<FinanceState>()(
           goals: state.goals.filter((goal) => goal.id !== id),
           recycleBin: [recycleItem("goal", id, item.name, item), ...state.recycleBin],
         }));
-        void get().syncWithServer();
+        get().queueSync();
       },
 
       addInvestment: (i) =>
@@ -446,7 +482,7 @@ export const useFinanceStore = create<FinanceState>()(
           investments: state.investments.filter((investment) => investment.id !== id),
           recycleBin: [recycleItem("investment", id, item.name, item), ...state.recycleBin],
         }));
-        void get().syncWithServer();
+        get().queueSync();
       },
 
       addAccount: (account) =>
@@ -475,7 +511,7 @@ export const useFinanceStore = create<FinanceState>()(
           accounts: state.accounts.filter((account) => account.id !== id),
           recycleBin: [recycleItem("account", id, item.bankName, item), ...state.recycleBin],
         }));
-        void get().syncWithServer();
+        get().queueSync();
         return { ok: true };
       },
       addAccountTransfer: (transfer, mode = "scheduled") => {
@@ -511,7 +547,7 @@ export const useFinanceStore = create<FinanceState>()(
             goals: result.goals,
           }));
         }
-        void get().syncWithServer();
+        get().queueSync();
         return true;
       },
       completeAccountTransfer: (id) => {
@@ -539,7 +575,7 @@ export const useFinanceStore = create<FinanceState>()(
           accounts: result.accounts,
           goals: result.goals,
         }));
-        void get().syncWithServer();
+        get().queueSync();
         return true;
       },
 
@@ -556,7 +592,7 @@ export const useFinanceStore = create<FinanceState>()(
           creditCards: state.creditCards.filter((card) => card.id !== id),
           recycleBin: [recycleItem("credit-card", id, item.name, item), ...state.recycleBin],
         }));
-        void get().syncWithServer();
+        get().queueSync();
       },
 
       addBudgetRule: (rule) =>
@@ -580,7 +616,7 @@ export const useFinanceStore = create<FinanceState>()(
           budgetRules: state.budgetRules.filter((rule) => rule.id !== id),
           recycleBin: [recycleItem("budget-rule", id, item.name, item), ...state.recycleBin],
         }));
-        void get().syncWithServer();
+        get().queueSync();
       },
 
       restoreRecycleItem: async (id) => {
@@ -761,10 +797,11 @@ export const useFinanceStore = create<FinanceState>()(
 
       loadNotifications: async () => {
         try {
-          const response = await fetch("/api/notifications", {
-            credentials: "include",
-            cache: "no-store",
-          });
+          // No `cache: "no-store"`: that bypassed the HTTP cache entirely and
+          // forced a full download every poll. The route sends `no-cache` with
+          // an ETag, so the browser still revalidates but re-reads the body
+          // only when it has actually changed.
+          const response = await fetch("/api/notifications", { credentials: "include" });
           if (!response.ok) return;
 
           const json = await response.json();
@@ -796,9 +833,27 @@ export const useFinanceStore = create<FinanceState>()(
         }).catch(() => null);
       },
 
+      queueSync: () => {
+        if (syncTimer) clearTimeout(syncTimer);
+        syncTimer = setTimeout(() => {
+          syncTimer = null;
+          void get().syncWithServer();
+        }, SYNC_DEBOUNCE_MS);
+      },
+
       // sync store to server (requires authenticated session cookie)
       syncWithServer: async () => {
         const state = get();
+        const pushing = fingerprint(state);
+        // The server already holds exactly this. Saying so again costs a full
+        // round trip and changes nothing.
+        if (pushing === syncedFingerprint) return;
+
+        if (syncTimer) {
+          clearTimeout(syncTimer);
+          syncTimer = null;
+        }
+
         try {
           const res = await fetch("/api/sync", {
             method: "POST",
@@ -806,18 +861,7 @@ export const useFinanceStore = create<FinanceState>()(
             body: JSON.stringify({
               userId: state.user.email || undefined,
               since: state.lastSyncedAt,
-              onboardingCompleted: state.user.onboarded,
-              profile: state.profile,
-              expenses: state.expenses,
-              incomes: state.incomes,
-              bills: state.bills,
-              goals: state.goals,
-              investments: state.investments,
-              accounts: state.accounts,
-              accountTransfers: state.accountTransfers,
-              creditCards: state.creditCards,
-              budgetRules: state.budgetRules,
-              recycleBin: state.recycleBin,
+              ...syncPayload(state),
             }),
             credentials: "include",
           });
@@ -849,6 +893,11 @@ export const useFinanceStore = create<FinanceState>()(
               recycleBin: normalizeServerItems<RecycleBinItem>(d.recycleBin, state.recycleBin),
             });
           }
+          // Fingerprint the state *after* the response has been folded in, not
+          // the payload that went out. The server normalises rows on the way
+          // through, so recording what was sent would leave the two looking
+          // different forever and push again on every call.
+          syncedFingerprint = fingerprint(get());
         } catch {
           // silent fail — keep local state
           // console.warn('sync failed', e)
@@ -856,6 +905,7 @@ export const useFinanceStore = create<FinanceState>()(
       },
 
       loadFromServer: async () => {
+        const before = fingerprint(get());
         try {
           const res = await fetch("/api/sync", { credentials: "include" });
           if (!res.ok) return;
@@ -863,6 +913,12 @@ export const useFinanceStore = create<FinanceState>()(
           if (!json?.data) return;
 
           const state = get();
+          // The app now paints from the cached copy while this request is in
+          // flight, so the user can record something before it lands. Their
+          // edit is newer than this response and their own push will carry it
+          // up — applying the response would erase it in front of them.
+          if (fingerprint(state) !== before) return;
+
           const data = json.data;
           set({
             lastSyncedAt: json.syncedAt ?? state.lastSyncedAt,
@@ -878,6 +934,9 @@ export const useFinanceStore = create<FinanceState>()(
             budgetRules: normalizeBudgetRules(data.budgetRules, []),
             recycleBin: normalizeServerItems<RecycleBinItem>(data.recycleBin, []),
           });
+          // Freshly pulled: the two copies match, so the next save has nothing
+          // to push until the user actually changes something.
+          syncedFingerprint = fingerprint(get());
         } catch {
           // Keep the last locally persisted state while offline.
         }
@@ -901,7 +960,14 @@ export const useFinanceStore = create<FinanceState>()(
           notifications: seedNotifications(),
         }),
 
-      resetAll: () =>
+      resetAll: () => {
+        // The next account's state is nothing like this one's, so the "already
+        // pushed" record must go with it or the first sync would be skipped.
+        syncedFingerprint = null;
+        if (syncTimer) {
+          clearTimeout(syncTimer);
+          syncTimer = null;
+        }
         set({
           user: emptyUser,
           profile: emptyProfile,
@@ -920,7 +986,8 @@ export const useFinanceStore = create<FinanceState>()(
           // Signing out must clear the watermark: the next account starts from
           // "has seen nothing", so its first push can never tombstone rows.
           lastSyncedAt: null,
-        }),
+        });
+      },
     }),
     {
       name: STORE_KEY,
@@ -949,3 +1016,19 @@ export const useFinanceStore = create<FinanceState>()(
     },
   ),
 );
+
+/**
+ * A debounced save must never be the one that got away.
+ *
+ * On a phone the app is backgrounded far more often than it is closed, and
+ * `pagehide` is the last event that reliably fires in both cases — `unload`
+ * does not fire at all on iOS. Flushing here means the longest a change can
+ * sit unsent is until the user leaves the app.
+ */
+if (typeof window !== "undefined") {
+  const flush = () => {
+    if (document.visibilityState === "hidden") void useFinanceStore.getState().syncWithServer();
+  };
+  window.addEventListener("pagehide", () => void useFinanceStore.getState().syncWithServer());
+  document.addEventListener("visibilitychange", flush);
+}

@@ -40,6 +40,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function hydrate() {
       await Promise.resolve();
 
+      // A device that has signed in before is already holding the whole
+      // account in localStorage, and the server-rendered layout has already
+      // turned away anyone without a valid cookie. Painting that copy now and
+      // reconciling underneath removes the network from the critical path
+      // entirely; only a genuinely empty device still has to wait for the
+      // first pull, where there is nothing to show anyway.
+      const cached = useFinanceStore.getState().user;
+      if (cached.email && cached.onboarded) setReady(true);
+
       try {
         const response = await fetch("/api/auth/me", { credentials: "include" });
         const result = await response.json();
