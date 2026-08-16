@@ -9,6 +9,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Modal, ModalFooter } from "@/components/ui/modal";
+import { fundingAccount } from "@/lib/account-references";
 import { billCycle, billOccurrenceDate, monthlyBillReserve } from "@/lib/bill-cycle";
 import { CATEGORIES } from "@/lib/constants";
 import { billSchema } from "@/lib/schemas";
@@ -51,6 +52,14 @@ export function BillsView() {
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   /** Bill id -> why its "mark paid" could not be recorded. */
   const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({});
+  /**
+   * The bill waiting to be told which account pays it. Marking an unlinked bill
+   * paid used to record the expense and move no balance at all, silently.
+   */
+  const [payingBill, setPayingBill] = useState<Bill | null>(null);
+  const [payFromId, setPayFromId] = useState("");
+
+  const activeAccounts = accounts.filter((account) => account.status === "active");
 
   const sorted = useMemo(() => {
     return [...bills].sort((first, second) => {
@@ -137,6 +146,35 @@ export function BillsView() {
     await syncWithServer();
   };
 
+  /**
+   * Paying an unlinked bill cannot move a balance, so ask which account pays it
+   * instead of recording a payment that quietly changes nothing. Skipped when
+   * there is no active account to offer — then "no balance moved" is the truth,
+   * not a mistake.
+   */
+  const startPayment = (bill: Bill) => {
+    const funding = fundingAccount(bill.accountId, accounts);
+    if (funding.status === "linked" || activeAccounts.length === 0) {
+      void markPaid(bill);
+      return;
+    }
+
+    const preferred = activeAccounts.find((account) =>
+      account.defaultFor?.includes("subscriptions"),
+    );
+    setPayFromId(preferred?.id ?? activeAccounts[0].id);
+    setPayingBill(bill);
+  };
+
+  const confirmPayment = async () => {
+    if (!payingBill || !payFromId) return;
+    const bill = { ...payingBill, accountId: payFromId };
+    // Remember the choice: the next cycle of this bill pays from here too.
+    updateBill(payingBill.id, { accountId: payFromId });
+    setPayingBill(null);
+    await markPaid(bill);
+  };
+
   const markPaid = async (bill: Bill) => {
     const cycle = billCycle(bill, expenses);
     if (cycle.isPaid) return;
@@ -197,7 +235,7 @@ export function BillsView() {
           {sorted.map((b) => {
             const categoryColor = getCategoryColor(b.category, customCategories);
             const cycle = billCycle(b, expenses);
-            const account = accounts.find((item) => item.id === b.accountId);
+            const funding = fundingAccount(b.accountId, accounts);
             const isFutureYear = cycle.occurrenceDate.getFullYear() > new Date().getFullYear();
             const dateLabel = cycle.occurrenceDate.toLocaleDateString("en-US", {
               day: "numeric",
@@ -226,8 +264,15 @@ export function BillsView() {
                         : b.frequency === "interval"
                           ? `Every ${b.intervalDays ?? 90} days · next ${dateLabel}`
                           : dateLabel}
-                      {account ? ` · ${account.bankName}` : ""}
+                      {funding.status === "linked" ? ` · ${funding.account.bankName}` : ""}
                     </span>
+                    {funding.status !== "linked" && !cycle.isPaid && (
+                      <span className="text-xs text-warning">
+                        {funding.status === "missing"
+                          ? "Account deleted — no balance will change"
+                          : "No account — no balance will change"}
+                      </span>
+                    )}
                     {paymentErrors[b.id] && (
                       <span className="text-xs text-danger">{paymentErrors[b.id]}</span>
                     )}
@@ -261,7 +306,7 @@ export function BillsView() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => void markPaid(b)}
+                        onClick={() => startPayment(b)}
                         className="h-8 w-8 text-muted hover:bg-success/10 hover:text-success"
                         aria-label={`Mark ${b.name} paid`}
                         title="Mark paid"
@@ -421,6 +466,44 @@ export function BillsView() {
               Cancel
             </Button>
             <Button onClick={() => void save()}>{editingId ? "Save changes" : "Add bill"}</Button>
+          </ModalFooter>
+        </div>
+      </Modal>
+
+      <Modal
+        open={payingBill !== null}
+        onClose={() => setPayingBill(null)}
+        title={payingBill ? `Pay ${payingBill.name}` : "Pay bill"}
+      >
+        <div className="space-y-4">
+          <p className="text-sm leading-relaxed text-muted">
+            This bill is not linked to an account yet, so marking it paid would record the expense
+            without changing any balance. Choose where the money comes from and it will be taken
+            from that account — this time and every time after.
+          </p>
+          <div>
+            <Label htmlFor="pay-from">Paid from</Label>
+            <Select
+              id="pay-from"
+              value={payFromId}
+              onChange={(event) => setPayFromId(event.target.value)}
+            >
+              {activeAccounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.bankName} · {formatMoney(account.balance, currency)}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <ModalFooter>
+            <Button variant="secondary" onClick={() => setPayingBill(null)}>
+              Cancel
+            </Button>
+            <Button onClick={() => void confirmPayment()}>
+              {payingBill
+                ? `Pay ${formatMoney(billCycle(payingBill, expenses).remainingAmount, currency)}`
+                : "Pay"}
+            </Button>
           </ModalFooter>
         </div>
       </Modal>

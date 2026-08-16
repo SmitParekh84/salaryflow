@@ -97,3 +97,24 @@ export function monthlyBillReserve(bill: Bill): number {
   const salaryCycles = Math.max(1, Math.round((bill.intervalDays ?? 90) / 30));
   return bill.amount / salaryCycles;
 }
+
+/**
+ * A bill's true cost per month.
+ *
+ * Deliberately not `monthlyBillReserve` above: that answers "how much to hold
+ * back this salary cycle" and returns a yearly bill's full amount. Levelising
+ * is what you want when comparing a bill against a monthly figure — advice,
+ * and the emergency-fund suggestion, both need this one.
+ */
+export function monthlyBillCost(bill: Bill): number {
+  switch (bill.frequency) {
+    case "yearly":
+      return bill.amount / 12;
+    case "weekly":
+      return (bill.amount * 52) / 12;
+    case "interval":
+      return (bill.amount * 30) / (bill.intervalDays ?? 90);
+    default:
+      return bill.amount;
+  }
+}

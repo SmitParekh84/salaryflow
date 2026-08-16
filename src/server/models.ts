@@ -444,6 +444,9 @@ export const OtpModel = models.Otp || model("Otp", OTPSchema);
 const FinancialProfileSchema = new Schema(
   {
     userId: { type: String, required: true, unique: true, index: true },
+    /** Plain `YYYY-MM-DD`: a birthday is a calendar date, not an instant. */
+    dateOfBirth: String,
+    /** Legacy. Records written before birthdays; age is derived from dateOfBirth now. */
     age: Number,
     dependents: Number,
     existingLifeCover: Number,

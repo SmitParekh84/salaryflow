@@ -25,7 +25,28 @@ export function LandingStructuredData() {
         url: SITE_ORIGIN,
         logo: absoluteUrl("/icons/favicon-64.png"),
         email: BRAND.legalEmail,
-        sameAs: [BRAND.linkedin],
+        // Every profile a reader can verify the company against. sameAs is how
+        // a crawler ties the site, the LinkedIn page and the Instagram account
+        // to one entity rather than three unrelated things sharing a name.
+        sameAs: [BRAND.linkedin, BRAND.instagram],
+        // Both published mailboxes, split the way /contact describes them, so
+        // the routing a reader is told about is the one a crawler reads too.
+        contactPoint: [
+          {
+            "@type": "ContactPoint",
+            contactType: "customer support",
+            email: BRAND.supportEmail,
+            url: absoluteUrl("/contact"),
+            availableLanguage: ["en"],
+          },
+          {
+            "@type": "ContactPoint",
+            contactType: "privacy",
+            email: BRAND.legalEmail,
+            url: absoluteUrl("/contact"),
+            availableLanguage: ["en"],
+          },
+        ],
       },
       {
         "@type": "WebSite",

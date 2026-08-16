@@ -1,3 +1,5 @@
+import { monthlyBillCost } from "@/lib/bill-cycle";
+import { ageOn } from "@/lib/date-of-birth";
 import type { BankAccount, Bill, Expense, Goal, Investment, SalaryProfile } from "@/lib/types";
 
 /* ---------------------------------------------------------------------------
@@ -18,7 +20,11 @@ import type { BankAccount, Bill, Expense, Goal, Investment, SalaryProfile } from
      added to them.
    --------------------------------------------------------------------------- */
 
-/** Facts Aartha does not otherwise store, needed for advice like term cover. */
+/**
+ * Facts Aartha does not otherwise store, needed for advice like term cover.
+ *
+ * `age` is derived, never asked for: see financialProfileFromDoc below.
+ */
 export type FinancialProfile = {
   age?: number | null;
   dependents?: number | null;
@@ -61,25 +67,8 @@ const WINDOW_DAYS = WINDOW_MONTHS * 30;
 
 const round = (value: number) => Math.round(value);
 
-/**
- * A bill's true cost per month.
- *
- * Deliberately not `monthlyBillReserve` from bill-cycle.ts: that answers "how
- * much to hold back this salary cycle" and returns a yearly bill's full amount.
- * Advice needs the levelised monthly cost instead.
- */
-export function monthlyBillCost(bill: Bill): number {
-  switch (bill.frequency) {
-    case "yearly":
-      return bill.amount / 12;
-    case "weekly":
-      return (bill.amount * 52) / 12;
-    case "interval":
-      return (bill.amount * 30) / (bill.intervalDays ?? 90);
-    default:
-      return bill.amount;
-  }
-}
+/** Re-exported so the assistant context keeps its single import surface. */
+export { monthlyBillCost };
 
 export function buildFinancialContext(input: FinancialContextInput): FinancialContext {
   const { salary, expenses, bills, investments, goals, accounts, profile } = input;
@@ -160,5 +149,36 @@ export function buildFinancialContext(input: FinancialContextInput): FinancialCo
     totalLiquidBalance,
     emergencyFundMonths,
     profile,
+  };
+}
+
+/**
+ * A stored profile document as the assistant's snapshot.
+ *
+ * Two jobs. Mongo omits unset optional fields, and a key missing from the
+ * prompt reads to the model as zero — "no dependents" instead of "never asked"
+ * — so every field is forced present as null. And age is derived from the
+ * recorded birthday rather than read from storage: a typed age is right for one
+ * year and quietly wrong after that. A stored `age` is still honoured for
+ * records written before birthdays were collected.
+ */
+export function financialProfileFromDoc(
+  doc: Record<string, unknown> | null | undefined,
+  now: Date,
+): FinancialProfile {
+  const read = (key: string) => {
+    const value = doc?.[key];
+    return typeof value === "number" ? value : null;
+  };
+
+  const dateOfBirth = typeof doc?.dateOfBirth === "string" ? doc.dateOfBirth : null;
+
+  return {
+    age: ageOn(dateOfBirth, now) ?? read("age"),
+    dependents: read("dependents"),
+    existingLifeCover: read("existingLifeCover"),
+    existingHealthCover: read("existingHealthCover"),
+    outstandingLoans: read("outstandingLoans"),
+    spouseIncome: read("spouseIncome"),
   };
 }

@@ -11,6 +11,8 @@ import type { MetadataRoute } from "next";
 const ROUTES: { path: string; priority: number; changeFrequency: "monthly" | "yearly" }[] = [
   { path: "/", priority: 1, changeFrequency: "monthly" },
   { path: "/about", priority: 0.6, changeFrequency: "monthly" },
+  { path: "/pricing", priority: 0.6, changeFrequency: "monthly" },
+  { path: "/contact", priority: 0.5, changeFrequency: "yearly" },
   { path: "/download", priority: 0.5, changeFrequency: "monthly" },
   { path: "/privacy", priority: 0.3, changeFrequency: "yearly" },
   { path: "/terms", priority: 0.3, changeFrequency: "yearly" },

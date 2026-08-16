@@ -9,6 +9,7 @@ export const BRAND = {
   domain: "aartha.app",
   url: "https://aartha.app",
   linkedin: "https://www.linkedin.com/company/aartha-app",
+  instagram: "https://www.instagram.com/aartha.app",
   /**
    * Published contact addresses. Both mailboxes have to stay monitored — a
    * privacy policy naming an address nobody reads is worse than one naming

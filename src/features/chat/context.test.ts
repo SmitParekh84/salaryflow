@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BankAccount, Bill, Expense, Goal, Investment, SalaryProfile } from "@/lib/types";
-import { buildFinancialContext, monthlyBillCost } from "./context";
+import { buildFinancialContext, financialProfileFromDoc, monthlyBillCost } from "./context";
 
 const NOW = new Date("2026-08-16T00:00:00.000Z");
 
@@ -303,5 +303,46 @@ describe("buildFinancialContext", () => {
     });
 
     expect(Number.isInteger(context.avgMonthlySpend)).toBe(true);
+  });
+});
+
+describe("financialProfileFromDoc", () => {
+  it("derives age from a stored date of birth", () => {
+    const profile = financialProfileFromDoc({ dateOfBirth: "1990-03-10" }, NOW);
+
+    expect(profile.age).toBe(36);
+  });
+
+  it("prefers the date of birth over an age typed years ago", () => {
+    // The stored 28 was true when it was typed and is stale now; the birthday
+    // is not. Quoting the stale number back at the user is the bug.
+    const profile = financialProfileFromDoc({ dateOfBirth: "1990-03-10", age: 28 }, NOW);
+
+    expect(profile.age).toBe(36);
+  });
+
+  it("falls back to a stored age for records saved before birthdays existed", () => {
+    const profile = financialProfileFromDoc({ age: 28 }, NOW);
+
+    expect(profile.age).toBe(28);
+  });
+
+  it("reports age as unknown when neither is recorded", () => {
+    expect(financialProfileFromDoc({}, NOW).age).toBeNull();
+    expect(financialProfileFromDoc(null, NOW).age).toBeNull();
+  });
+
+  it("nulls the fields Mongo leaves out rather than dropping the keys", () => {
+    // A missing key renders as a blank line to the model, which reads as zero.
+    const profile = financialProfileFromDoc({ dependents: 0 }, NOW);
+
+    expect(profile).toEqual({
+      age: null,
+      dependents: 0,
+      existingLifeCover: null,
+      existingHealthCover: null,
+      outstandingLoans: null,
+      spouseIncome: null,
+    });
   });
 });
