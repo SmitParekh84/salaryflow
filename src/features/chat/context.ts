@@ -1,3 +1,4 @@
+import { monthlyBillCost } from "@/lib/bill-cycle";
 import { ageOn } from "@/lib/date-of-birth";
 import type { BankAccount, Bill, Expense, Goal, Investment, SalaryProfile } from "@/lib/types";
 
@@ -66,25 +67,8 @@ const WINDOW_DAYS = WINDOW_MONTHS * 30;
 
 const round = (value: number) => Math.round(value);
 
-/**
- * A bill's true cost per month.
- *
- * Deliberately not `monthlyBillReserve` from bill-cycle.ts: that answers "how
- * much to hold back this salary cycle" and returns a yearly bill's full amount.
- * Advice needs the levelised monthly cost instead.
- */
-export function monthlyBillCost(bill: Bill): number {
-  switch (bill.frequency) {
-    case "yearly":
-      return bill.amount / 12;
-    case "weekly":
-      return (bill.amount * 52) / 12;
-    case "interval":
-      return (bill.amount * 30) / (bill.intervalDays ?? 90);
-    default:
-      return bill.amount;
-  }
-}
+/** Re-exported so the assistant context keeps its single import surface. */
+export { monthlyBillCost };
 
 export function buildFinancialContext(input: FinancialContextInput): FinancialContext {
   const { salary, expenses, bills, investments, goals, accounts, profile } = input;

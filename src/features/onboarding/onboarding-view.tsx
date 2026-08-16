@@ -6,10 +6,11 @@ import { AmountInput } from "@/components/ui/amount-input";
 import { Input, Label, Select } from "@/components/ui/input";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
+import { suggestEmergencyFund } from "@/lib/emergency-fund";
 import { parseAmount } from "@/lib/number-input";
 import { useFinanceStore } from "@/lib/store";
 import type { SalaryCycle, SalaryProfile } from "@/lib/types";
-import { currencySymbol } from "@/lib/utils";
+import { currencySymbol, formatMoney } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -30,8 +31,27 @@ export function OnboardingView() {
   const addBill = useFinanceStore((s) => s.addBill);
   const syncWithServer = useFinanceStore((s) => s.syncWithServer);
 
+  /**
+   * The name given at sign-up. Registration stores it, `/api/auth/me` returns
+   * it and AuthProvider writes it here — so asking "what should we call you?"
+   * again was asking for something the app was already holding.
+   */
+  const accountName = useFinanceStore((s) => s.user.name);
+
   const [step, setStep] = useState(0);
-  const [name, setName] = useState("");
+  const [name, setName] = useState(accountName);
+
+  // The session resolves after mount, so the name usually arrives a beat late.
+  // Adjusting during render is React's supported way to follow a changed
+  // source; an effect would render the empty question first and then blank it.
+  const [syncedName, setSyncedName] = useState(accountName);
+  if (accountName !== syncedName) {
+    setSyncedName(accountName);
+    if (accountName) setName(accountName);
+  }
+
+  const knowsName = accountName.trim().length > 0;
+  const greeting = accountName.trim().split(/\s+/)[0];
   const [profile, setProfile] = useState<SalaryProfile>({
     amount: 0,
     salaryDay: 1,
@@ -75,6 +95,12 @@ export function OnboardingView() {
 
   const patch = (p: Partial<SalaryProfile>) => setProfile((prev) => ({ ...prev, ...p }));
 
+  // Built from the salary entered a step earlier. Nothing else is known yet at
+  // onboarding — there are no expenses to fall back on.
+  const emergencySuggestion = suggestEmergencyFund({
+    monthlySalary: enteredMoney.amount ?? 0,
+  });
+
   function addCustom() {
     const amount = parseAmount(customAmount);
     if (!customTitle.trim() || amount === null || amount <= 0) return;
@@ -87,25 +113,27 @@ export function OnboardingView() {
     setCustomItems((s) => s.filter((c) => c.id !== id));
   }
 
-  const steps = [
-    {
-      title: "Welcome to Aartha",
-      subtitle: "Let's set up your salary cycle in under a minute.",
-      valid: name.trim().length > 0,
-      content: (
-        <div className="space-y-4">
-          <div>
-            <Label>What should we call you?</Label>
-            <Input
-              autoFocus
-              placeholder="Your name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
+  const nameStep = {
+    title: "Welcome to Aartha",
+    subtitle: "Let's set up your salary cycle in under a minute.",
+    valid: name.trim().length > 0,
+    content: (
+      <div className="space-y-4">
+        <div>
+          <Label>What should we call you?</Label>
+          <Input
+            autoFocus
+            placeholder="Your name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
         </div>
-      ),
-    },
+      </div>
+    ),
+  };
+
+  const steps = [
+    ...(knowsName ? [] : [nameStep]),
     {
       title: "Your salary",
       subtitle: "How much and when do you get paid?",
@@ -206,6 +234,26 @@ export function OnboardingView() {
               value={money.emergencyFundGoal}
               onChange={(emergencyFundGoal) => setMoney({ ...money, emergencyFundGoal })}
             />
+            {emergencySuggestion && (
+              <p className="mt-1.5 text-xs text-muted">
+                {emergencySuggestion.months} months of your salary is{" "}
+                {formatMoney(emergencySuggestion.amount, profile.currency)}.{" "}
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="px-0 text-xs"
+                  onClick={() =>
+                    setMoney({
+                      ...money,
+                      emergencyFundGoal: String(emergencySuggestion.amount),
+                    })
+                  }
+                >
+                  Use this
+                </Button>
+              </p>
+            )}
           </div>
           <div>
             <Label htmlFor="onboarding-investmentAmount">Monthly investment amount</Label>
@@ -300,6 +348,12 @@ export function OnboardingView() {
           </div>
           <span className="text-base font-bold">Aartha</span>
         </div>
+
+        {knowsName && (
+          <p className="mb-4 text-sm text-muted">
+            Welcome, {greeting}. Just {steps.length} short {steps.length === 1 ? "step" : "steps"}.
+          </p>
+        )}
 
         <div className="mb-6 flex gap-1.5">
           {steps.map((_, i) => (

@@ -11,7 +11,9 @@ import { ChangePasswordForm } from "@/features/settings/change-password-form";
 import { useSummary } from "@/hooks/use-summary";
 import { CATEGORIES, COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
 import { download, exportExpensesCsv } from "@/lib/export";
-import { toInputValue } from "@/lib/number-input";
+import { monthlyBillCost } from "@/lib/bill-cycle";
+import { suggestEmergencyFund } from "@/lib/emergency-fund";
+import { stripGrouping, toInputValue } from "@/lib/number-input";
 import { salaryProfileSchema } from "@/lib/schemas";
 import {
   availableFinancialYears,
@@ -158,6 +160,16 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
     setSeededFrom(profileStamp);
     setDraft(draftFromProfile(profile));
   }
+
+  /**
+   * Six months of cover, from salary when there is one. Someone paid
+   * irregularly has no salary to multiply, so their recurring bills stand in —
+   * rent still has to be paid for those months either way.
+   */
+  const emergencySuggestion = suggestEmergencyFund({
+    monthlySalary: Number(stripGrouping(draft.amount)) || profile.amount || 0,
+    monthlyOutgoings: bills.reduce((sum, bill) => sum + monthlyBillCost(bill), 0),
+  });
 
   const currentFinancialYear = currentFinancialYearStart();
   const selectedFinancialYear = profile.financialYearStart ?? currentFinancialYear;
@@ -515,11 +527,31 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                       invalid={Boolean(preferenceErrors.emergencyFundGoal)}
                       onChange={(emergencyFundGoal) => setDraft({ ...draft, emergencyFundGoal })}
                     />
-                    {preferenceErrors.emergencyFundGoal && (
+                    {preferenceErrors.emergencyFundGoal ? (
                       <p className="mt-1 text-xs text-danger">
                         {preferenceErrors.emergencyFundGoal}
                       </p>
-                    )}
+                    ) : emergencySuggestion ? (
+                      <p className="mt-1.5 text-xs text-muted">
+                        {emergencySuggestion.months} months of your{" "}
+                        {emergencySuggestion.basis === "salary" ? "salary" : "outgoings"} is{" "}
+                        {formatMoney(emergencySuggestion.amount, profile.currency)}.{" "}
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="px-0 text-xs"
+                          onClick={() =>
+                            setDraft({
+                              ...draft,
+                              emergencyFundGoal: String(emergencySuggestion.amount),
+                            })
+                          }
+                        >
+                          Use this
+                        </Button>
+                      </p>
+                    ) : null}
                   </div>
                 </div>
                 <Button type="submit" size="sm">
