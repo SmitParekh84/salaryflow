@@ -117,7 +117,7 @@ interface FinanceState {
   deleteInvestment: (id: string) => void;
 
   // accounts
-  addAccount: (account: Omit<BankAccount, "id">) => void;
+  addAccount: (account: Omit<BankAccount, "id">) => string;
   updateAccount: (id: string, patch: Partial<BankAccount>) => void;
   deleteAccount: (id: string) => { ok: boolean; reason?: string };
   addAccountTransfer: (
@@ -485,8 +485,13 @@ export const useFinanceStore = create<FinanceState>()(
         get().queueSync();
       },
 
-      addAccount: (account) =>
-        set((s) => ({ accounts: [...s.accounts, { ...account, id: uid("acct") }] })),
+      // Returns the new id so a caller creating an account and the records that
+      // point at it — onboarding does both — can link them without a re-read.
+      addAccount: (account) => {
+        const id = uid("acct");
+        set((s) => ({ accounts: [...s.accounts, { ...account, id }] }));
+        return id;
+      },
       updateAccount: (id, patch) =>
         set((s) => ({
           accounts: s.accounts.map((account) =>

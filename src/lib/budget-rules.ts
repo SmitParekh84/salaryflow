@@ -143,3 +143,38 @@ export function evaluateBudgetRule(
     score: Math.round(Math.max(0, 100 - totalDeviation / 2)),
   };
 }
+
+/**
+ * The template to offer a user who has just described their money.
+ *
+ * Onboarding pre-selects this rather than leaving every template equally
+ * plausible to someone who has no basis to choose between them — but it is
+ * shown as a selection with a stated reason, never applied quietly, because a
+ * rule the user never agreed to still shapes their savings target.
+ *
+ * The order encodes one opinion: a cash cushion comes before investing pace.
+ * Investing while one bad month would sink you is the sequence this reverses.
+ */
+export function recommendBudgetRule(input: {
+  emergencyFundGoal: number;
+  investmentAmount: number;
+}): { key: string; reason: string } {
+  if (!(input.emergencyFundGoal > 0)) {
+    return {
+      key: "emergency-builder-50-15-20-15",
+      reason: "You have no emergency fund target yet, so this one builds cash first.",
+    };
+  }
+
+  if (input.investmentAmount > 0) {
+    return {
+      key: "wealth-builder-50-20-15-15",
+      reason: "You already invest each month, so this one protects that pace.",
+    };
+  }
+
+  return {
+    key: "balanced-50-30-10-10",
+    reason: "An even split between saving and investing, to start from.",
+  };
+}
