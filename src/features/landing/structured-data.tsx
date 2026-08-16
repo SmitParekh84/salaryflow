@@ -26,6 +26,24 @@ export function LandingStructuredData() {
         logo: absoluteUrl("/icons/favicon-64.png"),
         email: BRAND.legalEmail,
         sameAs: [BRAND.linkedin],
+        // Both published mailboxes, split the way /contact describes them, so
+        // the routing a reader is told about is the one a crawler reads too.
+        contactPoint: [
+          {
+            "@type": "ContactPoint",
+            contactType: "customer support",
+            email: BRAND.supportEmail,
+            url: absoluteUrl("/contact"),
+            availableLanguage: ["en"],
+          },
+          {
+            "@type": "ContactPoint",
+            contactType: "privacy",
+            email: BRAND.legalEmail,
+            url: absoluteUrl("/contact"),
+            availableLanguage: ["en"],
+          },
+        ],
       },
       {
         "@type": "WebSite",
