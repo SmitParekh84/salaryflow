@@ -9,26 +9,18 @@ Ordered by how much it is worth doing, not by effort.
 
 ## 1. Ready to build, waiting on a go-ahead
 
-### Autocomplete for names you have typed before
+### Extend autocomplete beyond the expense form
 
-Typing **Title or place** on an expense, or **Friend's name** on a split, should suggest your own
-past entries. Old data powers it from the first keystroke.
+**Title or place** and **Friend's name** now suggest past entries, through `SuggestInput` and
+`src/lib/suggestions.ts`. Two extensions were scoped alongside it and left out:
 
-- `src/lib/suggestions.ts` (new) — `merchantSuggestions(expenses)` and
-  `friendNameSuggestions(expenses)`. Deduped case-insensitively so `Blinkit`, `blinkit` and
-  `BLINKIT` collapse into one. Ranked by how often used, then most recent.
-- `src/components/ui/suggest-input.tsx` (new) — the existing `Input` plus a filtered dropdown.
-  Arrow keys and Enter, Escape and blur to close, touch-sized rows.
-- `src/features/expenses/expense-form.tsx` — wire both fields.
+- Same treatment on the Bills **Bill name** field. `src/features/bills/bills-view.tsx` already has
+  the form; it needs the same `Controller` plus `SuggestInput` wiring.
+- Picking a past merchant also prefills its usual category. Choosing Blinkit would set Groceries,
+  still editable. Saves a tap on every repeat expense, but it changes what selecting a suggestion
+  *does*, which is a behaviour change rather than autocomplete.
 
-The existing `Combobox` cannot be reused. It is a fixed-list picker with a button trigger and no
-free-text entry, and both of these fields must always accept a brand-new value.
-
-Optional extras, not agreed:
-
-- Same treatment on the Bills **Bill name** field.
-- Picking a past merchant also prefills its usual category. Saves a tap on every repeat expense,
-  but it is a behaviour change rather than pure autocomplete.
+Neither is blocked on anything. Both reuse what already exists.
 
 ---
 
