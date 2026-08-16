@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Checkbox, Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Modal, ModalFooter } from "@/components/ui/modal";
+import { SuggestInput } from "@/components/ui/suggest-input";
 import { CATEGORIES, PAYMENT_METHODS } from "@/lib/constants";
 import { EXPENSE_AMOUNT_MESSAGE, expenseAmountIsValid } from "@/lib/schemas";
+import { friendNameSuggestions, merchantSuggestions } from "@/lib/suggestions";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
 import { dateInputToIso, localDateInputValue, parseFinancialDate } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
@@ -86,6 +88,9 @@ export function ExpenseForm({
   const accounts = useFinanceStore((s) => s.accounts);
   const creditCards = useFinanceStore((s) => s.creditCards);
   const syncWithServer = useFinanceStore((s) => s.syncWithServer);
+  const expenses = useFinanceStore((s) => s.expenses);
+  const merchantOptions = useMemo(() => merchantSuggestions(expenses), [expenses]);
+  const friendOptions = useMemo(() => friendNameSuggestions(expenses), [expenses]);
 
   const {
     register,
@@ -352,7 +357,20 @@ export function ExpenseForm({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label>Title or place</Label>
-            <Input placeholder="e.g. Grocery store or restaurant" {...register("merchant")} />
+            <Controller
+              control={control}
+              name="merchant"
+              render={({ field }) => (
+                <SuggestInput
+                  placeholder="e.g. Grocery store or restaurant"
+                  suggestions={merchantOptions}
+                  value={field.value ?? ""}
+                  onValueChange={field.onChange}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                />
+              )}
+            />
           </div>
           <div>
             <Label>Date</Label>
@@ -400,7 +418,20 @@ export function ExpenseForm({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Friend&apos;s name</Label>
-                  <Input placeholder="e.g. Swarali" {...register("friendName")} />
+                  <Controller
+                    control={control}
+                    name="friendName"
+                    render={({ field }) => (
+                      <SuggestInput
+                        placeholder="e.g. Swarali"
+                        suggestions={friendOptions}
+                        value={field.value ?? ""}
+                        onValueChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                      />
+                    )}
+                  />
                   {errors.friendName && (
                     <p className="mt-1 text-xs text-danger">{errors.friendName.message}</p>
                   )}
