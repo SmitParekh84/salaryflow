@@ -9,7 +9,11 @@ import {
   InvestmentModel,
   SalaryProfileModel,
 } from "@/server/models";
-import { buildFinancialContext, type FinancialContext, type FinancialProfile } from "./context";
+import {
+  buildFinancialContext,
+  financialProfileFromDoc,
+  type FinancialContext,
+} from "./context";
 
 /** Enough history for a 3-month average without dragging the whole ledger in. */
 const EXPENSE_LIMIT = 600;
@@ -60,23 +64,6 @@ export async function loadFinancialContext(userId: string): Promise<FinancialCon
     investments: investments as unknown as Investment[],
     goals: goals as unknown as Goal[],
     accounts: accounts as unknown as BankAccount[],
-    profile: toProfile(profile),
+    profile: financialProfileFromDoc(profile as Record<string, unknown> | null, new Date()),
   });
-}
-
-/** Mongo omits unset optional fields; the snapshot needs them present as null. */
-function toProfile(doc: Record<string, unknown> | null): FinancialProfile {
-  const read = (key: string) => {
-    const value = doc?.[key];
-    return typeof value === "number" ? value : null;
-  };
-
-  return {
-    age: read("age"),
-    dependents: read("dependents"),
-    existingLifeCover: read("existingLifeCover"),
-    existingHealthCover: read("existingHealthCover"),
-    outstandingLoans: read("outstandingLoans"),
-    spouseIncome: read("spouseIncome"),
-  };
 }

@@ -1,27 +1,15 @@
 import { getAuthenticatedContext, isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
+import { ageOn } from "@/lib/date-of-birth";
+import { financialProfileSchema } from "@/lib/schemas";
 import { connectDB } from "@/server/db";
 import { FinancialProfileModel } from "@/server/models";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/**
- * Every field is optional and nullable. Null means "clear this", which is
- * different from omitting the key, which means "leave it as it is".
- */
-const profileSchema = z.object({
-  age: z.number().int().min(14).max(120).nullable().optional(),
-  dependents: z.number().int().min(0).max(20).nullable().optional(),
-  existingLifeCover: z.number().min(0).max(1_000_000_000).nullable().optional(),
-  existingHealthCover: z.number().min(0).max(1_000_000_000).nullable().optional(),
-  outstandingLoans: z.number().min(0).max(1_000_000_000).nullable().optional(),
-  spouseIncome: z.number().min(0).max(100_000_000).nullable().optional(),
-});
-
-const FIELDS = [
-  "age",
+/** Numeric fields the form both reads and writes. */
+const NUMBER_FIELDS = [
   "dependents",
   "existingLifeCover",
   "existingHealthCover",
@@ -29,10 +17,22 @@ const FIELDS = [
   "spouseIncome",
 ] as const;
 
+/**
+ * `age` is sent back derived and read-only — the form never posts it. Legacy
+ * records that carry a typed age and no birthday keep showing it until the
+ * user records a birthday, at which point the birthday wins.
+ */
 function toResponse(doc: Record<string, unknown> | null) {
-  return Object.fromEntries(
-    FIELDS.map((field) => [field, typeof doc?.[field] === "number" ? doc[field] : null]),
-  );
+  const dateOfBirth = typeof doc?.dateOfBirth === "string" ? doc.dateOfBirth : null;
+  const storedAge = typeof doc?.age === "number" ? doc.age : null;
+
+  return {
+    dateOfBirth,
+    age: ageOn(dateOfBirth, new Date()) ?? storedAge,
+    ...Object.fromEntries(
+      NUMBER_FIELDS.map((field) => [field, typeof doc?.[field] === "number" ? doc[field] : null]),
+    ),
+  };
 }
 
 export async function GET() {
@@ -57,7 +57,7 @@ export async function PUT(req: Request) {
   }
 
   const body = await req.json().catch(() => null);
-  const parsed = profileSchema.safeParse(body);
+  const parsed = financialProfileSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Validation failed", issues: parsed.error.flatten() },
@@ -65,12 +65,16 @@ export async function PUT(req: Request) {
     );
   }
 
-  const set: Record<string, number> = {};
+  const set: Record<string, string | number> = {};
   const unset: Record<string, ""> = {};
   for (const [key, value] of Object.entries(parsed.data)) {
     if (value === null) unset[key] = "";
     else if (value !== undefined) set[key] = value;
   }
+
+  // A recorded birthday makes any age typed in an earlier version dead weight,
+  // and leaving it would keep the stale number alive in exports and backups.
+  if (typeof set.dateOfBirth === "string") unset.age = "";
 
   try {
     await connectDB();

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidDateOfBirth } from "../date-of-birth";
 import {
   dayOfMonth,
   money,
@@ -155,6 +156,29 @@ export const onboardingSchema = z.object({
   country: optionalText(60),
 });
 export type OnboardingInput = z.input<typeof onboardingSchema>;
+
+/**
+ * The optional facts the assistant works from, none of which Aartha records
+ * anywhere else.
+ *
+ * Three states matter here and the schema keeps them apart. An omitted key
+ * means "leave what is stored alone", `null` means "clear this", and `0` is a
+ * real answer — someone saying they have no dependents or no life cover is
+ * telling the assistant something, and it must not read as "never asked".
+ */
+export const financialProfileSchema = z.object({
+  dateOfBirth: z
+    .string()
+    .refine((value) => isValidDateOfBirth(value, new Date()), "Enter a valid date of birth")
+    .nullable()
+    .optional(),
+  dependents: z.number().int().min(0).max(20).nullable().optional(),
+  existingLifeCover: z.number().min(0).max(1_000_000_000).nullable().optional(),
+  existingHealthCover: z.number().min(0).max(1_000_000_000).nullable().optional(),
+  outstandingLoans: z.number().min(0).max(1_000_000_000).nullable().optional(),
+  spouseIncome: z.number().min(0).max(100_000_000).nullable().optional(),
+});
+export type FinancialProfileInput = z.input<typeof financialProfileSchema>;
 
 // --- Auth ---
 

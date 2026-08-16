@@ -5,6 +5,7 @@ import {
   budgetRuleSchema,
   creditCardSchema,
   expenseAmountIsValid,
+  financialProfileSchema,
   goalSchema,
   investmentSchema,
   otpSchema,
@@ -189,5 +190,43 @@ describe("expenseAmountIsValid", () => {
 
   it("rejects a negative amount even on a split", () => {
     expect(expenseAmountIsValid(-1, true)).toBe(false);
+  });
+});
+
+describe("financialProfileSchema", () => {
+  it("accepts a plain date of birth", () => {
+    expect(financialProfileSchema.parse({ dateOfBirth: "1990-03-10" }).dateOfBirth).toBe(
+      "1990-03-10",
+    );
+  });
+
+  it("rejects a date of birth that is malformed, impossible, or in the future", () => {
+    expect(financialProfileSchema.safeParse({ dateOfBirth: "10/03/1990" }).success).toBe(false);
+    expect(financialProfileSchema.safeParse({ dateOfBirth: "2001-02-30" }).success).toBe(false);
+    expect(financialProfileSchema.safeParse({ dateOfBirth: "2099-01-01" }).success).toBe(false);
+  });
+
+  it("accepts null on every field, which is how a cleared field is saved", () => {
+    const cleared = financialProfileSchema.parse({
+      dateOfBirth: null,
+      dependents: null,
+      existingLifeCover: null,
+    });
+    expect(cleared).toEqual({ dateOfBirth: null, dependents: null, existingLifeCover: null });
+  });
+
+  it("keeps an explicit zero, which says 'none' rather than 'not answered'", () => {
+    const parsed = financialProfileSchema.parse({ dependents: 0, existingLifeCover: 0 });
+    expect(parsed.dependents).toBe(0);
+    expect(parsed.existingLifeCover).toBe(0);
+  });
+
+  it("treats an omitted field as untouched rather than cleared", () => {
+    expect(financialProfileSchema.parse({})).toEqual({});
+  });
+
+  it("rejects a negative amount and a fractional count of dependents", () => {
+    expect(financialProfileSchema.safeParse({ outstandingLoans: -1 }).success).toBe(false);
+    expect(financialProfileSchema.safeParse({ dependents: 1.5 }).success).toBe(false);
   });
 });

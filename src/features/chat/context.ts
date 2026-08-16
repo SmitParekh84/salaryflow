@@ -1,3 +1,4 @@
+import { ageOn } from "@/lib/date-of-birth";
 import type { BankAccount, Bill, Expense, Goal, Investment, SalaryProfile } from "@/lib/types";
 
 /* ---------------------------------------------------------------------------
@@ -18,7 +19,11 @@ import type { BankAccount, Bill, Expense, Goal, Investment, SalaryProfile } from
      added to them.
    --------------------------------------------------------------------------- */
 
-/** Facts Aartha does not otherwise store, needed for advice like term cover. */
+/**
+ * Facts Aartha does not otherwise store, needed for advice like term cover.
+ *
+ * `age` is derived, never asked for: see financialProfileFromDoc below.
+ */
 export type FinancialProfile = {
   age?: number | null;
   dependents?: number | null;
@@ -160,5 +165,36 @@ export function buildFinancialContext(input: FinancialContextInput): FinancialCo
     totalLiquidBalance,
     emergencyFundMonths,
     profile,
+  };
+}
+
+/**
+ * A stored profile document as the assistant's snapshot.
+ *
+ * Two jobs. Mongo omits unset optional fields, and a key missing from the
+ * prompt reads to the model as zero — "no dependents" instead of "never asked"
+ * — so every field is forced present as null. And age is derived from the
+ * recorded birthday rather than read from storage: a typed age is right for one
+ * year and quietly wrong after that. A stored `age` is still honoured for
+ * records written before birthdays were collected.
+ */
+export function financialProfileFromDoc(
+  doc: Record<string, unknown> | null | undefined,
+  now: Date,
+): FinancialProfile {
+  const read = (key: string) => {
+    const value = doc?.[key];
+    return typeof value === "number" ? value : null;
+  };
+
+  const dateOfBirth = typeof doc?.dateOfBirth === "string" ? doc.dateOfBirth : null;
+
+  return {
+    age: ageOn(dateOfBirth, now) ?? read("age"),
+    dependents: read("dependents"),
+    existingLifeCover: read("existingLifeCover"),
+    existingHealthCover: read("existingHealthCover"),
+    outstandingLoans: read("outstandingLoans"),
+    spouseIncome: read("spouseIncome"),
   };
 }
