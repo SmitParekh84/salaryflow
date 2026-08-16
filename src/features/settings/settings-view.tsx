@@ -6,6 +6,7 @@ import { AmountInput } from "@/components/ui/amount-input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
+import { AboutYouForm } from "@/features/chat/about-you-form";
 import { useSummary } from "@/hooks/use-summary";
 import { CATEGORIES, COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
 import { download, exportExpensesCsv } from "@/lib/export";
@@ -374,6 +375,10 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                   {saved ? "Saved" : "Save changes"}
                 </Button>
               </form>
+
+              <div className="border-t border-border pt-5">
+                <AboutYouForm />
+              </div>
             </SettingsPane>
           )}
 

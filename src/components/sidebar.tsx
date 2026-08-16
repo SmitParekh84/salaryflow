@@ -17,6 +17,7 @@ import {
   MoreHorizontal,
   Receipt,
   Settings,
+  Sparkles,
   Target,
   Trash2,
   TrendingUp,
@@ -54,6 +55,7 @@ export const ICONS: Record<string, LucideIcon> = {
   BarChart3,
   BadgeIndianRupee,
   Settings,
+  Sparkles,
   Users,
   Trash2,
 };

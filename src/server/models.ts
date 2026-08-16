@@ -428,3 +428,49 @@ const OTPSchema = new Schema(
 
 export type OtpDoc = InferSchemaType<typeof OTPSchema>;
 export const OtpModel = models.Otp || model("Otp", OTPSchema);
+
+/* ---------------------------------------------------------------------------
+   Finance assistant
+   ---------------------------------------------------------------------------
+   Facts about the person that the rest of Aartha has no reason to store. A
+   term-cover answer needs to know who depends on this income and what is
+   already covered, and none of that can be derived from expenses or bills.
+
+   Every field is optional on purpose. The assistant asks for what it needs
+   when it needs it, so a half-filled record is the normal state, not an error.
+   Absent means "never told us" and is what makes the assistant ask rather
+   than assume.
+   --------------------------------------------------------------------------- */
+const FinancialProfileSchema = new Schema(
+  {
+    userId: { type: String, required: true, unique: true, index: true },
+    age: Number,
+    dependents: Number,
+    existingLifeCover: Number,
+    existingHealthCover: Number,
+    outstandingLoans: Number,
+    spouseIncome: Number,
+  },
+  { timestamps: true },
+);
+
+export type FinancialProfileDoc = InferSchemaType<typeof FinancialProfileSchema>;
+export const FinancialProfileModel =
+  models.FinancialProfile || model("FinancialProfile", FinancialProfileSchema);
+
+const ChatMessageSchema = new Schema(
+  {
+    userId: { type: String, required: true, index: true },
+    role: { type: String, enum: ["user", "model"], required: true },
+    text: { type: String, required: true },
+    /** Which model answered, kept so a bad run can be traced to a fallback. */
+    modelId: String,
+  },
+  { timestamps: true },
+);
+
+// History is always read as "the last N turns for this user".
+ChatMessageSchema.index({ userId: 1, createdAt: -1 });
+
+export type ChatMessageDoc = InferSchemaType<typeof ChatMessageSchema>;
+export const ChatMessageModel = models.ChatMessage || model("ChatMessage", ChatMessageSchema);
