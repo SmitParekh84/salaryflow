@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { AboutYouForm } from "@/features/chat/about-you-form";
+import { ChangePasswordForm } from "@/features/settings/change-password-form";
 import { useSummary } from "@/hooks/use-summary";
 import { CATEGORIES, COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
 import { download, exportExpensesCsv } from "@/lib/export";
@@ -780,14 +781,18 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                 />
               </div>
 
-              <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold">Account access</h3>
-                  <p className="mt-1 text-xs text-muted">Sign out of Aartha on this device.</p>
+              <div className="space-y-5 border-t border-border pt-5">
+                <ChangePasswordForm />
+
+                <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold">Account access</h3>
+                    <p className="mt-1 text-xs text-muted">Sign out of Aartha on this device.</p>
+                  </div>
+                  <Button variant="secondary" size="sm" onClick={() => void logout()}>
+                    <LogOut className="h-4 w-4" /> Sign out
+                  </Button>
                 </div>
-                <Button variant="secondary" size="sm" onClick={() => void logout()}>
-                  <LogOut className="h-4 w-4" /> Sign out
-                </Button>
               </div>
             </SettingsPane>
           )}

@@ -3,6 +3,7 @@ import {
   accountSchema,
   billSchema,
   budgetRuleSchema,
+  changePasswordSchema,
   creditCardSchema,
   expenseAmountIsValid,
   financialProfileSchema,
@@ -228,5 +229,36 @@ describe("financialProfileSchema", () => {
   it("rejects a negative amount and a fractional count of dependents", () => {
     expect(financialProfileSchema.safeParse({ outstandingLoans: -1 }).success).toBe(false);
     expect(financialProfileSchema.safeParse({ dependents: 1.5 }).success).toBe(false);
+  });
+});
+
+describe("changePasswordSchema", () => {
+  const valid = { currentPassword: "old-passphrase-1", newPassword: "new-passphrase-2" };
+
+  it("accepts a current password plus a long enough new one", () => {
+    expect(changePasswordSchema.parse(valid).newPassword).toBe("new-passphrase-2");
+  });
+
+  it("requires the current password to be given", () => {
+    expect(firstError(changePasswordSchema, { ...valid, currentPassword: "" })).toBe(
+      "Enter your current password",
+    );
+  });
+
+  it("holds the new password to the same floor as signing up", () => {
+    expect(firstError(changePasswordSchema, { ...valid, newPassword: "short" })).toBe(
+      "Use at least 12 characters",
+    );
+  });
+
+  it("rejects reusing the current password", () => {
+    // Bumping sessionVersion signs out every other device, so a no-op change
+    // is pure cost: the user loses their sessions and gains no new secret.
+    expect(
+      firstError(changePasswordSchema, {
+        currentPassword: "old-passphrase-1",
+        newPassword: "old-passphrase-1",
+      }),
+    ).toBe("Choose a password different from your current one");
   });
 });
