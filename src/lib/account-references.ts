@@ -108,3 +108,29 @@ export function goalRestoreBlocker(
 
   return undefined;
 }
+
+/**
+ * Whether a record's `accountId` actually resolves to an account.
+ *
+ * `accounts.find(...)` returning undefined used to be the whole answer, which
+ * conflated two different situations and reported both as success. A bill or
+ * expense saved with "No account selected" is *unlinked*: recording it moves no
+ * balance, and that is a thing the user has to be told before they wonder why
+ * their bank balance never changed. A record pointing at an account that no
+ * longer exists is *missing*: same silent non-effect, but it means the data is
+ * broken rather than incomplete, and it needs a different message.
+ */
+export type FundingAccount =
+  | { status: "linked"; account: BankAccount }
+  | { status: "unlinked" }
+  | { status: "missing"; accountId: string };
+
+export function fundingAccount(
+  accountId: string | undefined | null,
+  accounts: BankAccount[],
+): FundingAccount {
+  if (!accountId) return { status: "unlinked" };
+
+  const account = accounts.find((candidate) => candidate.id === accountId);
+  return account ? { status: "linked", account } : { status: "missing", accountId };
+}

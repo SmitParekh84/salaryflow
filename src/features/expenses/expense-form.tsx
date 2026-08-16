@@ -116,6 +116,7 @@ export function ExpenseForm({
   const sharedEnabled = useWatch({ control, name: "sharedEnabled" });
   const friendEmail = useWatch({ control, name: "friendEmail" });
   const planNextPayment = useWatch({ control, name: "planNextPayment" });
+  const selectedAccountId = useWatch({ control, name: "accountId" });
   const isSharedForm = sharedMode || Boolean(editing?.shared);
 
   useEffect(() => {
@@ -293,10 +294,14 @@ export function ExpenseForm({
                 </Select>
               )}
             />
-            <p className="mt-1 text-xs text-muted">
-              {isSharedForm
-                ? "Your payment reduces the selected bank-account balance. Credit cards track usage instead."
-                : "The amount is deducted from the selected bank account. Credit-card purchases appear in card usage instead."}
+            {/* Saying "the amount is deducted" while nothing is selected is the
+                lie that made bill payments look like they moved money. */}
+            <p className={`mt-1 text-xs ${selectedAccountId ? "text-muted" : "text-warning"}`}>
+              {!selectedAccountId
+                ? "No account selected — this is recorded as spending, but no balance changes."
+                : isSharedForm
+                  ? "Your payment reduces the selected bank-account balance. Credit cards track usage instead."
+                  : "The amount is deducted from the selected bank account. Credit-card purchases appear in card usage instead."}
             </p>
           </div>
         )}
