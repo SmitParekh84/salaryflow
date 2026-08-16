@@ -16,6 +16,13 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  /**
+   * Emits `.next/standalone` with only the node_modules the server actually
+   * loads, traced from the build. The container image drops from roughly a
+   * gigabyte to a couple of hundred megabytes, which is what makes it fit
+   * comfortably on the 1 GB Lightsail Micro tier. See DEPLOYMENT.md.
+   */
+  output: "standalone",
   devIndicators: false,
   poweredByHeader: false,
   experimental: {
