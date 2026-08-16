@@ -48,8 +48,12 @@ export default function ContactPage() {
         Product updates are posted on{" "}
         <a href={BRAND.linkedin} rel="noreferrer noopener" target="_blank">
           LinkedIn
+        </a>{" "}
+        and{" "}
+        <a href={BRAND.instagram} rel="noreferrer noopener" target="_blank">
+          Instagram
         </a>
-        .
+        . Both are run by the same person who answers the mail.
       </p>
 
       <h2>Reporting a security issue</h2>

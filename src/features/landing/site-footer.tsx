@@ -3,7 +3,7 @@ import { BRAND } from "@/lib/brand";
 import Link from "next/link";
 // lucide-react ships no brand marks, so the LinkedIn glyph comes from
 // react-icons rather than a hand-drawn path.
-import { FaLinkedinIn } from "react-icons/fa6";
+import { FaInstagram, FaLinkedinIn } from "react-icons/fa6";
 import styles from "./landing.module.css";
 
 /**
@@ -104,6 +104,16 @@ export function SiteFooter() {
             title="LinkedIn"
           >
             <FaLinkedinIn aria-hidden="true" focusable="false" />
+          </a>
+          <a
+            className={styles.footerSocial}
+            href={BRAND.instagram}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${BRAND.name} on Instagram`}
+            title="Instagram"
+          >
+            <FaInstagram aria-hidden="true" focusable="false" />
           </a>
           <p className={styles.footerDomain}>{BRAND.domain}</p>
         </div>
