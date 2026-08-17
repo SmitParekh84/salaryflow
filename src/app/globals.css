@@ -246,6 +246,15 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Turning an iPhone sideways otherwise makes Safari inflate the text in any
+   block it decides is the main column, so a card's figures grow while its
+   labels do not and the layout it was measured for stops holding. Pinching to
+   zoom is unaffected — that is a separate control. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 /* Apple HIG §Response: nothing on the input path that isn't essential.
    `touch-action: manipulation` removes the ~300ms double-tap delay, and killing
    the tap highlight lets each component own its own press feedback. */

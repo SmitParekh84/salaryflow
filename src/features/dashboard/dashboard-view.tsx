@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Progress } from "@/components/ui/progress";
-import { CashFlowChart, CategoryDonut, SpendTrendChart } from "@/features/analytics/charts";
+import { CashFlowChart, CategoryDonut, SpendTrendChart } from "@/features/analytics/lazy-charts";
 import { SafeToSpendHero } from "@/features/dashboard/safe-to-spend-hero";
 import { ExpenseForm } from "@/features/expenses/expense-form";
 import { SeedPrompt, TransactionList } from "@/features/expenses/transaction-list";

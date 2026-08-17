@@ -7,7 +7,7 @@ import {
   IncomeExpenseBars,
   MonthlyBars,
   SpendTrendChart,
-} from "@/features/analytics/charts";
+} from "@/features/analytics/lazy-charts";
 import { useSummary } from "@/hooks/use-summary";
 import { countsAsEarnedIncome } from "@/lib/calculations";
 import {

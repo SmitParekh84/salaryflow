@@ -111,9 +111,11 @@ export function PwaInstallSection() {
                 <button
                   onClick={() => setIosGuideOpen(false)}
                   aria-label="Close"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-muted"
+                  className="-m-1.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted"
                 >
-                  <X className="h-4 w-4" />
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2">
+                    <X className="h-4 w-4" />
+                  </span>
                 </button>
               </div>
 
