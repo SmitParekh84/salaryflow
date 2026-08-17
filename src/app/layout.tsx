@@ -8,7 +8,19 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+/**
+ * The mono face is worn by the OTP field and one confirmation string in the
+ * admin console — two screens out of thirty. Declaring it here still emitted a
+ * `<link rel="preload">` on every page, so the landing page and the whole app
+ * spent a request and part of their bandwidth budget fetching a font they will
+ * almost certainly never paint. `preload: false` leaves the family available
+ * and lets the two screens that use it fetch it when they need it.
+ */
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+  preload: false,
+});
 
 import ClientAuthWrapper from "@/components/client-auth-wrapper";
 

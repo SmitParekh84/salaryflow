@@ -55,7 +55,55 @@ const nextConfig: NextConfig = {
         : []),
     ];
 
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+
+      /*
+       * Everything under `public/` is served with `max-age=0` by default, so
+       * the app icons and the manifest were revalidated on every single load —
+       * a round trip per icon, on a connection that has better things to do.
+       *
+       * These URLs are not content-hashed the way `/_next/static` is, so they
+       * cannot be `immutable`. A week of freshness plus a month of
+       * stale-while-revalidate gives instant reuse while still letting a
+       * changed icon reach existing installs on its own.
+       */
+      {
+        source: "/icons/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=604800, stale-while-revalidate=2592000",
+          },
+        ],
+      },
+      {
+        source: "/manifest.webmanifest",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=3600, stale-while-revalidate=86400" },
+        ],
+      },
+
+      /*
+       * The service worker is the one file that must never be pinned: a cached
+       * copy keeps serving its own caching rules, so a stale one cannot be
+       * corrected by shipping a new build.
+       */
+      {
+        source: "/sw.js",
+        headers: [{ key: "Cache-Control", value: "public, max-age=0, must-revalidate" }],
+      },
+
+      /*
+       * Route handlers answer with no cache directive at all, which leaves a
+       * response holding one account's balances eligible for heuristic reuse.
+       * Say plainly that none of it is storable.
+       */
+      {
+        source: "/api/:path*",
+        headers: [{ key: "Cache-Control", value: "private, no-store, max-age=0" }],
+      },
+    ];
   },
 };
 

@@ -374,22 +374,32 @@ export function OnboardingView() {
           {/* Custom other items section */}
           <div className="mt-2">
             <Label>Other monthly items</Label>
-            <div className="flex gap-2 mt-2">
+            {/* Three controls abreast leaves each one about a hundred pixels
+                wide on a phone, which is not enough to read "Title (e.g.,
+                Rent)" or an amount with its currency symbol. Below `sm` the
+                title takes its own line and only the amount shares one with the
+                button. */}
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
               <Input
                 placeholder="Title (e.g., Rent)"
                 value={customTitle}
                 onChange={(e) => setCustomTitle(e.target.value)}
+                className="sm:flex-1"
               />
-              <AmountInput
-                placeholder="Amount"
-                aria-label="Amount"
-                prefix={currencySymbol(profile.currency)}
-                value={customAmount}
-                onChange={setCustomAmount}
-              />
-              <Button onClick={addCustom} className="whitespace-nowrap">
-                Add
-              </Button>
+              <div className="flex gap-2">
+                <div className="min-w-0 flex-1">
+                  <AmountInput
+                    placeholder="Amount"
+                    aria-label="Amount"
+                    prefix={currencySymbol(profile.currency)}
+                    value={customAmount}
+                    onChange={setCustomAmount}
+                  />
+                </div>
+                <Button onClick={addCustom} className="whitespace-nowrap">
+                  Add
+                </Button>
+              </div>
             </div>
             {customItems.length > 0 && (
               <div className="mt-3 space-y-2">
