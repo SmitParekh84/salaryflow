@@ -53,11 +53,44 @@ describe("parseAssistantReply", () => {
     expect(result.profileUpdates).toEqual({ dependents: 0 });
   });
 
-  it("falls back to text when reply is missing or not a string", () => {
+  it("never shows an envelope it could not read", () => {
+    // Was asserted the other way round: the raw envelope was handed straight to
+    // the user. Since the model is called with responseMimeType application/json
+    // its raw output is *always* JSON, so "show the raw text" could only ever
+    // put braces and quotes in front of someone asking about their money.
     const result = parseAssistantReply('{"profileUpdates":{"dependents":2}}');
 
-    expect(result.reply).toContain("profileUpdates");
+    expect(result.reply).not.toContain("profileUpdates");
+    expect(result.reply).not.toMatch(/^\s*[{[]/);
     expect(result.profileUpdates).toEqual({});
+  });
+
+  it("salvages the prose from an answer truncated mid-string", () => {
+    // The real failure from production: gemini-2.5-flash spent its token budget
+    // thinking and the envelope was cut off with no closing quote or brace. The
+    // sentence it managed to write is still worth showing.
+    const truncated =
+      '{ "reply": "Buying a bike priced at 1.80 lakh right now would be challenging given your current financial situation. Your liquid balance of 30,753 INR is primarily';
+
+    const result = parseAssistantReply(truncated);
+
+    expect(result.reply).toBe(
+      "Buying a bike priced at 1.80 lakh right now would be challenging given your current financial situation. Your liquid balance of 30,753 INR is primarily",
+    );
+    expect(result.profileUpdates).toEqual({});
+  });
+
+  it("unescapes a salvaged fragment rather than showing its escapes", () => {
+    const result = parseAssistantReply('{"reply":"Line one.\\nA \\"quoted\\" word and 50\\u0025 of it');
+
+    expect(result.reply).toBe('Line one.\nA "quoted" word and 50% of it');
+  });
+
+  it("falls back to the friendly message when an envelope has nothing to salvage", () => {
+    const result = parseAssistantReply('{"profileUpdates":{"dep');
+
+    expect(result.reply).not.toContain("profileUpdates");
+    expect(result.reply.length).toBeGreaterThan(0);
   });
 
   it("never returns an empty reply", () => {
