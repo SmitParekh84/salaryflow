@@ -1,4 +1,9 @@
 import { SettingsView, type SettingsSection } from "@/features/settings/settings-view";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Settings",
+};
 
 const SETTINGS_SECTIONS = new Set<SettingsSection>([
   "profile",
