@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Progress } from "@/components/ui/progress";
 import { CashFlowChart, CategoryDonut, SpendTrendChart } from "@/features/analytics/lazy-charts";
 import { SafeToSpendHero } from "@/features/dashboard/safe-to-spend-hero";
+import { CatchUpCard } from "@/features/expenses/catch-up-card";
 import { ExpenseForm } from "@/features/expenses/expense-form";
 import { FuelCard } from "@/features/fuel/fuel-card";
 import { SeedPrompt, TransactionList } from "@/features/expenses/transaction-list";
@@ -136,6 +137,9 @@ export function DashboardView() {
           </DropdownMenuPrimitive.Root>
         </div>
       </div>
+
+      {/* Renders nothing unless days are actually outstanding. */}
+      <CatchUpCard />
 
       <SafeToSpendHero summary={summary} currency={currency} />
 

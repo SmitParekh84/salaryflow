@@ -9,20 +9,27 @@ Ordered by how much it is worth doing, not by effort.
 
 ## 1. Ready to build, waiting on a go-ahead
 
-### Catch-up entry for missed days
+### Catch-up: offer gaps that sit between recorded days
 
-Designed and agreed, spec at `docs/superpowers/specs/2026-08-20-catch-up-entry-design.md`.
-Not started — it needs its own implementation plan.
+Catch-up shipped, and its window deliberately opens *after* the most recent entry. A day
+missed in the middle — recorded on the 16th and 18th, nothing on the 17th — is therefore
+never offered, and never can be. `src/lib/catch-up.test.ts` pins this as intended.
 
-Finds calendar days with no expense between the last entry and today, and walks them
-oldest-first with the date defaulted, seven at a time. Only the days the user calls empty
-need persisting: a day with an expense drops out of the queue by itself. State rides on
-`SalaryProfile` (`catchUpReviewedDates`, `catchUpDismissedUntil`) rather than a new synced
-collection, and must be pruned to 90 days or it grows without bound and is resent on every
-sync.
+Widening it means deciding when to stop caring about a historic hole, which the current
+design sidesteps entirely. Options if it turns out to matter: always sweep the trailing 7
+days regardless of the last entry, or offer holes only within the current salary cycle.
 
-Blocked on nothing. The only change to existing code is a `defaultDate` prop on
-`ExpenseForm`.
+Not blocked, but it needs that question answered before it is worth building.
+
+### No component tests anywhere in the app
+
+`vitest.config.mts` has no DOM environment, so nothing under `src/features` is tested. The
+catch-up flow is the sharpest example: it is a multi-step state machine driven entirely by
+clicks, and its whole correctness rests on reading the code. A remount bug in it was caught
+by review, not by a test.
+
+Adding `jsdom` and `@testing-library/react` would be a new dependency and a new convention
+for the repo, so it wants a deliberate yes rather than being slipped in alongside a feature.
 
 ### Extend autocomplete beyond the expense form
 

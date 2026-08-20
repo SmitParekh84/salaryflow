@@ -225,6 +225,10 @@ export interface SalaryProfile {
   customCategories?: CustomCategory[];
   city?: string;
   vehicle?: Vehicle;
+  /** Local dates ("2026-08-17") the user marked as no-spend. Pruned to 90 days. */
+  catchUpReviewedDates?: string[];
+  /** Local date the dashboard catch-up card reappears on. Set by its dismiss control. */
+  catchUpDismissedUntil?: string;
 }
 
 export interface UserProfile {

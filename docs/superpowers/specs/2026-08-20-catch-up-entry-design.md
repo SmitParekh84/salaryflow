@@ -54,7 +54,7 @@ other date in the app. This matters directly: a fill recorded at 00:25 on
 |---|---|
 | No expenses ever recorded | Empty queue. A new user is never asked about days before they joined. |
 | Expenses dated in the future | Ignored when finding the last recorded day, so a post-dated entry cannot collapse the window to nothing. |
-| `catchUpDismissedUntil` is today or later | Card hidden; queue still computed for when it returns. |
+| Today is before `catchUpDismissedUntil` | Card hidden; queue still computed for when it returns. The field names the day the card comes back, so `[×]` sets tomorrow and the card is gone for the rest of today. |
 | Gap longer than 7 days | Queue is the 7 oldest missing days. The remainder is reported as a count and offered at the end. |
 
 ### Today
@@ -77,7 +77,7 @@ carries app-level settings like `customCategories`:
 ```ts
   /** Local dates ("2026-08-17") the user marked as no-spend. Pruned to 90 days. */
   catchUpReviewedDates?: string[];
-  /** Local date the dashboard card stays hidden until. Set by the [×] control. */
+  /** Local date the dashboard card reappears on. Set by the [×] control. */
   catchUpDismissedUntil?: string;
 ```
 
@@ -157,6 +157,16 @@ src/lib/catch-up.ts   (pure)
 | Card | `src/features/expenses/catch-up-card.tsx` | Dashboard entry point and dismissal. |
 | Flow | `src/features/expenses/catch-up-flow.tsx` | Modal, per-day step, advance and completion. |
 | Store actions | `src/lib/store.ts` | `markDayReviewed(date)`, `dismissCatchUp()`. Both write the profile and queue a sync. |
+
+### Knowing when a day got filled
+
+`ExpenseForm` calls `onClose` for both a successful save and a cancel, so a
+callback cannot tell the flow which happened. The flow therefore asks the data
+instead: after the form closes, a day with at least one expense has been filled.
+
+This is not a workaround for a missing prop — it is the more truthful question.
+It also covers a day filled from somewhere else entirely, which a save callback
+would miss.
 
 ### Change to existing code
 

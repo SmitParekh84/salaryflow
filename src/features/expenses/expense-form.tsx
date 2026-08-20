@@ -91,11 +91,17 @@ export function ExpenseForm({
   onClose,
   editing,
   sharedMode = false,
+  defaultDate,
 }: {
   open: boolean;
   onClose: () => void;
   editing?: Expense | null;
   sharedMode?: boolean;
+  /**
+   * Seeds the date field for a new expense. Still editable — someone who
+   * realises the spend was actually the next day should not have to start over.
+   */
+  defaultDate?: string;
 }) {
   const storedCustomCategories = useFinanceStore((state) => state.profile.customCategories);
   const customCategories = storedCustomCategories ?? [];
@@ -184,7 +190,7 @@ export function ExpenseForm({
                 merchant: "",
                 paymentMethod: "UPI",
                 note: "",
-                date: localDateInputValue(),
+                date: defaultDate ?? localDateInputValue(),
                 recurring: false,
                 planNextPayment: false,
                 recurrenceDays: 90,
@@ -201,7 +207,7 @@ export function ExpenseForm({
             })(),
       );
     }
-  }, [open, editing, reset, accounts, isSharedForm, sharedMode]);
+  }, [open, editing, reset, accounts, isSharedForm, sharedMode, defaultDate]);
 
   const onSubmit = async (values: FormValues) => {
     const parsed = schema.parse(values);
