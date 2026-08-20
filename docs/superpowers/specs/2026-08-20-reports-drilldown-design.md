@@ -48,7 +48,7 @@ off them.
 | Bucket | Contents |
 |---|---|
 | `incoming` | Confirmed salary history in range, plus incomes passing `countsAsEarnedIncome` |
-| `investments` | Expenses in category `Investment`, plus investment contributions in range |
+| `investments` | Expenses in category `Investment` |
 | `spends` | Every other expense that has an `accountId` |
 | `unlinked` | Every other expense with no `accountId` |
 
@@ -65,6 +65,13 @@ from level 2 — has a purpose beyond decoration.
 
 Credit-card expenses carry the card id in `accountId`, so they count as `spends`.
 They do not reduce a bank balance, which is invariant 6 and unchanged here.
+
+**Investments are drawn only from expenses.** An `Investment` record is a
+holding — name, invested total, current value — with no dates on it, so there is
+no dated contribution to place in a range. `computeSummary` already derives
+`investedThisCycle` the same way, from `Investment`-category expenses alone, and
+this report matches it rather than inventing a second definition. A holding's
+growth is not a cash flow and does not belong on this page at all.
 
 ## Routes
 
@@ -98,7 +105,7 @@ The same component serves all four buckets; only the grouping key changes.
 | `spends` | Expense category |
 | `unlinked` | Expense category |
 | `incoming` | Income type, with confirmed salary as its own `salary` row |
-| `investments` | Investment name for contributions; `Investment`-category expenses group under their merchant, falling back to `Investment` when there is none |
+| `investments` | Merchant on the expense, falling back to `Investment` when it has none |
 
 One component with a grouping function beats four near-identical pages, and it
 means a fix to sorting or percentage rounding lands everywhere at once.
@@ -127,7 +134,6 @@ export interface ReportInput {
   profile: SalaryProfile;
   expenses: Expense[];
   incomes: Income[];
-  investments: Investment[];
   salaryHistory: SalaryHistoryEntry[];
   accounts: BankAccount[];
   accountId?: string;      // undefined = all accounts
