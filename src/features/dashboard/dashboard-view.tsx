@@ -1,6 +1,7 @@
 "use client";
 
-import { CategoryIcon } from "@/components/category-icon";
+import { getCategoryColor } from "@/components/category-icon";
+import { MerchantIcon } from "@/components/merchant-icon";
 import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,6 +60,7 @@ export function DashboardView() {
   const investments = useFinanceStore((s) => s.investments);
   const salaryHistory = useFinanceStore((s) => s.salaryHistory);
   const activeBudgetRule = useFinanceStore((s) => s.budgetRules.find((rule) => rule.active));
+  const customCategories = useFinanceStore((s) => s.profile.customCategories) ?? [];
   const summary = useSummary();
   const [addOpen, setAddOpen] = useState(false);
   const [allocateOpen, setAllocateOpen] = useState(false);
@@ -469,7 +471,13 @@ export function DashboardView() {
                   {nextBills.map((b) => (
                     <div key={b.id} className="flex items-center justify-between gap-2 text-sm">
                       <div className="flex min-w-0 items-center gap-2">
-                        <CategoryIcon category={b.category} />
+                        <MerchantIcon
+                          merchant={b.name}
+                          category={b.category}
+                          categoryColor={getCategoryColor(b.category, customCategories)}
+                          size={16}
+                          chipClassName="h-8 w-8 rounded-lg"
+                        />
                         <span className="truncate">{b.name}</span>
                       </div>
                       <div className="shrink-0 text-right">

@@ -1,6 +1,7 @@
 "use client";
 
-import { CategoryIcon } from "@/components/category-icon";
+import { getCategoryColor } from "@/components/category-icon";
+import { MerchantIcon } from "@/components/merchant-icon";
 import { useFinanceStore } from "@/lib/store";
 import { formatDate, formatMoney, newestFirst } from "@/lib/utils";
 import { Search } from "lucide-react";
@@ -11,6 +12,8 @@ import { Modal } from "./ui/modal";
 export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => void }) {
   const expenses = useFinanceStore((s) => s.expenses);
   const currency = useFinanceStore((s) => s.profile.currency);
+  const storedCustomCategories = useFinanceStore((s) => s.profile.customCategories);
+  const customCategories = storedCustomCategories ?? [];
   const [q, setQ] = useState("");
 
   useEffect(() => {
@@ -61,7 +64,16 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
             key={e.id}
             className="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-surface-2"
           >
-            <CategoryIcon category={e.category} className="h-5 w-5" />
+            {/* Same mark as the transaction lists. A row that says "Netflix"
+                should carry Netflix's own logo here too, not the generic glyph
+                for whatever category it happens to sit in. */}
+            <MerchantIcon
+              merchant={e.merchant}
+              category={e.category}
+              categoryColor={getCategoryColor(e.category, customCategories)}
+              size={18}
+              chipClassName="h-9 w-9 rounded-xl"
+            />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{e.merchant || e.category}</p>
               <p className="text-xs text-muted">

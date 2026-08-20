@@ -1,6 +1,7 @@
 "use client";
 
 import { CategoryIcon, getCategoryColor } from "@/components/category-icon";
+import { MerchantIcon } from "@/components/merchant-icon";
 import { AmountInput } from "@/components/ui/amount-input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -247,14 +248,15 @@ export function BillsView() {
             const isScheduled = isFutureInterval || isFutureYear;
             return (
               <Card key={b.id} className="flex items-center gap-3 p-4">
-                <div
-                  className="flex h-11 w-11 items-center justify-center rounded-xl text-lg"
-                  style={{
-                    backgroundColor: `color-mix(in srgb, ${categoryColor} 15%, transparent)`,
-                  }}
-                >
-                  <CategoryIcon category={b.category} className="h-5 w-5" />
-                </div>
+                {/* A bill's name is its merchant — "Netflix", "Airtel Fiber" —
+                    so it gets the same brand mark the expense lists use. */}
+                <MerchantIcon
+                  merchant={b.name}
+                  category={b.category}
+                  categoryColor={categoryColor}
+                  size={20}
+                  chipClassName="h-11 w-11 rounded-xl"
+                />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{b.name}</p>
                   <div className="mt-0.5 flex items-center gap-2">
