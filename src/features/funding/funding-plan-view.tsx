@@ -9,7 +9,17 @@ import { useSummary } from "@/hooks/use-summary";
 import { buildFundingPlan, type FundingPlanItem } from "@/lib/funding-plan";
 import { useFinanceStore } from "@/lib/store";
 import { formatMoney, localDateInputValue, newestFirst } from "@/lib/utils";
-import { Check, CreditCard, Landmark, PiggyBank, Plus, Receipt, TrendingUp } from "lucide-react";
+import {
+  Check,
+  CreditCard,
+  Landmark,
+  PiggyBank,
+  Plus,
+  Receipt,
+  TrendingUp,
+  Wallet,
+} from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 const KIND_ICON = {
@@ -224,6 +234,72 @@ export function FundingPlanView() {
           </Card>
         </section>
       ))}
+
+      {/*
+       * The money you live on, stated as plainly as the reserves are.
+       *
+       * Everything above is money to protect; this is what should be sitting in
+       * the account you spend from once the protecting is done. It is kept out
+       * of the "still to set aside" total on purpose — that figure means money
+       * with a job elsewhere, and folding the spending allowance into it would
+       * make it the whole salary.
+       */}
+      {plan.everyday.amount > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-success" />
+              <h2 className="text-sm font-semibold">
+                Keep for everyday
+                {plan.everyday.accountName ? ` in ${plan.everyday.accountName}` : ""}
+              </h2>
+            </div>
+            <p className="text-lg font-bold">{formatMoney(plan.everyday.amount, currency)}</p>
+          </div>
+
+          <Card className="p-4 shadow-none">
+            <p className="text-xs leading-relaxed text-muted">
+              {plan.everyday.source === "budget-rule"
+                ? `Needs and wants under ${plan.everyday.ruleName}, on a salary of ${formatMoney(salary, currency)}.`
+                : `Your salary of ${formatMoney(salary, currency)} less everything reserved above. Set a budget rule to size this deliberately instead of by subtraction.`}
+            </p>
+
+            {/*
+             * Divided by the whole cycle, not the days left in it. This is the
+             * allowance for a full salary cycle, moved on salary day — dividing
+             * it by what remains reported ₹13,600 a day on the fifth-from-last
+             * day of the month, which is not a figure anyone can act on. The
+             * dashboard's Safe-to-Spend is the one that paces what is *left*.
+             */}
+            {summary.cycleLength > 0 && (
+              <p className="mt-3 text-sm">
+                <span className="font-semibold">
+                  {formatMoney(plan.everyday.amount / summary.cycleLength, currency)}
+                </span>{" "}
+                <span className="text-muted">
+                  a day across the {summary.cycleLength}-day cycle
+                </span>
+              </p>
+            )}
+
+            {/* An unassigned everyday account is why this ran dry in the first
+                place: no account was named, so nothing was ever moved into it. */}
+            {!plan.everyday.accountId && (
+              <p className="mt-3 rounded-xl bg-warning/10 p-3 text-xs leading-relaxed text-muted">
+                No account is marked for everyday spending, so this amount has nowhere to go. Pick
+                one in{" "}
+                <Link
+                  href="/settings?section=accounts"
+                  className="font-medium text-primary hover:underline"
+                >
+                  Financial accounts
+                </Link>{" "}
+                and it will appear here as a transfer.
+              </p>
+            )}
+          </Card>
+        </section>
+      )}
 
       <div className="rounded-xl border border-warning/35 bg-warning/10 p-4 text-xs leading-relaxed text-muted">
         Electricity is tracked one month behind: August usage appears in September&apos;s plan.

@@ -2113,3 +2113,230 @@ describe("transfer goal reservations", () => {
     vi.unstubAllGlobals();
   });
 });
+
+/**
+ * Editing a recorded spend must not charge the account a second time.
+ *
+ * The bank has already moved the money. An edit re-states what that spend was,
+ * so the balance has to be rolled back to before it and re-applied from the
+ * new figures — never simply deducted again.
+ */
+describe("editing an expense and the account balance", () => {
+  function seedOneExpense(amount = 1_000) {
+    useFinanceStore.getState().resetAll();
+    useFinanceStore.setState({
+      expenses: [],
+      accounts: [
+        {
+          id: "hdfc",
+          bankName: "HDFC",
+          accountType: "Savings",
+          balance: 10_000,
+          status: "active",
+        },
+        {
+          id: "sbi",
+          bankName: "SBI",
+          accountType: "Savings",
+          balance: 4_000,
+          status: "active",
+        },
+      ],
+    });
+    useFinanceStore.getState().addExpense({
+      amount,
+      category: "Food",
+      merchant: "Swiggy",
+      paymentMethod: "UPI",
+      date: new Date().toISOString(),
+      recurring: false,
+      accountId: "hdfc",
+    });
+    return useFinanceStore.getState().expenses[0].id;
+  }
+
+  const balanceOf = (id: string) =>
+    useFinanceStore.getState().accounts.find((account) => account.id === id)?.balance;
+
+  it("leaves the balance alone when only the name changes", () => {
+    const id = seedOneExpense(1_000);
+    expect(balanceOf("hdfc")).toBe(9_000);
+
+    useFinanceStore.getState().updateExpense(id, { merchant: "Zomato" });
+
+    // The one the user asked about: a rename is not a second ₹1,000 payment.
+    expect(balanceOf("hdfc")).toBe(9_000);
+    expect(useFinanceStore.getState().expenses[0].merchant).toBe("Zomato");
+  });
+
+  it("moves the balance by the difference when the amount changes", () => {
+    const id = seedOneExpense(1_000);
+    useFinanceStore.getState().updateExpense(id, { amount: 1_500 });
+    expect(balanceOf("hdfc")).toBe(8_500);
+
+    useFinanceStore.getState().updateExpense(id, { amount: 200 });
+    expect(balanceOf("hdfc")).toBe(9_800);
+  });
+
+  it("refunds the old account and charges the new one when the account changes", () => {
+    const id = seedOneExpense(1_000);
+    useFinanceStore.getState().updateExpense(id, { accountId: "sbi" });
+    expect(balanceOf("hdfc")).toBe(10_000);
+    expect(balanceOf("sbi")).toBe(3_000);
+  });
+
+  it("refunds the account when the spend moves to a credit card", () => {
+    const id = seedOneExpense(1_000);
+    // Cards are not in `accounts`, so nothing is deducted from cash balances.
+    useFinanceStore.getState().updateExpense(id, { accountId: "card-1" });
+    expect(balanceOf("hdfc")).toBe(10_000);
+    expect(useFinanceStore.getState().expenses[0].balanceApplied).toBe(false);
+  });
+
+  it("does not double-refund when the same edit is saved twice", () => {
+    const id = seedOneExpense(1_000);
+    useFinanceStore.getState().updateExpense(id, { merchant: "Zomato" });
+    useFinanceStore.getState().updateExpense(id, { merchant: "Zomato" });
+    expect(balanceOf("hdfc")).toBe(9_000);
+  });
+
+  it("restores a deleted spend even when the balance has since fallen below it", async () => {
+    const id = seedOneExpense(5_000);
+    expect(balanceOf("hdfc")).toBe(5_000);
+
+    useFinanceStore.getState().deleteExpense(id);
+    expect(balanceOf("hdfc")).toBe(10_000);
+
+    // Something else spends the refunded money before the restore.
+    useFinanceStore.getState().addExpense({
+      amount: 9_000,
+      category: "Shopping",
+      paymentMethod: "UPI",
+      date: new Date().toISOString(),
+      recurring: false,
+      accountId: "hdfc",
+    });
+    expect(balanceOf("hdfc")).toBe(1_000);
+
+    const recycled = useFinanceStore.getState().recycleBin[0].id;
+    await useFinanceStore.getState().restoreRecycleItem(recycled);
+
+    // The spend really happened, so bringing the record back has to bring its
+    // deduction back with it. Skipping the charge left the balance overstated
+    // and the record marked as never applied, so deleting it again would have
+    // refunded money that was never taken.
+    expect(balanceOf("hdfc")).toBe(-4_000);
+    expect(useFinanceStore.getState().expenses[0].balanceApplied).toBe(true);
+  });
+});
+
+/**
+ * The plan has to name the everyday account too.
+ *
+ * Reserving cards, bills, SIPs and savings and then saying nothing about the
+ * money you live on is how an everyday account runs down to nothing while the
+ * plan reports itself fully funded.
+ */
+describe("everyday spending in the funding plan", () => {
+  const everydayAccount = {
+    id: "icici",
+    bankName: "ICICI",
+    accountType: "Savings" as const,
+    balance: 5_000,
+    status: "active" as const,
+    defaultFor: ["everyday" as const],
+  };
+
+  const rule = {
+    id: "rule-1",
+    name: "Balanced 50/30/10/10",
+    active: true,
+    allocations: [
+      { kind: "needs" as const, label: "Needs", percentage: 50 },
+      { kind: "wants" as const, label: "Wants", percentage: 30 },
+      { kind: "savings" as const, label: "Cash savings", percentage: 10 },
+      { kind: "investments" as const, label: "Investments", percentage: 10 },
+    ],
+  };
+
+  const base = {
+    bills: [],
+    creditCards: [],
+    expenses: [],
+    incomes: [],
+    investments: [],
+    monthlyIncome: 85_000,
+  };
+
+  it("uses needs plus wants from the active rule, aimed at the everyday account", () => {
+    const plan = buildFundingPlan({ ...base, accounts: [everydayAccount], budgetRule: rule });
+
+    // 50% + 30% of 85,000 — the split the user already chose, not a second one.
+    expect(plan.everyday.amount).toBe(68_000);
+    expect(plan.everyday.source).toBe("budget-rule");
+    expect(plan.everyday.accountId).toBe("icici");
+    expect(plan.everyday.ruleName).toBe("Balanced 50/30/10/10");
+  });
+
+  it("falls back to salary minus every reserve when no rule is set", () => {
+    const plan = buildFundingPlan({
+      ...base,
+      accounts: [everydayAccount],
+      bills: [
+        {
+          id: "rent",
+          name: "Rent",
+          amount: 25_000,
+          dueDay: 5,
+          frequency: "monthly" as const,
+          category: "Rent" as const,
+          paid: false,
+        },
+      ],
+    });
+
+    expect(plan.everyday.source).toBe("leftover");
+    expect(plan.everyday.amount).toBe(60_000);
+  });
+
+  it("still reports an amount when no account is marked for everyday spending", () => {
+    const plan = buildFundingPlan({ ...base, accounts: [], budgetRule: rule });
+
+    // The figure is still true; the UI prompts for an account to send it to.
+    expect(plan.everyday.amount).toBe(68_000);
+    expect(plan.everyday.accountId).toBeUndefined();
+  });
+
+  it("keeps the spending allowance out of the amount to set aside", () => {
+    const plan = buildFundingPlan({ ...base, accounts: [everydayAccount], budgetRule: rule });
+
+    // `total` means "money with a job elsewhere": the rule's 10% savings
+    // reserve plus its 10% investment top-up, since no SIP is recorded here.
+    // Folding ₹68,000 of spending money into it would make it the whole salary
+    // and say nothing.
+    expect(plan.total).toBe(17_000);
+    // And the two together with the allowance account for the whole salary.
+    expect(plan.total + plan.everyday.amount).toBe(85_000);
+  });
+
+  it("never suggests a negative allowance when the reserves exceed salary", () => {
+    const plan = buildFundingPlan({
+      ...base,
+      monthlyIncome: 20_000,
+      accounts: [everydayAccount],
+      bills: [
+        {
+          id: "rent",
+          name: "Rent",
+          amount: 30_000,
+          dueDay: 5,
+          frequency: "monthly" as const,
+          category: "Rent" as const,
+          paid: false,
+        },
+      ],
+    });
+
+    expect(plan.everyday.amount).toBe(0);
+  });
+});

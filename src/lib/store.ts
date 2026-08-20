@@ -699,13 +699,23 @@ export const useFinanceStore = create<FinanceState>()(
           switch (item.entityType) {
             case "expense": {
               const expense = item.data as unknown as Expense;
+              /*
+               * The account has to exist; it does not have to be able to afford
+               * it. This used to also require `balance >= amount`, which
+               * contradicted the check above it and the rest of the store:
+               * deleting a ₹5,000 spend refunds ₹5,000, so if anything else
+               * spent that money before the restore, the balance was below the
+               * amount and the restore brought the record back with no
+               * deduction — the balance stayed ₹5,000 too high, and because the
+               * record was also marked `balanceApplied: false`, deleting it
+               * again would have refunded money that was never taken. The spend
+               * happened; a negative balance is the honest signal, the same
+               * reasoning `addExpense` and `updateExpense` already follow.
+               */
               const canReapplyBalance =
                 expense.balanceApplied &&
                 expense.accountId &&
-                state.accounts.some(
-                  (account) =>
-                    account.id === expense.accountId && account.balance >= expense.amount,
-                );
+                state.accounts.some((account) => account.id === expense.accountId);
               return {
                 expenses: [
                   { ...expense, balanceApplied: Boolean(canReapplyBalance) },

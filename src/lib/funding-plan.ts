@@ -1,4 +1,5 @@
 import { billCycle, monthlyBillReserve } from "./bill-cycle";
+import { budgetAllocationTarget } from "./budget-rules";
 import { creditCardUsage } from "./credit-cards";
 import type {
   BankAccount,
@@ -39,6 +40,29 @@ export interface FundingTransfer {
   items: FundingPlanItem[];
 }
 
+/**
+ * What to leave in the account you actually spend from.
+ *
+ * The plan used to reserve everything with a name — cards, bills, SIPs, the
+ * savings target — and say nothing about the money you live on, which is the
+ * one figure you act on daily. The everyday account was funded by whatever
+ * happened to be left over, so it could quietly run down to nothing while the
+ * plan reported itself fully funded.
+ *
+ * `source` says where the number came from, because the two answers deserve
+ * different confidence: a budget rule is a decision the user made, a leftover
+ * is just arithmetic.
+ */
+export interface EverydayAllowance {
+  /** The account marked for everyday spending, if one is set. */
+  accountId?: string;
+  accountName?: string;
+  amount: number;
+  source: "budget-rule" | "leftover";
+  /** Names the rule when one drove the figure, for the caller to show. */
+  ruleName?: string;
+}
+
 export function buildFundingPlan({
   accounts,
   bills,
@@ -71,6 +95,9 @@ export function buildFundingPlan({
     );
   const savingsAccount = accounts.find(
     (account) => account.status === "active" && account.defaultFor?.includes("savings"),
+  );
+  const everydayAccount = accounts.find(
+    (account) => account.status === "active" && account.defaultFor?.includes("everyday"),
   );
   const investmentBills = bills.filter(
     (bill) => bill.frequency === "monthly" && bill.category === "Investment",
@@ -240,14 +267,48 @@ export function buildFundingPlan({
     transfersByAccount.set(key, transfer);
   }
 
+  const plannedTotal = items.reduce((sum, item) => sum + item.amount, 0);
+
+  /*
+   * Needs + Wants when a rule is active, because that is the split the user
+   * already chose and this should not offer a second opinion on it. With no
+   * rule, everything the reserves do not claim.
+   *
+   * Measured against `plannedTotal`, not the unpaid remainder: a bill already
+   * paid out of this salary is money that has gone, so it must not reappear as
+   * spending money just because it is no longer outstanding.
+   */
+  const everyday: EverydayAllowance = budgetRule
+    ? {
+        accountId: everydayAccount?.id,
+        accountName: everydayAccount?.bankName,
+        amount:
+          budgetAllocationTarget(budgetRule, "needs", monthlyIncome) +
+          budgetAllocationTarget(budgetRule, "wants", monthlyIncome),
+        source: "budget-rule",
+        ruleName: budgetRule.name,
+      }
+    : {
+        accountId: everydayAccount?.id,
+        accountName: everydayAccount?.bankName,
+        amount: Math.max(0, monthlyIncome - plannedTotal),
+        source: "leftover",
+      };
+
   return {
     items,
     transfers: Array.from(transfersByAccount.values()).sort(
       (first, second) => second.amount - first.amount,
     ),
-    plannedTotal: items.reduce((sum, item) => sum + item.amount, 0),
+    plannedTotal,
     paidTotal: items.reduce((sum, item) => sum + item.paidAmount, 0),
     total: items.reduce((sum, item) => sum + item.remainingAmount, 0),
+    /**
+     * Deliberately outside `total`: that figure means "money to protect", and
+     * folding the spending allowance into it would make it the whole salary and
+     * say nothing.
+     */
+    everyday,
   };
 }
 
