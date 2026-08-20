@@ -53,52 +53,69 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 export type SettingsSection =
-  | "profile"
-  | "money"
-  | "accounts"
-  | "categories"
-  | "planning"
-  | "vehicle"
-  | "system";
+  "profile" | "money" | "accounts" | "categories" | "planning" | "vehicle" | "system";
 
+/**
+ * `accent` tints each row's icon chip. Seven identical grey squares gave the
+ * mobile list nothing to aim at but the words; a colour per section makes it
+ * scannable, and the hues are the same tokens the categories and charts use.
+ */
 const SETTINGS_SECTIONS: {
   id: SettingsSection;
   label: string;
   description: string;
   icon: LucideIcon;
+  accent: string;
 }[] = [
-  { id: "profile", label: "Profile", description: "Your personal details", icon: UserRound },
+  {
+    id: "profile",
+    label: "Profile",
+    description: "Your personal details",
+    icon: UserRound,
+    accent: "var(--primary)",
+  },
   {
     id: "money",
     label: "Money setup",
     description: "Salary, country and currency",
     icon: SlidersHorizontal,
+    accent: "var(--chart-savings)",
   },
   {
     id: "accounts",
     label: "Financial accounts",
     description: "Banks, cards and visibility",
     icon: WalletCards,
+    accent: "var(--cat-insurance)",
   },
   {
     id: "categories",
     label: "Categories",
     description: "Organize expenses your way",
     icon: Shapes,
+    accent: "var(--cat-entertainment)",
   },
   {
     id: "planning",
     label: "Goals & rules",
     description: "Targets and budget strategy",
     icon: Target,
+    accent: "var(--chart-invest)",
   },
   {
     id: "vehicle",
     label: "Vehicle & fuel",
-    description: "Your vehicle, and the city your rate comes from",
+    description: "Your vehicle and fuel rates",
     icon: Fuel,
+    accent: "var(--cat-fuel)",
   },
-  { id: "system", label: "System", description: "Appearance, data and access", icon: MonitorCog },
+  {
+    id: "system",
+    label: "System",
+    description: "Appearance, data and access",
+    icon: MonitorCog,
+    accent: "var(--cat-business)",
+  },
 ];
 
 function draftFromProfile(profile: {
@@ -308,56 +325,72 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
             Personalize how Aartha works for you.
           </p>
         </div>
-        <nav
-          aria-label="Mobile settings sections"
-          className="divide-y divide-border border-y border-border lg:hidden"
-        >
-          {SETTINGS_SECTIONS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => selectSection(item.id)}
-                className="flex min-h-16 w-full items-center gap-3 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-(--ring)"
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-foreground">
-                  <Icon className="h-5 w-5" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium">{item.label}</span>
-                  <span className="mt-0.5 block text-xs text-muted">{item.description}</span>
-                </span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
-              </button>
-            );
-          })}
-        </nav>
-        <nav aria-label="Settings sections" className="hidden flex-col gap-1 lg:flex">
-          {SETTINGS_SECTIONS.map((item) => {
-            const Icon = item.icon;
-            const selected = section === item.id;
-            return (
-              <Button
-                key={item.id}
-                type="button"
-                variant="ghost"
-                onClick={() => selectSection(item.id)}
-                aria-current={selected ? "page" : undefined}
-                className={cn(
-                  "h-auto shrink-0 justify-start gap-3 px-3 py-2.5 text-left lg:w-full",
-                  selected ? "bg-primary/10 text-primary" : "text-muted hover:text-foreground",
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span>
-                  <span className="block text-sm font-medium">{item.label}</span>
-                  <span className="hidden text-[11px] text-muted lg:block">{item.description}</span>
-                </span>
-              </Button>
-            );
-          })}
-        </nav>
+        {/* One grouped card rather than an edge-to-edge divider list, so the
+            sections read as a panel like every other list in the app. */}
+        <Card className="overflow-hidden p-0 lg:hidden">
+          <nav aria-label="Mobile settings sections" className="divide-y divide-border">
+            {SETTINGS_SECTIONS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => selectSection(item.id)}
+                  className="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left outline-none transition-colors active:bg-surface-2/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-(--ring)"
+                >
+                  <span
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                    style={{
+                      backgroundColor: `color-mix(in srgb, ${item.accent} 15%, transparent)`,
+                      color: item.accent,
+                    }}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium">{item.label}</span>
+                    <span className="mt-0.5 block text-xs text-muted">{item.description}</span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
+                </button>
+              );
+            })}
+          </nav>
+        </Card>
+
+        {/*
+         * Labels only on desktop. The descriptions repeated what the panel
+         * header already says, and inside a 15rem column the longest of them
+         * ran straight out of the nav and over the panel beside it.
+         */}
+        <Card className="hidden p-2 lg:block">
+          <nav aria-label="Settings sections" className="flex flex-col gap-0.5">
+            {SETTINGS_SECTIONS.map((item) => {
+              const Icon = item.icon;
+              const selected = section === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => selectSection(item.id)}
+                  aria-current={selected ? "page" : undefined}
+                  className={cn(
+                    "relative flex w-full min-w-0 items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-(--ring)",
+                    selected
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted hover:bg-surface-2 hover:text-foreground",
+                  )}
+                >
+                  {selected && (
+                    <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary" />
+                  )}
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </Card>
       </aside>
 
       <div className={cn("min-w-0", !hasRequestedSection && "hidden lg:block")}>

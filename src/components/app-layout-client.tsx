@@ -123,7 +123,12 @@ export default function AppLayoutClient({ children }: { children: React.ReactNod
           title={title}
           showBack={pathname !== "/dashboard"}
           onBack={goBack}
-          showHamburger={isHamburger}
+          /*
+           * Shown in both nav modes now. With "More" gone from the bottom bar,
+           * the drawer is the only way to the sections that are not tabs, so the
+           * button that opens it cannot be exclusive to hamburger mode.
+           */
+          showHamburger
           onHamburger={() => setHamburgerOpen(true)}
         />
         <main
@@ -138,11 +143,8 @@ export default function AppLayoutClient({ children }: { children: React.ReactNod
         </main>
       </div>
 
-      {isHamburger ? (
-        <HamburgerDrawer open={hamburgerOpen} onClose={() => setHamburgerOpen(false)} />
-      ) : (
-        <MobileNav />
-      )}
+      <HamburgerDrawer open={hamburgerOpen} onClose={() => setHamburgerOpen(false)} />
+      {!isHamburger && <MobileNav />}
     </div>
   );
 }

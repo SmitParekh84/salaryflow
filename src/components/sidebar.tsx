@@ -62,7 +62,7 @@ export const ICONS: Record<string, LucideIcon> = {
   Trash2,
 };
 
-// The 4 tabs always pinned in the bottom bar
+// The 4 tabs pinned in the bottom bar. Everything else is in the drawer.
 const PINNED_HREFS = ["/dashboard", "/expenses", "/bills", "/analytics"];
 
 export function Sidebar() {
@@ -194,103 +194,24 @@ export function HamburgerDrawer({ open, onClose }: { open: boolean; onClose: () 
   );
 }
 
-/** Bottom nav "More" full-screen sheet */
-function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const pathname = usePathname();
-  const allItems = NAV_ITEMS.filter((item) => !PINNED_HREFS.includes(item.href));
-
-  return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            key="backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
-            onClick={onClose}
-          />
-          <motion.div
-            key="sheet"
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", bounce: 0, duration: 0.38 }}
-            className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-surface pb-[max(1.25rem,env(safe-area-inset-bottom))] lg:hidden"
-          >
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="h-1 w-10 rounded-full bg-border" />
-            </div>
-
-            <div className="flex items-center justify-between px-5 py-3">
-              <p className="text-base font-semibold">All sections</p>
-              <button
-                onClick={onClose}
-                aria-label="Close"
-                className="-m-1.5 flex h-11 w-11 items-center justify-center rounded-full text-muted"
-              >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2">
-                  <X className="h-4 w-4" />
-                </span>
-              </button>
-            </div>
-
-            <nav className="px-4 pb-2">
-              <div className="grid grid-cols-1 gap-0.5">
-                {allItems.map((item) => {
-                  const Icon = ICONS[item.icon];
-                  const active = pathname === item.href || pathname.startsWith(item.href + "/");
-                  const isExtra = "settingsOnly" in item && item.settingsOnly;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={onClose}
-                      className={cn(
-                        "flex items-center gap-3.5 rounded-2xl px-4 py-3.5 transition-colors",
-                        active
-                          ? "bg-primary/10 text-primary"
-                          : "text-foreground hover:bg-surface-2",
-                        isExtra && "opacity-70",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-                          active ? "bg-primary/20" : "bg-surface-2",
-                        )}
-                      >
-                        <Icon className="h-4.5 w-4.5" />
-                      </span>
-                      <span className="flex-1 text-sm font-medium">{item.label}</span>
-                      <ChevronRight className="h-4 w-4 text-muted" />
-                    </Link>
-                  );
-                })}
-              </div>
-            </nav>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
-}
-
-/** Bottom navigation bar — default mobile nav style */
+/**
+ * Bottom navigation bar — the default mobile nav.
+ *
+ * Four tabs and the add button, and no "More". A tab labelled More is a tab
+ * that says nothing about where it goes, and it was carrying nine sections
+ * behind it while sitting next to four that each carry one. Those sections now
+ * live in the drawer behind the top bar's menu button, which is where a phone
+ * user looks for the full list, and dropping it buys the remaining tabs the
+ * width they need.
+ */
 export function MobileNav() {
   const pathname = usePathname();
-  const [moreOpen, setMoreOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
 
   const pinnedItems = NAV_ITEMS.filter((item) => PINNED_HREFS.includes(item.href));
   // Split around the centre cell, which holds the add button rather than a tab.
   const leftItems = pinnedItems.slice(0, Math.ceil(pinnedItems.length / 2));
   const rightItems = pinnedItems.slice(Math.ceil(pinnedItems.length / 2));
-  // "More" is active when the current page isn't in the pinned set
-  const moreActive =
-    !moreOpen && !PINNED_HREFS.some((href) => pathname === href || pathname.startsWith(href + "/"));
 
   return (
     <>
@@ -306,7 +227,7 @@ export function MobileNav() {
         <div
           className="mx-auto grid max-w-lg items-stretch"
           style={{
-            gridTemplateColumns: `repeat(${pinnedItems.length + 2}, 1fr)`,
+            gridTemplateColumns: `repeat(${pinnedItems.length + 1}, 1fr)`,
           }}
         >
           {leftItems.map((item) => (
@@ -336,30 +257,9 @@ export function MobileNav() {
           {rightItems.map((item) => (
             <MobileNavTab key={item.href} item={item} pathname={pathname} />
           ))}
-
-          {/* More button */}
-          <button
-            onClick={() => setMoreOpen(true)}
-            aria-label="More sections"
-            className={cn(
-              "relative flex min-w-0 flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-(--ring)",
-              moreActive ? "text-primary" : "text-muted",
-            )}
-            style={{
-              height: "calc(4rem + env(safe-area-inset-bottom))",
-              paddingBottom: "env(safe-area-inset-bottom)",
-            }}
-          >
-            {moreActive && (
-              <span className="absolute top-0 inset-x-3 h-0.5 rounded-b-full bg-primary" />
-            )}
-            <MoreHorizontal className="h-5 w-5 shrink-0" aria-hidden="true" />
-            <span>More</span>
-          </button>
         </div>
       </nav>
 
-      <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
       <ExpenseForm open={addOpen} onClose={() => setAddOpen(false)} />
     </>
   );
@@ -424,7 +324,7 @@ export function NavModeToggle() {
         <p className="text-sm font-medium">Mobile navigation style</p>
         <p className="mt-0.5 text-xs text-muted">
           {navMode === "bottom"
-            ? "Bottom bar — 4 tabs + More sheet"
+            ? "Bottom bar — 4 tabs, add button, and the menu drawer"
             : "Hamburger — slide-in drawer"}
         </p>
       </div>

@@ -56,6 +56,7 @@ export function OnboardingView() {
   const accountName = useFinanceStore((s) => s.user.name);
 
   const [step, setStep] = useState(0);
+  const [finishing, setFinishing] = useState(false);
   const [name, setName] = useState(accountName);
 
   // The session resolves after mount, so the name usually arrives a beat late.
@@ -190,9 +191,9 @@ export function OnboardingView() {
       title: "Your salary",
       subtitle: "How much and when do you get paid?",
       valid:
-      (enteredMoney.amount ?? 0) > 0 &&
-      (enteredMoney.salaryDay ?? 0) >= 1 &&
-      (enteredMoney.salaryDay ?? 0) <= 31,
+        (enteredMoney.amount ?? 0) > 0 &&
+        (enteredMoney.salaryDay ?? 0) >= 1 &&
+        (enteredMoney.salaryDay ?? 0) <= 31,
       content: (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
@@ -482,6 +483,15 @@ export function OnboardingView() {
 
   const current = steps[step];
   const persistAndFinish = async () => {
+    /*
+     * Guard against a second press. Finishing writes a profile, an account, a
+     * budget rule and a bill per custom item, and none of those writes is keyed
+     * on anything that would collapse a duplicate — so a double tap, which a
+     * phone makes easy while the sync at the end is still running, left the
+     * account with two banks, two active rules and every bill twice.
+     */
+    if (finishing) return;
+    setFinishing(true);
     const finalProfile: SalaryProfile = {
       ...profile,
       amount: enteredMoney.amount ?? 0,
@@ -537,13 +547,25 @@ export function OnboardingView() {
     }
     try {
       await syncWithServer?.();
-    } catch {}
+    } catch {
+      // Everything above is already in the local store, and the next successful
+      // sync carries it up. Blocking the finish on a failed request would trap
+      // someone on this screen with their setup already saved.
+    }
     router.replace("/dashboard");
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    /*
+     * `dvh` rather than `vh`: the salary step is tall, and on a phone `100vh`
+     * measures the viewport as if the browser's own bars were not there, so the
+     * card was centred against a height taller than the screen and its footer
+     * sat under the address bar. Top-aligned below `sm` for the same reason —
+     * centring a card taller than the screen clips its head, and it is the head
+     * that says which step you are on.
+     */
+    <div className="flex min-h-dvh items-start justify-center px-4 py-8 sm:items-center sm:py-4">
+      <div className="w-full max-w-md" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="mb-6 flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
             <Wallet className="h-5 w-5" />
@@ -565,7 +587,17 @@ export function OnboardingView() {
           </Card>
         )}
 
-        <div className={authReady ? "mb-6 flex gap-1.5" : "hidden"}>
+        {/* The bar is the only thing that says how much is left, so it carries
+            the count for a screen reader rather than being seven blank divs. */}
+        <div
+          role="progressbar"
+          aria-label="Setup progress"
+          aria-valuemin={1}
+          aria-valuemax={steps.length}
+          aria-valuenow={step + 1}
+          aria-valuetext={`Step ${step + 1} of ${steps.length}`}
+          className={authReady ? "mb-6 flex gap-1.5" : "hidden"}
+        >
           {steps.map((_, i) => (
             <div
               key={i}
@@ -577,64 +609,65 @@ export function OnboardingView() {
         </div>
 
         {authReady && (
-        <Card className="p-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={step}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.25 }}
-            >
-              <h2 className="text-xl font-bold">{current.title}</h2>
-              <p className="mt-1 text-sm text-muted">{current.subtitle}</p>
-              <div className="mt-6">{current.content}</div>
-            </motion.div>
-          </AnimatePresence>
-
-          <div className="mt-8 flex items-center gap-3">
-            {step > 0 && (
-              <Button
-                variant="secondary"
-                size="icon"
-                onClick={() => setStep((s) => s - 1)}
-                aria-label="Back"
+          <Card className="p-6">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={step}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.25 }}
               >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            )}
+                <h2 className="text-xl font-bold">{current.title}</h2>
+                <p className="mt-1 text-sm text-muted">{current.subtitle}</p>
+                <div className="mt-6">{current.content}</div>
+              </motion.div>
+            </AnimatePresence>
 
-            {step === steps.length - 1 ? (
-              <Button className="flex-1" onClick={persistAndFinish}>
-                Finish setup <ArrowRight className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button
-                className="flex-1"
-                disabled={!current.valid}
-                onClick={() => setStep((s) => s + 1)}
-              >
-                Continue <ArrowRight className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+            <div className="mt-8 flex items-center gap-3">
+              {step > 0 && (
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={() => setStep((s) => s - 1)}
+                  aria-label="Back"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              )}
 
-          {/* An optional step says so plainly. Calling every step required and
+              {step === steps.length - 1 ? (
+                <Button className="flex-1" onClick={persistAndFinish} disabled={finishing}>
+                  {finishing ? "Saving your setup…" : "Finish setup"}
+                  {!finishing && <ArrowRight className="h-4 w-4" />}
+                </Button>
+              ) : (
+                <Button
+                  className="flex-1"
+                  disabled={!current.valid}
+                  onClick={() => setStep((s) => s + 1)}
+                >
+                  Continue <ArrowRight className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
+            {/* An optional step says so plainly. Calling every step required and
               then accepting empty answers is how a form teaches people to type
               a placeholder value just to get past it. */}
-          {current.optional && step < steps.length - 1 && (
-            <div className="mt-3 text-center">
-              <Button
-                variant="link"
-                size="sm"
-                className="text-xs"
-                onClick={() => setStep((s) => s + 1)}
-              >
-                Skip for now
-              </Button>
-            </div>
-          )}
-        </Card>
+            {current.optional && step < steps.length - 1 && (
+              <div className="mt-3 text-center">
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => setStep((s) => s + 1)}
+                >
+                  Skip for now
+                </Button>
+              </div>
+            )}
+          </Card>
         )}
       </div>
     </div>

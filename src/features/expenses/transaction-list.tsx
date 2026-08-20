@@ -1,12 +1,14 @@
 "use client";
 
-import { CategoryIcon, getCategoryColor } from "@/components/category-icon";
+import { getCategoryColor } from "@/components/category-icon";
+import { MerchantIcon } from "@/components/merchant-icon";
 import { Button } from "@/components/ui/button";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
 import { cn, formatMoney } from "@/lib/utils";
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { AnimatePresence, motion } from "framer-motion";
-import { Heart, Pencil, Trash2, Users } from "lucide-react";
+import { Heart, MoreVertical, Pencil, Trash2, Users } from "lucide-react";
 
 export function TransactionList({
   expenses,
@@ -72,17 +74,13 @@ export function TransactionList({
                   "cursor-pointer rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-(--ring)",
               )}
             >
-              <div
-                className={cn(
-                  "flex shrink-0 items-center justify-center rounded-xl text-lg",
-                  dense ? "h-9 w-9" : "h-10 w-10",
-                )}
-                style={{
-                  backgroundColor: `color-mix(in srgb, ${categoryColor} 15%, transparent)`,
-                }}
-              >
-                <CategoryIcon category={e.category} className={dense ? "h-4.5 w-4.5" : "h-5 w-5"} />
-              </div>
+              <MerchantIcon
+                merchant={e.merchant}
+                category={e.category}
+                categoryColor={categoryColor}
+                size={dense ? 18 : 20}
+                chipClassName={cn("rounded-xl", dense ? "h-9 w-9" : "h-10 w-10")}
+              />
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1 text-sm font-medium">
                   <span className="truncate">{e.merchant || e.category}</span>
@@ -161,6 +159,21 @@ export function TransactionList({
                 </div>
               )}
 
+              {/*
+               * The same three actions for a phone. The desktop set reveals on
+               * hover, which no touch device has, so below `sm` there was no way
+               * to delete or favourite a transaction at all — the row's tap was
+               * spent on opening the editor.
+               */}
+              {!compact && (
+                <RowActions
+                  expense={e}
+                  onEdit={onEdit}
+                  onDelete={() => deleteExpense(e.id)}
+                  onToggleFavorite={() => toggleFavorite(e.id)}
+                />
+              )}
+
               <div className="text-right">
                 <p className="text-sm font-semibold">−{formatMoney(e.amount, currency)}</p>
                 <p className="text-[11px] text-muted">
@@ -175,6 +188,86 @@ export function TransactionList({
         })}
       </AnimatePresence>
     </div>
+  );
+}
+
+/** Overflow menu for one transaction row. Phone only — see the call site. */
+function RowActions({
+  expense,
+  onEdit,
+  onDelete,
+  onToggleFavorite,
+}: {
+  expense: Expense;
+  onEdit?: (e: Expense) => void;
+  onDelete: () => void;
+  onToggleFavorite: () => void;
+}) {
+  return (
+    <DropdownMenuPrimitive.Root>
+      <DropdownMenuPrimitive.Trigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={`Actions for ${expense.merchant || expense.category}`}
+          onClick={(event) => event.stopPropagation()}
+          className="h-9 w-9 shrink-0 text-muted sm:hidden"
+        >
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuPrimitive.Trigger>
+      <DropdownMenuPrimitive.Portal>
+        <DropdownMenuPrimitive.Content
+          data-slot="dropdown-menu-content"
+          align="end"
+          sideOffset={4}
+          collisionPadding={12}
+          onClick={(event) => event.stopPropagation()}
+          className="z-50 min-w-44 rounded-2xl bg-surface p-1.5 text-foreground card-shadow outline-none"
+        >
+          <DropdownMenuPrimitive.Item asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggleFavorite}
+              className="w-full justify-start outline-none"
+            >
+              <Heart
+                className={cn(
+                  "h-4 w-4",
+                  expense.favorite ? "fill-danger text-danger" : "text-muted",
+                )}
+              />
+              {expense.favorite ? "Remove favourite" : "Favourite"}
+            </Button>
+          </DropdownMenuPrimitive.Item>
+          {onEdit && (
+            <DropdownMenuPrimitive.Item asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onEdit(expense)}
+                className="w-full justify-start outline-none"
+              >
+                <Pencil className="h-4 w-4 text-muted" /> Edit
+              </Button>
+            </DropdownMenuPrimitive.Item>
+          )}
+          {/* No confirmation step: a deleted expense goes to the recycle bin, so
+              this is undoable rather than destructive. */}
+          <DropdownMenuPrimitive.Item asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onDelete}
+              className="w-full justify-start text-danger outline-none hover:bg-danger/10"
+            >
+              <Trash2 className="h-4 w-4" /> Delete
+            </Button>
+          </DropdownMenuPrimitive.Item>
+        </DropdownMenuPrimitive.Content>
+      </DropdownMenuPrimitive.Portal>
+    </DropdownMenuPrimitive.Root>
   );
 }
 

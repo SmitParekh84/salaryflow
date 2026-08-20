@@ -59,8 +59,14 @@ export function TopBar({
     // the status bar while the controls clear it. The inset is 0 on Android and
     // desktop, where `max()` falls through to the original 0.875rem.
     <header className="sticky top-0 z-20 flex items-center gap-1.5 border-b border-border bg-background/70 px-3 pb-3.5 pt-[max(0.875rem,env(safe-area-inset-top))] backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-8">
-      {/* Hamburger button — only in hamburger nav mode on mobile */}
-      {showHamburger && !showBack && (
+      {/*
+       * The menu button stays even when there is a back arrow. It used to give
+       * way to it, which was survivable while the bottom bar had a "More" tab;
+       * without one, a sub-page would have had no route to the sections that
+       * are not tabs at all. Back and menu answer different questions — "where
+       * was I" and "where else can I go" — so a phone shows both.
+       */}
+      {showHamburger && (
         <Button
           type="button"
           variant="ghost"

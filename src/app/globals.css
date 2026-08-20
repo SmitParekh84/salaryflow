@@ -267,7 +267,11 @@ html,
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-family:
+    var(--font-sans),
+    system-ui,
+    -apple-system,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -308,6 +312,28 @@ label,
   box-shadow: var(--shadow);
 }
 
+/*
+ * Merchant brand marks. Both variables are set inline per row from Simple
+ * Icons' official hex and its dark-mode lift (see merchant-icon.tsx); the glyph
+ * and its swatch both derive from whichever one this theme selects, so a row
+ * carries one colour rather than four.
+ *
+ * The lift is computed per brand rather than applied as one blanket mix here,
+ * because the brands that need it range from pure black to mid-navy and a
+ * single ratio either leaves Uber a smudge or bleaches Netflix. Without a
+ * `--brand-color` — a merchant with no mark — both declarations fall back to
+ * inherited values and the caller's inline category tint shows through.
+ */
+.brand-chip {
+  --brand-glyph: var(--brand-color);
+  color: var(--brand-glyph);
+  background-color: color-mix(in srgb, var(--brand-glyph) 15%, transparent);
+}
+
+.dark .brand-chip {
+  --brand-glyph: var(--brand-color-dark, var(--brand-color));
+}
+
 /* ============================================================================
    Auth surfaces
    ============================================================================ */
@@ -315,13 +341,23 @@ label,
   background-color: var(--background);
   background-image:
     radial-gradient(circle at 82% 7%, var(--auth-glow) 0, transparent 36%),
-    linear-gradient(145deg, var(--auth-wash-warm) 0%, var(--background) 58%, var(--auth-wash-deep) 100%);
+    linear-gradient(
+      145deg,
+      var(--auth-wash-warm) 0%,
+      var(--background) 58%,
+      var(--auth-wash-deep) 100%
+    );
 }
 
 .auth-showcase {
   background:
     radial-gradient(circle at 82% 18%, var(--auth-showcase-glow) 0, transparent 30%),
-    linear-gradient(145deg, var(--auth-showcase-from) 0%, var(--auth-showcase-via) 52%, var(--auth-showcase-to) 100%);
+    linear-gradient(
+      145deg,
+      var(--auth-showcase-from) 0%,
+      var(--auth-showcase-via) 52%,
+      var(--auth-showcase-to) 100%
+    );
 }
 
 .auth-showcase::after {
@@ -362,7 +398,6 @@ label,
 
 /* Apple HIG: translucent surfaces go frosty-solid, never disappear. */
 @media (prefers-reduced-transparency: reduce) {
-
   .auth-form-surface,
   .auth-segment,
   .glass {
@@ -373,7 +408,6 @@ label,
 }
 
 @media (prefers-contrast: more) {
-
   .auth-form-surface,
   .auth-segment {
     background: var(--surface);
@@ -426,15 +460,16 @@ label,
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg,
-      transparent,
-      color-mix(in srgb, var(--foreground) 8%, transparent),
-      transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--foreground) 8%, transparent),
+    transparent
+  );
   animation: shimmer 1.6s infinite;
 }
 
 @keyframes floaty {
-
   0%,
   100% {
     transform: translateY(0);
@@ -452,7 +487,6 @@ label,
 /* Apple HIG: reduced motion means a gentler equivalent, not a dead interface.
    Opacity and color feedback survive; travel and looping oscillation do not. */
 @media (prefers-reduced-motion: reduce) {
-
   .floaty,
   .shimmer::after {
     animation: none;
