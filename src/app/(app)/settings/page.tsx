@@ -6,6 +6,7 @@ const SETTINGS_SECTIONS = new Set<SettingsSection>([
   "accounts",
   "categories",
   "planning",
+  "vehicle",
   "system",
 ]);
 
