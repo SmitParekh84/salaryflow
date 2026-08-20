@@ -61,17 +61,17 @@ export const CategoryDonut = dynamic(() => import("./charts").then((m) => m.Cate
   loading: () => <DonutFallback />,
 });
 
-export const IncomeExpenseBars = dynamic(
-  () => import("./charts").then((m) => m.IncomeExpenseBars),
-  { ssr: false, loading: () => <ChartFallback height={220} /> },
+export const MileageTrendChart = dynamic(
+  () => import("./charts").then((m) => m.MileageTrendChart),
+  { ssr: false, loading: () => <ChartFallback height={200} /> },
 );
 
-export const MonthlyBars = dynamic(() => import("./charts").then((m) => m.MonthlyBars), {
+export const CashFlowBars = dynamic(() => import("./charts").then((m) => m.CashFlowBars), {
   ssr: false,
   loading: () => <ChartFallback height={240} />,
 });
 
-export const MileageTrendChart = dynamic(
-  () => import("./charts").then((m) => m.MileageTrendChart),
-  { ssr: false, loading: () => <ChartFallback height={200} /> },
+export const CategoryMonthlyBars = dynamic(
+  () => import("./charts").then((m) => m.CategoryMonthlyBars),
+  { ssr: false, loading: () => <ChartFallback height={220} /> },
 );
