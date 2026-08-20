@@ -115,20 +115,37 @@ export default function AppLayoutClient({ children }: { children: React.ReactNod
 
   const isHamburger = navMode === "hamburger";
 
+  /*
+   * Back is for depth, not for "anywhere but home".
+   *
+   * This used to be `pathname !== "/dashboard"`, which put a back arrow on
+   * /analytics, /expenses and /bills — tabs you reach by tapping the bar, not by
+   * travelling into anything. Paired with the menu button it left two controls
+   * competing for the same corner and nothing to go back to.
+   *
+   * A nav destination gets the menu; anything the nav cannot reach — a report
+   * drill-down, one account, a settings section, the settings-only pages — gets
+   * back. Exactly one of the two, decided here so the bar never has to guess.
+   */
+  const isNavDestination = NAV_ITEMS.some(
+    (item) => !("settingsOnly" in item && item.settingsOnly) && item.href === pathname,
+  );
+  const showBack = !isNavDestination || Boolean(settingsSectionTitle);
+
   return (
     <div className="min-h-screen">
       <Sidebar />
       <div className="lg:pl-64">
         <TopBar
           title={title}
-          showBack={pathname !== "/dashboard"}
+          showBack={showBack}
           onBack={goBack}
           /*
-           * Shown in both nav modes now. With "More" gone from the bottom bar,
-           * the drawer is the only way to the sections that are not tabs, so the
-           * button that opens it cannot be exclusive to hamburger mode.
+           * Shown in both nav modes, because with "More" gone from the bottom bar
+           * the drawer is the only route to the sections that are not tabs — but
+           * only where there is no back arrow, so the two never share the corner.
            */
-          showHamburger
+          showHamburger={!showBack}
           onHamburger={() => setHamburgerOpen(true)}
         />
         <main

@@ -8,19 +8,19 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Checkbox, Input, Label, Select } from "@/components/ui/input";
 import { Modal, ModalFooter } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
+import { TransferSheet } from "@/features/accounts/transfer-sheet";
 import { AllocationSheet } from "@/features/goals/allocation-sheet";
-import { accountAllocated, accountFree, goalSaved, isOverAllocated } from "@/lib/allocations";
+import { accountAllocated, accountFree, isOverAllocated } from "@/lib/allocations";
 import { creditCardUsage } from "@/lib/credit-cards";
 import { accountSchema, creditCardSchema } from "@/lib/schemas";
 import { useFinanceStore } from "@/lib/store";
 import type {
   AccountPurpose,
-  AccountTransferMode,
   BankAccount,
   BankAccountType,
   CreditCard as CreditCardType,
 } from "@/lib/types";
-import { currencySymbol, formatDate, formatMoney, localDateInputValue } from "@/lib/utils";
+import { currencySymbol, formatDate, formatMoney } from "@/lib/utils";
 import {
   ArrowRight,
   ArrowRightLeft,
@@ -62,16 +62,6 @@ const EMPTY_CARD_FORM = {
   statementDay: "1",
 };
 
-const EMPTY_TRANSFER_FORM = {
-  sourceAccountId: "",
-  destinationAccountId: "",
-  amount: 0,
-  date: localDateInputValue(),
-  note: "",
-  goalId: "",
-  goalAmount: 0,
-};
-
 export function AccountsView() {
   const router = useRouter();
   const accounts = useFinanceStore((state) => state.accounts);
@@ -89,7 +79,6 @@ export function AccountsView() {
   const updateCreditCard = useFinanceStore((state) => state.updateCreditCard);
   const deleteCreditCard = useFinanceStore((state) => state.deleteCreditCard);
   const accountTransfers = useFinanceStore((state) => state.accountTransfers);
-  const addAccountTransfer = useFinanceStore((state) => state.addAccountTransfer);
   const completeAccountTransfer = useFinanceStore((state) => state.completeAccountTransfer);
 
   const [open, setOpen] = useState(false);
@@ -99,8 +88,6 @@ export function AccountsView() {
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [cardForm, setCardForm] = useState(EMPTY_CARD_FORM);
   const [transferOpen, setTransferOpen] = useState(false);
-  const [transferForm, setTransferForm] = useState(EMPTY_TRANSFER_FORM);
-  const [transferError, setTransferError] = useState("");
   const [accountError, setAccountError] = useState("");
   const [formErrors, setFormErrors] = useState<Partial<Record<string, string>>>({});
   const [cardErrors, setCardErrors] = useState<Partial<Record<string, string>>>({});
@@ -233,39 +220,9 @@ export function AccountsView() {
     await syncWithServer();
   }
 
-  function openTransfer() {
-    const active = accounts.filter((account) => account.status === "active");
-    setTransferForm({
-      ...EMPTY_TRANSFER_FORM,
-      sourceAccountId: active[0]?.id ?? "",
-      destinationAccountId: active[1]?.id ?? "",
-    });
-    setTransferError("");
-    setTransferOpen(true);
-  }
-
-  function saveTransfer(mode: AccountTransferMode) {
-    if (transferForm.goalAmount > transferForm.amount) {
-      setTransferError("The goal amount cannot be more than the transfer amount.");
-      return;
-    }
-    const success = addAccountTransfer(
-      {
-        ...transferForm,
-        amount: Number(transferForm.amount),
-        goalId: transferForm.goalId || undefined,
-        goalAmount: transferForm.goalId ? Number(transferForm.goalAmount) : undefined,
-        date: new Date(`${transferForm.date}T12:00:00`).toISOString(),
-        note: transferForm.note.trim() || undefined,
-      },
-      mode,
-    );
-    if (!success) {
-      setTransferError("Choose two different accounts and check the source balance.");
-      return;
-    }
-    setTransferOpen(false);
-  }
+  // The form itself, its validation and the three save modes live in
+  // TransferSheet — this page only decides when it is open.
+  const openTransfer = () => setTransferOpen(true);
 
   async function toggleBalanceMask(account: BankAccount) {
     updateAccount(account.id, { maskBalance: !account.maskBalance });
@@ -788,165 +745,7 @@ export function AccountsView() {
         </div>
       </Modal>
 
-      <Modal
-        open={transferOpen}
-        onClose={() => setTransferOpen(false)}
-        title="Transfer between banks"
-      >
-        <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label>From</Label>
-              <Select
-                value={transferForm.sourceAccountId}
-                onChange={(event) =>
-                  setTransferForm({ ...transferForm, sourceAccountId: event.target.value })
-                }
-              >
-                {accounts
-                  .filter((account) => account.status === "active")
-                  .map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.bankName}
-                      {account.hiddenFromAccounts ? " (hidden)" : ""}
-                    </option>
-                  ))}
-              </Select>
-            </div>
-            <div>
-              <Label>To</Label>
-              <Select
-                value={transferForm.destinationAccountId}
-                onChange={(event) => {
-                  const destinationAccountId = event.target.value;
-                  const selectedGoal = goals.find((goal) => goal.id === transferForm.goalId);
-                  const keepGoal =
-                    selectedGoal &&
-                    (!selectedGoal.preferredAccountId ||
-                      selectedGoal.preferredAccountId === destinationAccountId);
-                  setTransferForm({
-                    ...transferForm,
-                    destinationAccountId,
-                    goalId: keepGoal ? transferForm.goalId : "",
-                    goalAmount: keepGoal ? transferForm.goalAmount : 0,
-                  });
-                }}
-              >
-                {accounts
-                  .filter((account) => account.status === "active")
-                  .map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.bankName}
-                      {account.hiddenFromAccounts ? " (hidden)" : ""}
-                    </option>
-                  ))}
-              </Select>
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label>Amount</Label>
-              <Input
-                type="number"
-                step="0.01"
-                inputMode="decimal"
-                min={0.01}
-                value={transferForm.amount || ""}
-                onChange={(event) => {
-                  const amount = Number(event.target.value);
-                  setTransferForm({
-                    ...transferForm,
-                    amount,
-                    goalAmount: transferForm.goalId ? Math.min(transferForm.goalAmount, amount) : 0,
-                  });
-                }}
-              />
-            </div>
-            <div>
-              <Label>Transfer date</Label>
-              <Input
-                type="date"
-                value={transferForm.date}
-                onChange={(event) => setTransferForm({ ...transferForm, date: event.target.value })}
-              />
-            </div>
-          </div>
-          <div className="rounded-xl bg-surface-2 p-3">
-            <Label htmlFor="transfer-goal">Reserve for a goal (optional)</Label>
-            <div className="mt-1 grid gap-3 sm:grid-cols-2">
-              <Select
-                id="transfer-goal"
-                value={transferForm.goalId}
-                onChange={(event) => {
-                  const goalId = event.target.value;
-                  setTransferForm({
-                    ...transferForm,
-                    goalId,
-                    goalAmount: goalId ? transferForm.amount : 0,
-                  });
-                  setTransferError("");
-                }}
-              >
-                <option value="">Do not reserve this transfer</option>
-                {goals
-                  .filter(
-                    (goal) =>
-                      !goal.balanceAccountId &&
-                      goalSaved(goal, accounts) < goal.target &&
-                      (!goal.preferredAccountId ||
-                        goal.preferredAccountId === transferForm.destinationAccountId),
-                  )
-                  .map((goal) => (
-                    <option key={goal.id} value={goal.id}>
-                      {goal.name}
-                    </option>
-                  ))}
-              </Select>
-              <div>
-                <Label htmlFor="transfer-goal-amount">Amount to reserve</Label>
-                <Input
-                  id="transfer-goal-amount"
-                  type="number"
-                  step="0.01"
-                  inputMode="decimal"
-                  min={0}
-                  max={transferForm.amount || undefined}
-                  disabled={!transferForm.goalId}
-                  value={transferForm.goalAmount || ""}
-                  onChange={(event) =>
-                    setTransferForm({
-                      ...transferForm,
-                      goalAmount: Number(event.target.value),
-                    })
-                  }
-                />
-              </div>
-            </div>
-            <p className="mt-2 text-xs leading-relaxed text-muted">
-              Only this reserved amount counts toward the goal. Money already in the destination
-              bank remains free unless you assigned it earlier.
-            </p>
-          </div>
-          <div>
-            <Label>Note (optional)</Label>
-            <Input
-              value={transferForm.note}
-              onChange={(event) => setTransferForm({ ...transferForm, note: event.target.value })}
-              placeholder="e.g. October salary savings"
-            />
-          </div>
-          {transferError && <p className="text-sm text-danger">{transferError}</p>}
-          <ModalFooter className="flex-wrap">
-            <Button variant="secondary" onClick={() => saveTransfer("scheduled")}>
-              Schedule
-            </Button>
-            <Button variant="secondary" onClick={() => saveTransfer("already-transferred")}>
-              Already transferred
-            </Button>
-            <Button onClick={() => saveTransfer("transfer-now")}>Transfer now</Button>
-          </ModalFooter>
-        </div>
-      </Modal>
+      <TransferSheet open={transferOpen} onClose={() => setTransferOpen(false)} />
 
       <Modal
         open={cardOpen}

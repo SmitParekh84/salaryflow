@@ -8,6 +8,22 @@ export function goalSaved(goal: Goal, accounts: BankAccount[] = []): number {
   return (goal.contributions ?? []).reduce((sum, entry) => sum + entry.amount, 0);
 }
 
+/**
+ * The account a "save to a goal" action should move money out of.
+ *
+ * The account someone marked as their savings account, or any active one if
+ * they never marked it — an allocation has to come from somewhere, and the
+ * sheet lets them change it. Returns undefined only when there is no active
+ * account at all, which is what the callers disable the action on.
+ */
+export function defaultSavingsAccount(accounts: BankAccount[]): BankAccount | undefined {
+  return (
+    accounts.find(
+      (account) => account.status === "active" && account.defaultFor?.includes("savings"),
+    ) ?? accounts.find((account) => account.status === "active")
+  );
+}
+
 /** Money in this goal that is not yet linked to a bank account. */
 export function unassignedSaved(goal: Goal): number {
   return (goal.contributions ?? [])

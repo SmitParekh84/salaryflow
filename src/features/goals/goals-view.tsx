@@ -8,7 +8,7 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { Modal, ModalFooter } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
 import { AllocationSheet } from "@/features/goals/allocation-sheet";
-import { goalAccountBreakdown, goalSaved } from "@/lib/allocations";
+import { defaultSavingsAccount, goalAccountBreakdown, goalSaved } from "@/lib/allocations";
 import { goalContributionStep, projectGoal, whatIfDelta } from "@/lib/goal-projection";
 import { GOAL_TYPES } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
@@ -48,10 +48,7 @@ export function GoalsView() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [allocateOpen, setAllocateOpen] = useState(false);
   const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
-  const savingsAccount =
-    accounts.find(
-      (account) => account.status === "active" && account.defaultFor?.includes("savings"),
-    ) ?? accounts.find((account) => account.status === "active");
+  const savingsAccount = defaultSavingsAccount(accounts);
 
   const openNew = () => {
     setEditingId(null);

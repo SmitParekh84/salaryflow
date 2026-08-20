@@ -88,11 +88,18 @@ export const EMAIL_COLORS = {
 export const EMAIL_COLORS_DARK = {
   brand: "#70d2df",
   brandOn: "#031b2a",
-  background: "#020912",
-  surface: "#071321",
-  border: "#26384a",
-  foreground: "#f2f7fa",
-  muted: "#9aabba",
+  /*
+   * Re-synced with the LAYER 1 dark ramp. These still carried the near-black
+   * #020912 / #071321 the app moved away from when dark mode was rebuilt as an
+   * elevation ramp, so an Aartha email in dark mode looked like a different
+   * product to the app that sent it. `foreground` matches --grey-dark-900 for
+   * the same reason it changed there: white body text on near-black glares.
+   */
+  background: "#151d29",
+  surface: "#202a38",
+  border: "#2c3849",
+  foreground: "#ccd8e3",
+  muted: "#a4b5c6",
   subtle: "#8295a6",
 } as const;
 
@@ -102,8 +109,14 @@ export const EMAIL_COLORS_DARK = {
  */
 export const PICKER_DEFAULT_COLOR = "#0ea5e9";
 
-/** Browser/OS chrome colour per theme. Must be literal hex. */
+/**
+ * Browser/OS chrome colour per theme. Must be literal hex.
+ *
+ * Mirrors --background. The dark value was #020912, from before the dark ramp
+ * was raised, which drew a visibly darker band above the app in the installed
+ * PWA — the status bar and the page it sits on should be the same colour.
+ */
 export const THEME_COLORS = {
   light: "#f3f7fa",
-  dark: "#020912",
+  dark: "#151d29",
 } as const;

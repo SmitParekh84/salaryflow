@@ -18,7 +18,7 @@ import { FuelCard } from "@/features/fuel/fuel-card";
 import { SeedPrompt, TransactionList } from "@/features/expenses/transaction-list";
 import { AllocationSheet } from "@/features/goals/allocation-sheet";
 import { useSummary } from "@/hooks/use-summary";
-import { goalSaved } from "@/lib/allocations";
+import { defaultSavingsAccount, goalSaved } from "@/lib/allocations";
 import { billCycle } from "@/lib/bill-cycle";
 import { projectedGoalDate, upcomingBills } from "@/lib/calculations";
 import { currentFinancialYearStart, financialYearLabel } from "@/lib/financial-year";
@@ -68,10 +68,7 @@ export function DashboardView() {
   const topGoal = goals[0];
   const nextBills = upcomingBills(bills, expenses).slice(0, 3);
   const emergencyGoal = goals.find((goal) => goal.type === "Emergency Fund");
-  const savingsAccount =
-    accounts.find(
-      (account) => account.status === "active" && account.defaultFor?.includes("savings"),
-    ) ?? accounts.find((account) => account.status === "active");
+  const savingsAccount = defaultSavingsAccount(accounts);
   // When the emergency fund *is* the top goal, the two cards were the same
   // number twice. The top-goal card already carries it, projected date included.
   const emergency = emergencyGoal && emergencyGoal.id !== topGoal?.id ? emergencyGoal : undefined;

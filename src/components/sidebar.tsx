@@ -4,7 +4,7 @@ import { BRAND } from "@/lib/brand";
 import { NAV_ITEMS } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   BadgeIndianRupee,
   BarChart3,
@@ -15,8 +15,10 @@ import {
   LayoutDashboard,
   ListChecks,
   MoreHorizontal,
+  PiggyBank,
   Plus,
   Receipt,
+  Repeat2,
   Settings,
   Sparkles,
   Target,
@@ -28,8 +30,11 @@ import {
 } from "lucide-react";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { TransferSheet } from "@/features/accounts/transfer-sheet";
 import { ExpenseForm } from "@/features/expenses/expense-form";
+import { AllocationSheet } from "@/features/goals/allocation-sheet";
+import { defaultSavingsAccount } from "@/lib/allocations";
 import { Brand } from "./brand";
 import { Card } from "./ui/card";
 
@@ -206,18 +211,65 @@ export function HamburgerDrawer({ open, onClose }: { open: boolean; onClose: () 
  */
 export function MobileNav() {
   const pathname = usePathname();
+  const accounts = useFinanceStore((s) => s.accounts);
   const [addOpen, setAddOpen] = useState(false);
+  const [allocateOpen, setAllocateOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPathname, setMenuPathname] = useState(pathname);
 
+  const savingsAccount = defaultSavingsAccount(accounts);
+  const activeAccountCount = accounts.filter((account) => account.status === "active").length;
   const pinnedItems = NAV_ITEMS.filter((item) => PINNED_HREFS.includes(item.href));
   // Split around the centre cell, which holds the add button rather than a tab.
   const leftItems = pinnedItems.slice(0, Math.ceil(pinnedItems.length / 2));
   const rightItems = pinnedItems.slice(Math.ceil(pinnedItems.length / 2));
 
+  // Close the fan on navigation, adjusted during render rather than in an
+  // effect so the new route never paints with it still open. Same reasoning as
+  // the drawer in AppLayoutClient.
+  if (pathname !== menuPathname) {
+    setMenuPathname(pathname);
+    setMenuOpen(false);
+  }
+
+  // Escape closes it, like every other dismissable layer in the app. Bound only
+  // while it is open so the app is not listening for keys it cannot use.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen]);
+
   return (
     <>
+      {/* Sibling of the bar, not a child of it: a scrim nested inside would be
+          painted in the bar's own stacking context and cover its tabs. */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.button
+            type="button"
+            aria-label="Close add menu"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => setMenuOpen(false)}
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
       <nav
         aria-label="Mobile navigation"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 px-1 backdrop-blur-xl lg:hidden"
+        className={cn(
+          "fixed inset-x-0 bottom-0 border-t border-border bg-surface/95 px-1 backdrop-blur-xl lg:hidden",
+          // Above the scrim while the fan is open, below it otherwise.
+          menuOpen ? "z-50" : "z-30",
+        )}
       >
         {/*
          * The home-indicator inset is padded onto each tab rather than onto the
@@ -238,21 +290,49 @@ export function MobileNav() {
            * Logging an expense is the one thing this app asks of someone every
            * day, and every route was making them find a button at the top of a
            * scrolled page to do it. It sits in the middle of the bar because
-           * that is the easiest place on a phone for either thumb to reach.
+           * that is the easiest place on a phone for either thumb to reach, and
+           * it fans out to the other two things worth doing from anywhere.
            */}
-          <button
-            onClick={() => setAddOpen(true)}
-            aria-label="Add expense"
-            className="flex items-center justify-center outline-none"
-            style={{
-              height: "calc(4rem + env(safe-area-inset-bottom))",
-              paddingBottom: "env(safe-area-inset-bottom)",
-            }}
-          >
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-transform duration-150 active:scale-[0.92]">
-              <Plus className="h-6 w-6" />
-            </span>
-          </button>
+          <div className="relative flex items-center justify-center">
+            <AddFan
+              open={menuOpen}
+              savingsAccount={Boolean(savingsAccount)}
+              canTransfer={activeAccountCount >= 2}
+              onExpense={() => {
+                setMenuOpen(false);
+                setAddOpen(true);
+              }}
+              onSaveToGoal={() => {
+                setMenuOpen(false);
+                setAllocateOpen(true);
+              }}
+              onTransfer={() => {
+                setMenuOpen(false);
+                setTransferOpen(true);
+              }}
+            />
+            <button
+              onClick={() => setMenuOpen((previous) => !previous)}
+              aria-label={menuOpen ? "Close add menu" : "Add"}
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+              className="flex items-center justify-center outline-none"
+              style={{
+                height: "calc(4rem + env(safe-area-inset-bottom))",
+                paddingBottom: "env(safe-area-inset-bottom)",
+              }}
+            >
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-transform duration-150 active:scale-[0.92]">
+                <motion.span
+                  animate={{ rotate: menuOpen ? 45 : 0 }}
+                  transition={{ type: "spring", bounce: 0.3, duration: 0.35 }}
+                  className="flex"
+                >
+                  <Plus className="h-6 w-6" />
+                </motion.span>
+              </span>
+            </button>
+          </div>
 
           {rightItems.map((item) => (
             <MobileNavTab key={item.href} item={item} pathname={pathname} />
@@ -261,7 +341,144 @@ export function MobileNav() {
       </nav>
 
       <ExpenseForm open={addOpen} onClose={() => setAddOpen(false)} />
+      {savingsAccount && (
+        <AllocationSheet
+          open={allocateOpen}
+          onClose={() => setAllocateOpen(false)}
+          accountId={savingsAccount.id}
+          title="Save to a goal"
+        />
+      )}
+      <TransferSheet open={transferOpen} onClose={() => setTransferOpen(false)} />
     </>
+  );
+}
+
+/**
+ * The three actions, fanned out in an arc above the add button.
+ *
+ * Positions are measured from the button's own cell, so the arc travels with it
+ * and needs no knowledge of the screen width. Each bubble carries a caption:
+ * the arc is what makes this feel like a phone control, but three unlabelled
+ * circles are a memory test, and there is room for the words.
+ */
+const FAN_ACTIONS = [
+  {
+    key: "expense",
+    label: "Expense",
+    icon: Receipt,
+    accent: "var(--chart-expense)",
+    x: -96,
+    y: -20,
+  },
+  { key: "goal", label: "Save to goal", icon: PiggyBank, accent: "var(--success)", x: 0, y: -68 },
+  { key: "transfer", label: "Transfer", icon: Repeat2, accent: "var(--primary)", x: 96, y: -20 },
+] as const;
+
+/** Spoken labels — the captions are abbreviated to fit the bubbles. */
+const ACTION_LABELS: Record<(typeof FAN_ACTIONS)[number]["key"], string> = {
+  expense: "Add expense",
+  goal: "Save to a goal",
+  transfer: "Transfer money",
+};
+
+function AddFan({
+  open,
+  savingsAccount,
+  canTransfer,
+  onExpense,
+  onSaveToGoal,
+  onTransfer,
+}: {
+  open: boolean;
+  /** Whether there is an account to allocate from; the goal action needs one. */
+  savingsAccount: boolean;
+  /** A transfer needs two active accounts to move money between. */
+  canTransfer: boolean;
+  onExpense: () => void;
+  onSaveToGoal: () => void;
+  onTransfer: () => void;
+}) {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <div role="menu" aria-label="Add" className="pointer-events-none absolute inset-0">
+          {FAN_ACTIONS.map((action, index) => {
+            const Icon = action.icon;
+            const disabled =
+              (action.key === "goal" && !savingsAccount) ||
+              (action.key === "transfer" && !canTransfer);
+            const content = (
+              <>
+                <span
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-surface card-shadow"
+                  style={{ color: action.accent }}
+                >
+                  <Icon className="h-5 w-5" />
+                </span>
+                {/* White in both themes: the caption always sits on the scrim,
+                    which is the same dark wash whichever theme is active. */}
+                <span className="mt-1 text-center text-[10px] font-medium leading-tight text-white drop-shadow-sm">
+                  {action.label}
+                </span>
+              </>
+            );
+
+            return (
+              <motion.div
+                key={action.key}
+                className="pointer-events-auto absolute bottom-full left-1/2 flex w-24 flex-col items-center"
+                style={{ marginLeft: -48 }}
+                // Travel out of the button itself, so the bubbles read as coming
+                // from the thing that was pressed. Reduced motion keeps the
+                // arrangement and drops the flight.
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.3, x: 0, y: 16 }}
+                animate={
+                  reduceMotion
+                    ? { opacity: 1, x: action.x, y: action.y }
+                    : { opacity: 1, scale: 1, x: action.x, y: action.y }
+                }
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.3, x: 0, y: 16 }}
+                transition={
+                  reduceMotion
+                    ? { duration: 0.12 }
+                    : {
+                        type: "spring",
+                        bounce: 0.35,
+                        duration: 0.42,
+                        // Outward from the centre bubble, so the fan opens as one
+                        // gesture rather than three separate pops.
+                        delay: (open ? Math.abs(1 - index) : 0) * 0.05,
+                      }
+                }
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={disabled}
+                  onClick={
+                    action.key === "expense"
+                      ? onExpense
+                      : action.key === "goal"
+                        ? onSaveToGoal
+                        : onTransfer
+                  }
+                  aria-label={ACTION_LABELS[action.key]}
+                  className={cn(
+                    "flex flex-col items-center rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-(--ring) active:scale-[0.94]",
+                    disabled && "pointer-events-none opacity-40",
+                  )}
+                >
+                  {content}
+                </button>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+    </AnimatePresence>
   );
 }
 

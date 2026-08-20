@@ -71,15 +71,33 @@
   --grey-dark-50: #202a38;
   --grey-dark-100: #2c3849;
   --grey-dark-500: #a4b5c6;
-  --grey-dark-900: #f4f8fb;
+  /*
+   * Dark-mode body text, and deliberately not white.
+   *
+   * This was #f4f8fb — luminance 0.93, white in all but name — which put body
+   * copy at 15.9:1 against the page. AAA asks for 7:1; twice that is not twice
+   * as legible, it is glare, and on an OLED panel in a dark room the glyphs
+   * bloom into their own edges. At 0.67 it still clears AAA on every surface in
+   * the ramp (11.7:1 on the page, 8.2:1 on the raised one) and stops the screen
+   * being a lamp.
+   */
+  --grey-dark-900: #ccd8e3;
 
   /* Status */
   --green-500: #16a34a;
   --green-400: #34d399;
-  --amber-500: #d97706;
+  /*
+   * Both -500 steps carry status text on white, so they are set dark enough to
+   * clear 4.5:1 at small sizes. The old amber (#d97706) reached only 3.2:1 —
+   * "₹1,500 over" in a 12px line was the lightest thing on the card that was
+   * supposed to be a warning.
+   */
+  --amber-500: #b45309;
   --amber-400: #fbbf24;
   --red-500: #dc2626;
-  --red-400: #f87171;
+  /* Lifted a step so it still clears 4.5:1 on the raised dark surface, where the
+     old #f87171 fell to 4.3:1. */
+  --red-400: #fb8f8f;
 
   /* Data — category and chart series hues.
      Deliberately shared between light and dark: these are mid-chroma tones
@@ -126,8 +144,15 @@
   --primary-hover: var(--brand-700);
   --accent: var(--brand-500);
 
-  --success: #078b6d;
+  /* 4.3:1 before — under AA for the 11px "₹13,066 remaining" lines it labels. */
+  --success: #047857;
   --warning: var(--amber-500);
+  /*
+   * Ink for text sitting *on* --danger: the notification count, and the label of
+   * a destructive button. White works on the deep light-mode red; on the lighter
+   * dark-mode red it reads at 2.2:1, so that theme uses a near-black instead.
+   */
+  --danger-foreground: #ffffff;
   --danger: var(--red-500);
   --ring: color-mix(in srgb, var(--brand-600) 35%, transparent);
 
@@ -207,6 +232,7 @@
   --success: #34d6a2;
   --warning: var(--amber-400);
   --danger: var(--red-400);
+  --danger-foreground: #2b0a0a;
   --ring: color-mix(in srgb, var(--brand-400) 40%, transparent);
 
   /*
@@ -253,6 +279,7 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --radius-xl: 0.875rem;

@@ -191,8 +191,17 @@ export function CashFlowChart({
             name === "inflow" ? "Income" : "Spending",
           ]}
         />
+        {/*
+         * Recharts paints legend labels in their series colour, which put
+         * "Spending" on screen as orange-on-white at 2.8:1. The swatch beside it
+         * already carries the colour; the word only has to be readable.
+         */}
         <Legend
-          formatter={(value) => (value === "inflow" ? "Income" : "Spending")}
+          formatter={(value) => (
+            <span style={{ color: "var(--foreground)" }}>
+              {value === "inflow" ? "Income" : "Spending"}
+            </span>
+          )}
           wrapperStyle={{ fontSize: 11 }}
         />
         <Bar dataKey="inflow" fill={CHART_COLORS.income} radius={[5, 5, 0, 0]} maxBarSize={34} />

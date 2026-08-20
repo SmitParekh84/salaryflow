@@ -59,13 +59,8 @@ export function TopBar({
     // the status bar while the controls clear it. The inset is 0 on Android and
     // desktop, where `max()` falls through to the original 0.875rem.
     <header className="sticky top-0 z-20 flex items-center gap-1.5 border-b border-border bg-background/70 px-3 pb-3.5 pt-[max(0.875rem,env(safe-area-inset-top))] backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-8">
-      {/*
-       * The menu button stays even when there is a back arrow. It used to give
-       * way to it, which was survivable while the bottom bar had a "More" tab;
-       * without one, a sub-page would have had no route to the sections that
-       * are not tabs at all. Back and menu answer different questions — "where
-       * was I" and "where else can I go" — so a phone shows both.
-       */}
+      {/* Menu and back are mutually exclusive by the time they get here — the
+          layout decides which of the two this route wants. */}
       {showHamburger && (
         <Button
           type="button"
@@ -125,7 +120,7 @@ export function TopBar({
           <Button variant="secondary" size="icon" aria-label="Notifications" className="relative">
             <Bell className="h-4 w-4" />
             {unread > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[9px] font-bold text-danger-foreground">
                 {unread}
               </span>
             )}

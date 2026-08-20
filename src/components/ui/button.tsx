@@ -14,8 +14,10 @@ export const buttonVariants = cva(
           "bg-primary text-primary-foreground shadow-sm shadow-primary/20 hover:bg-primary/90",
         secondary: "bg-surface-2 text-foreground hover:bg-border",
         ghost: "text-foreground hover:bg-surface-2",
-        danger: "bg-danger text-white hover:bg-danger/90",
-        destructive: "bg-danger text-white hover:bg-danger/90",
+        // Not `text-white`: --danger is a lighter red in dark mode, where white
+        // sits on it at 2.2:1. The paired token flips with the theme.
+        danger: "bg-danger text-danger-foreground hover:bg-danger/90",
+        destructive: "bg-danger text-danger-foreground hover:bg-danger/90",
         success: "bg-success text-white hover:bg-success/90",
         warning: "bg-warning text-white hover:bg-warning/90",
         outline: "bg-transparent text-foreground ring-1 ring-inset ring-border hover:bg-surface-2",
