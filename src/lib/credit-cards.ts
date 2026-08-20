@@ -22,7 +22,13 @@ export function creditCardStatementPeriod(card: CreditCard, now = new Date()) {
   start.setHours(0, 0, 0, 0);
   const end = new Date(statementEnd);
   end.setHours(23, 59, 59, 999);
-  return { start, end };
+  const previousStatementEnd = new Date(previousStatement);
+  previousStatementEnd.setHours(23, 59, 59, 999);
+  // `previousStatementEnd` is when the last bill closed. Callers need it to say
+  // when an unpaid balance actually fell due — `end` is the *next* close, and
+  // dating an overdue amount to that is how money owed today came to be
+  // presented as next month's problem.
+  return { start, end, previousStatementEnd };
 }
 
 export function creditCardUsage(
@@ -31,20 +37,43 @@ export function creditCardUsage(
   incomes: Income[],
   now = new Date(),
 ) {
-  const { start, end } = creditCardStatementPeriod(card, now);
+  const { start, end, previousStatementEnd } = creditCardStatementPeriod(card, now);
   const isRecorded = (date: string) => parseFinancialDate(date) <= now;
-  const charges = expenses
-    .filter((expense) => expense.accountId === card.id && isRecorded(expense.date))
+
+  const cardCharges = expenses.filter(
+    (expense) => expense.accountId === card.id && isRecorded(expense.date),
+  );
+  const charges = cardCharges.reduce((sum, expense) => sum + expense.amount, 0);
+  // Anything before this period opened belongs to a statement that has already
+  // been issued, so it is owed now rather than at the next close.
+  const billedCharges = cardCharges
+    .filter((expense) => parseFinancialDate(expense.date) < start)
     .reduce((sum, expense) => sum + expense.amount, 0);
+  const currentCharges = charges - billedCharges;
+
   const credits = incomes
     .filter((income) => income.accountId === card.id && isRecorded(income.date))
     .reduce((sum, income) => sum + income.amount, 0);
-  const outstanding = Math.max(0, charges - credits);
+
+  // Payments clear the oldest debt first, the way an issuer applies them, and
+  // anything left over spills onto the statement still accruing.
+  const billedOutstanding = Math.max(0, billedCharges - credits);
+  const unusedCredits = Math.max(0, credits - billedCharges);
+  const currentOutstanding = Math.max(0, currentCharges - unusedCredits);
+  // Identical to the old `max(0, charges - credits)` in every case, so the
+  // running total the rest of the app reads is unchanged.
+  const outstanding = billedOutstanding + currentOutstanding;
+
   return {
     start,
     end,
+    previousStatementEnd,
     charges,
     credits,
+    /** Owed on a statement that has already closed. Due now. */
+    billedOutstanding,
+    /** Accruing on the statement that closes on `end`. */
+    currentOutstanding,
     outstanding,
     available: Math.max(0, card.creditLimit - outstanding),
     utilization: card.creditLimit > 0 ? (outstanding / card.creditLimit) * 100 : 0,

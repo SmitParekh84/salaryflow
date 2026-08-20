@@ -825,7 +825,9 @@ export function AccountsView() {
               <Label>Amount</Label>
               <Input
                 type="number"
-                min={1}
+                step="0.01"
+                inputMode="decimal"
+                min={0.01}
                 value={transferForm.amount || ""}
                 onChange={(event) => {
                   const amount = Number(event.target.value);
@@ -882,6 +884,8 @@ export function AccountsView() {
                 <Input
                   id="transfer-goal-amount"
                   type="number"
+                  step="0.01"
+                  inputMode="decimal"
                   min={0}
                   max={transferForm.amount || undefined}
                   disabled={!transferForm.goalId}

@@ -149,7 +149,8 @@ export function AllocationSheet({
             <Input
               id={`allocate-${goal.id}`}
               type="number"
-              inputMode="numeric"
+              step="0.01"
+              inputMode="decimal"
               min={0}
               max={Math.max(0, goal.target - goalSaved(goal, accounts))}
               value={draft[goal.id] || ""}

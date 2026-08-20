@@ -96,6 +96,7 @@ export function VehicleSettings() {
             <Input
               id="vehicle-min"
               type="number"
+              step="0.1"
               inputMode="decimal"
               value={draft.minKmpl}
               onChange={(event) => update({ minKmpl: event.target.value })}
@@ -106,6 +107,7 @@ export function VehicleSettings() {
             <Input
               id="vehicle-max"
               type="number"
+              step="0.1"
               inputMode="decimal"
               value={draft.maxKmpl}
               onChange={(event) => update({ maxKmpl: event.target.value })}

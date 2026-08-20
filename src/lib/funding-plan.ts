@@ -77,19 +77,45 @@ export function buildFundingPlan({
   );
   const items: FundingPlanItem[] = [];
 
+  /**
+   * A card can owe two different things at once, and they are not due together.
+   *
+   * A statement that has closed unpaid is owed now; purchases made since belong
+   * to the statement still accruing. Reporting one total against the next close
+   * told a user that money already overdue could wait another month, and they
+   * reserved too little this cycle.
+   */
+  const closeLabel = (date: Date) =>
+    date.toLocaleDateString("en-US", { day: "numeric", month: "short" });
+
   for (const card of creditCards.filter((card) => card.status === "active")) {
     const usage = creditCardUsage(card, expenses, incomes, now);
-    if (usage.outstanding <= 0) continue;
-    items.push({
-      id: `card-${card.id}`,
-      kind: "credit-card",
-      label: `${card.name} statement reserve`,
-      amount: usage.outstanding,
-      destinationAccountId: reserveAccount?.id,
-      timing: `Statement closes ${usage.end.toLocaleDateString("en-US", { day: "numeric", month: "short" })}`,
-      paidAmount: 0,
-      remainingAmount: usage.outstanding,
-    });
+
+    if (usage.billedOutstanding > 0) {
+      items.push({
+        id: `card-${card.id}-due`,
+        kind: "credit-card",
+        label: `${card.name} statement due`,
+        amount: usage.billedOutstanding,
+        destinationAccountId: reserveAccount?.id,
+        timing: `Closed ${closeLabel(usage.previousStatementEnd)} · due now`,
+        paidAmount: 0,
+        remainingAmount: usage.billedOutstanding,
+      });
+    }
+
+    if (usage.currentOutstanding > 0) {
+      items.push({
+        id: `card-${card.id}-open`,
+        kind: "credit-card",
+        label: `${card.name} accruing`,
+        amount: usage.currentOutstanding,
+        destinationAccountId: reserveAccount?.id,
+        timing: `Statement closes ${closeLabel(usage.end)}`,
+        paidAmount: 0,
+        remainingAmount: usage.currentOutstanding,
+      });
+    }
   }
 
   for (const investment of investmentBills.length > 0 ? [] : investments) {
