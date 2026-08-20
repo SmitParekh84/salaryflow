@@ -20,14 +20,21 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   images: {
     /*
-     * How long the browser may keep an optimised image.
+     * Serve images as they are, straight from `public/`.
      *
-     * The optimiser's own default sends `max-age=0, must-revalidate`, so the
-     * profile avatar in the top bar was re-requested on every page load — a
-     * round trip per navigation for a picture that never changes. A week of
-     * freshness matches what `/icons/` already uses below.
+     * The host's image optimiser answers `402 Payment Required`
+     * (`OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED`) once the account's
+     * optimisation allowance is gone, and every `next/image` on the site went
+     * through it — the brand mark and the profile avatars all resolved to a
+     * broken image in production while working perfectly in development.
+     *
+     * Nothing here needs it. There are five images: one brand mark and four
+     * avatars, all small PNGs already exported at the size they are shown at.
+     * Optimising them saved a few kilobytes and cost the whole feature. The
+     * `Cache-Control` rules in `headers()` below do the part that actually
+     * mattered — a week of browser caching instead of a request per page load.
      */
-    minimumCacheTTL: 604800,
+    unoptimized: true,
   },
   experimental: {
     /**
