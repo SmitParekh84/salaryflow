@@ -89,10 +89,19 @@ export function TopBar({
         <h1 className="truncate text-base font-semibold tracking-tight sm:text-lg">{title}</h1>
       </div>
 
+      {/*
+       * Search is a top-level control on a phone too. It used to live only in
+       * the avatar menu below `sm` — two taps and a guess about where it went
+       * for the fastest way to find a transaction. The icon collapses to a
+       * square button here and grows the label and shortcut hint on wider
+       * screens, where there is room for them.
+       */}
       <Button
         variant="secondary"
+        size="icon"
         onClick={() => setOpenSearch(true)}
-        className="hidden text-muted sm:flex"
+        aria-label="Search"
+        className="text-muted sm:w-auto sm:px-3"
       >
         <Search className="h-4 w-4" />
         <span className="hidden md:inline">Search…</span>
@@ -209,17 +218,9 @@ export function TopBar({
               <div className="mt-1 text-xs font-normal text-muted">{user.email}</div>
             </DropdownMenuPrimitive.Label>
             <DropdownMenuPrimitive.Separator className="-mx-1 my-1 h-px bg-border" />
+            {/* Search moved into the bar itself; only the theme switch still
+                needs a home here on a phone. */}
             <div className="sm:hidden">
-              <DropdownMenuPrimitive.Item asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setOpenSearch(true)}
-                  className="w-full justify-start outline-none"
-                >
-                  <Search className="h-4 w-4" /> Search
-                </Button>
-              </DropdownMenuPrimitive.Item>
               <DropdownMenuPrimitive.Item asChild>
                 <ThemeToggle menu />
               </DropdownMenuPrimitive.Item>

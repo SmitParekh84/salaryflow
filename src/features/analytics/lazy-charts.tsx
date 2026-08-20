@@ -27,10 +27,10 @@ function ChartFallback({ height }: { height: number }) {
   return <Skeleton className="w-full" style={{ height }} />;
 }
 
-export const SpendTrendChart = dynamic(
-  () => import("./charts").then((m) => m.SpendTrendChart),
-  { ssr: false, loading: () => <ChartFallback height={200} /> },
-);
+export const SpendTrendChart = dynamic(() => import("./charts").then((m) => m.SpendTrendChart), {
+  ssr: false,
+  loading: () => <ChartFallback height={200} />,
+});
 
 export const CashFlowChart = dynamic(() => import("./charts").then((m) => m.CashFlowChart), {
   ssr: false,
@@ -80,10 +80,10 @@ function StackedDonutFallback() {
   );
 }
 
-export const CategoryDonutStacked = dynamic(
-  () => import("./charts").then((m) => m.CategoryDonut),
-  { ssr: false, loading: () => <StackedDonutFallback /> },
-);
+export const CategoryDonutStacked = dynamic(() => import("./charts").then((m) => m.CategoryDonut), {
+  ssr: false,
+  loading: () => <StackedDonutFallback />,
+});
 
 export const MileageTrendChart = dynamic(
   () => import("./charts").then((m) => m.MileageTrendChart),

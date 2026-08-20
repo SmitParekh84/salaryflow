@@ -35,10 +35,16 @@ export function StatCard({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay, ease: [0.22, 1, 0.36, 1] }}
-        className="flex min-w-0 items-start gap-3.5 bg-surface p-5"
+        /*
+         * Column on a phone, row from `sm`. Two tiles to a row leaves ~190px,
+         * and taking 44px of that for the icon pushed every label onto two
+         * lines and every hint onto three, so the four tiles ended up different
+         * heights. Above the icon, the text gets the full width of the tile.
+         */
+        className="flex min-w-0 flex-col gap-2.5 bg-surface p-4 sm:flex-row sm:items-start sm:gap-3.5 sm:p-5"
       >
         <div
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl sm:h-11 sm:w-11"
           style={{
             backgroundColor: `color-mix(in srgb, ${accent} 15%, transparent)`,
             color: accent,

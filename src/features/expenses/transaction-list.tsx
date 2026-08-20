@@ -81,19 +81,13 @@ export function TransactionList({
                   backgroundColor: `color-mix(in srgb, ${categoryColor} 15%, transparent)`,
                 }}
               >
-                <CategoryIcon
-                  category={e.category}
-                  className={dense ? "h-4.5 w-4.5" : "h-5 w-5"}
-                />
+                <CategoryIcon category={e.category} className={dense ? "h-4.5 w-4.5" : "h-5 w-5"} />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1 text-sm font-medium">
                   <span className="truncate">{e.merchant || e.category}</span>
                   {e.shared && dense && (
-                    <Users
-                      className="h-3 w-3 shrink-0 text-primary"
-                      aria-label="Shared expense"
-                    />
+                    <Users className="h-3 w-3 shrink-0 text-primary" aria-label="Shared expense" />
                   )}
                 </p>
                 <p className={cn("truncate text-muted", dense ? "text-[11px]" : "text-xs")}>

@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   ListChecks,
   MoreHorizontal,
+  Plus,
   Receipt,
   Settings,
   Sparkles,
@@ -28,6 +29,7 @@ import {
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { ExpenseForm } from "@/features/expenses/expense-form";
 import { Brand } from "./brand";
 import { Card } from "./ui/card";
 
@@ -280,8 +282,12 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
 export function MobileNav() {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   const pinnedItems = NAV_ITEMS.filter((item) => PINNED_HREFS.includes(item.href));
+  // Split around the centre cell, which holds the add button rather than a tab.
+  const leftItems = pinnedItems.slice(0, Math.ceil(pinnedItems.length / 2));
+  const rightItems = pinnedItems.slice(Math.ceil(pinnedItems.length / 2));
   // "More" is active when the current page isn't in the pinned set
   const moreActive =
     !moreOpen && !PINNED_HREFS.some((href) => pathname === href || pathname.startsWith(href + "/"));
@@ -299,56 +305,37 @@ export function MobileNav() {
          */}
         <div
           className="mx-auto grid max-w-lg items-stretch"
-          style={{ gridTemplateColumns: `repeat(${pinnedItems.length + 1}, 1fr)` }}
+          style={{
+            gridTemplateColumns: `repeat(${pinnedItems.length + 2}, 1fr)`,
+          }}
         >
-          {pinnedItems.map((item) => {
-            const Icon = ICONS[item.icon];
-            const active = pathname === item.href || pathname.startsWith(item.href + "/");
-            const label = "mobileLabel" in item ? item.mobileLabel : item.label;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-label={item.label}
-                aria-current={active ? "page" : undefined}
-                className="relative flex min-w-0 flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-(--ring) active:scale-[0.96]"
-                style={{
-                  height: "calc(4rem + env(safe-area-inset-bottom))",
-                  paddingBottom: "env(safe-area-inset-bottom)",
-                }}
-              >
-                <TabPendingState>
-                  {(pending) => {
-                    // A pending tab reads as active immediately, so the press is
-                    // acknowledged even before `loading.tsx` swaps in.
-                    const lit = active || pending;
-                    return (
-                      <>
-                        {lit && (
-                          <span className="absolute top-0 inset-x-3 h-0.5 rounded-b-full bg-primary" />
-                        )}
-                        <Icon
-                          className={cn(
-                            "h-5 w-5 shrink-0 transition-colors duration-150",
-                            lit ? "text-primary" : "text-muted",
-                          )}
-                          aria-hidden="true"
-                        />
-                        <span
-                          className={cn(
-                            "max-w-full truncate whitespace-nowrap transition-colors duration-150",
-                            lit ? "text-primary" : "text-muted",
-                          )}
-                        >
-                          {label}
-                        </span>
-                      </>
-                    );
-                  }}
-                </TabPendingState>
-              </Link>
-            );
-          })}
+          {leftItems.map((item) => (
+            <MobileNavTab key={item.href} item={item} pathname={pathname} />
+          ))}
+
+          {/*
+           * Logging an expense is the one thing this app asks of someone every
+           * day, and every route was making them find a button at the top of a
+           * scrolled page to do it. It sits in the middle of the bar because
+           * that is the easiest place on a phone for either thumb to reach.
+           */}
+          <button
+            onClick={() => setAddOpen(true)}
+            aria-label="Add expense"
+            className="flex items-center justify-center outline-none"
+            style={{
+              height: "calc(4rem + env(safe-area-inset-bottom))",
+              paddingBottom: "env(safe-area-inset-bottom)",
+            }}
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-transform duration-150 active:scale-[0.92]">
+              <Plus className="h-6 w-6" />
+            </span>
+          </button>
+
+          {rightItems.map((item) => (
+            <MobileNavTab key={item.href} item={item} pathname={pathname} />
+          ))}
 
           {/* More button */}
           <button
@@ -373,7 +360,56 @@ export function MobileNav() {
       </nav>
 
       <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
+      <ExpenseForm open={addOpen} onClose={() => setAddOpen(false)} />
     </>
+  );
+}
+
+/** One tab in the bottom bar. */
+function MobileNavTab({ item, pathname }: { item: (typeof NAV_ITEMS)[number]; pathname: string }) {
+  const Icon = ICONS[item.icon];
+  const active = pathname === item.href || pathname.startsWith(item.href + "/");
+  const label = "mobileLabel" in item ? item.mobileLabel : item.label;
+
+  return (
+    <Link
+      href={item.href}
+      aria-label={item.label}
+      aria-current={active ? "page" : undefined}
+      className="relative flex min-w-0 flex-col items-center justify-center gap-1 px-0.5 text-[10px] font-medium leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-(--ring) active:scale-[0.96]"
+      style={{
+        height: "calc(4rem + env(safe-area-inset-bottom))",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
+    >
+      <TabPendingState>
+        {(pending) => {
+          // A pending tab reads as active immediately, so the press is
+          // acknowledged even before `loading.tsx` swaps in.
+          const lit = active || pending;
+          return (
+            <>
+              {lit && <span className="absolute top-0 inset-x-2 h-0.5 rounded-b-full bg-primary" />}
+              <Icon
+                className={cn(
+                  "h-5 w-5 shrink-0 transition-colors duration-150",
+                  lit ? "text-primary" : "text-muted",
+                )}
+                aria-hidden="true"
+              />
+              <span
+                className={cn(
+                  "max-w-full truncate whitespace-nowrap transition-colors duration-150",
+                  lit ? "text-primary" : "text-muted",
+                )}
+              >
+                {label}
+              </span>
+            </>
+          );
+        }}
+      </TabPendingState>
+    </Link>
   );
 }
 

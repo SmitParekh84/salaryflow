@@ -25,7 +25,7 @@ import { currentFinancialYearStart, financialYearLabel } from "@/lib/financial-y
 import { buildFundingPlan } from "@/lib/funding-plan";
 import { useFinanceStore } from "@/lib/store";
 import { CHART_COLORS } from "@/lib/theme";
-import { formatMoney, newestFirst } from "@/lib/utils";
+import { cn, formatMoney, newestFirst } from "@/lib/utils";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { motion } from "framer-motion";
 import {
@@ -43,6 +43,7 @@ import {
   Repeat2,
   Sparkles,
   TrendingUp,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -156,7 +157,9 @@ export function DashboardView() {
 
       <SafeToSpendHero summary={summary} currency={currency} />
 
-      <div className="grid gap-px overflow-hidden rounded-2xl bg-border card-shadow sm:grid-cols-2 lg:grid-cols-4">
+      {/* Two per row on a phone, not one. Four stacked tiles pushed everything
+          below them a full screen down for no gain in legibility. */}
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-border card-shadow lg:grid-cols-4">
         <StatCard
           row
           label="Invested this cycle"
@@ -196,36 +199,120 @@ export function DashboardView() {
       </div>
 
       {/*
-       * Two independent stacks rather than one flow of full-width bands. CSS
-       * grid cannot pour items into whichever column is currently shortest, so
-       * the split is assigned by hand: the money-movement narrative down the
-       * left, the rule-and-signals rail on the right.
+       * The two salary-day summaries sit outside the column split below, so
+       * that stacking on a phone puts them directly under the stat tiles.
+       * Inside the columns they were the top of each stack on desktop but, once
+       * stacked, the budget rule landed below the chart and the transaction
+       * list — a summary buried under its own detail.
        */}
-      <div className="grid gap-4 lg:grid-cols-12">
-        <div className="space-y-4 lg:col-span-5">
-          <Card className="p-4">
-            <div className="flex items-center gap-3.5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <Repeat2 className="h-5 w-5" />
+      {/* `items-start` so the one-line funding plan is not stretched to the
+          height of the rule card beside it. */}
+      <div className="grid items-start gap-4 lg:grid-cols-12">
+        <Card className="p-4 lg:col-span-5">
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Repeat2 className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">Salary-day funding plan</p>
+              <p className="text-xs text-muted">Cards, bills, SIPs, and your savings rule</p>
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="text-lg font-bold leading-tight">
+                {formatMoney(fundingPlan.total, currency, true)}
+              </p>
+              <Link
+                href="/funding-plan"
+                className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline"
+              >
+                View transfers <ChevronRight className="h-3 w-3" />
+              </Link>
+            </div>
+          </div>
+        </Card>
+
+        {summary.budgetRuleName && summary.budgetRuleScore !== undefined && (
+          <Card className="p-4 sm:p-5 lg:col-span-7">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <ListChecks className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">{summary.budgetRuleName}</p>
+                  <p className="text-xs text-muted">Active budget rule · in your health score</p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">Salary-day funding plan</p>
-                <p className="text-xs text-muted">Cards, bills, SIPs, and your savings rule</p>
-              </div>
-              <div className="text-right">
-                <p className="text-lg font-bold leading-tight">
-                  {formatMoney(fundingPlan.total, currency, true)}
-                </p>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-xl font-bold leading-tight">{summary.budgetRuleScore}/100</p>
+                  <p className="text-[10px] text-muted">adherence</p>
+                </div>
                 <Link
-                  href="/funding-plan"
+                  href="/rules"
                   className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline"
                 >
-                  View transfers <ChevronRight className="h-3 w-3" />
+                  View rule <ChevronRight className="h-3 w-3" />
                 </Link>
               </div>
             </div>
+            <Progress
+              value={summary.budgetRuleScore}
+              className="mt-4"
+              label={`${summary.budgetRuleName} adherence`}
+              valueText={`${summary.budgetRuleScore} out of 100`}
+            />
+            {/*
+             * The four-way breakdown is desktop-only. Stacked on a phone it ran
+             * to most of a screen of its own — four labels, four limits, four
+             * amounts — to say what the bar above it already says. The "View
+             * rule" link goes to the page that shows it properly.
+             */}
+            {summary.budgetProgress && (
+              <div className="mt-5 hidden gap-4 border-t border-border pt-4 sm:grid sm:grid-cols-2 xl:grid-cols-4">
+                {(
+                  [
+                    ["needs", "Needs", "Spent"],
+                    ["wants", "Wants", "Spent"],
+                    ["savings", "Cash savings", "Saved"],
+                    ["investments", "Investments", "Invested"],
+                  ] as const
+                ).map(([kind, label, usedLabel]) => {
+                  const progress = summary.budgetProgress?.[kind];
+                  const remaining = progress?.remaining ?? 0;
+                  return (
+                    <div key={kind}>
+                      <p className="text-xs font-semibold">{label}</p>
+                      <p className="text-[11px] text-muted">
+                        {formatMoney(progress?.target ?? 0, currency, true)} limit
+                      </p>
+                      <p className="mt-2 text-lg font-bold">
+                        {formatMoney(progress?.used ?? 0, currency, true)}
+                      </p>
+                      <p className="text-[11px] text-muted">{usedLabel} this cycle</p>
+                      <p
+                        className={`mt-1 text-xs font-medium ${remaining < 0 ? "text-danger" : "text-success"}`}
+                      >
+                        {formatMoney(Math.abs(remaining), currency, true)}{" "}
+                        {remaining < 0 ? "over" : "remaining"}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </Card>
+        )}
+      </div>
 
+      {/*
+       * Two independent stacks rather than one flow of full-width bands. CSS
+       * grid cannot pour items into whichever column is currently shortest, so
+       * the split is assigned by hand: the money-movement narrative down the
+       * left, the signals rail on the right.
+       */}
+      <div className="grid gap-4 lg:grid-cols-12">
+        <div className="space-y-4 lg:col-span-5">
           <Card>
             <CardHeader>
               <div>
@@ -328,75 +415,6 @@ export function DashboardView() {
         </div>
 
         <div className="space-y-4 lg:col-span-7">
-          {summary.budgetRuleName && summary.budgetRuleScore !== undefined && (
-            <Card className="p-5">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <ListChecks className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">{summary.budgetRuleName}</p>
-                    <p className="text-xs text-muted">
-                      Active budget rule · included in health score
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-xl font-bold">{summary.budgetRuleScore}/100</p>
-                    <p className="text-[10px] text-muted">adherence</p>
-                  </div>
-                  <Link
-                    href="/rules"
-                    className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline"
-                  >
-                    View rule <ChevronRight className="h-3 w-3" />
-                  </Link>
-                </div>
-              </div>
-              <Progress
-                value={summary.budgetRuleScore}
-                className="mt-4"
-                label={`${summary.budgetRuleName} adherence`}
-                valueText={`${summary.budgetRuleScore} out of 100`}
-              />
-              {summary.budgetProgress && (
-                <div className="mt-5 grid gap-4 border-t border-border pt-4 sm:grid-cols-2 xl:grid-cols-4">
-                  {(
-                    [
-                      ["needs", "Needs", "Spent"],
-                      ["wants", "Wants", "Spent"],
-                      ["savings", "Cash savings", "Saved"],
-                      ["investments", "Investments", "Invested"],
-                    ] as const
-                  ).map(([kind, label, usedLabel]) => {
-                    const progress = summary.budgetProgress?.[kind];
-                    const remaining = progress?.remaining ?? 0;
-                    return (
-                      <div key={kind}>
-                        <p className="text-xs font-semibold">{label}</p>
-                        <p className="text-[11px] text-muted">
-                          {formatMoney(progress?.target ?? 0, currency, true)} limit
-                        </p>
-                        <p className="mt-2 text-lg font-bold">
-                          {formatMoney(progress?.used ?? 0, currency, true)}
-                        </p>
-                        <p className="text-[11px] text-muted">{usedLabel} this cycle</p>
-                        <p
-                          className={`mt-1 text-xs font-medium ${remaining < 0 ? "text-danger" : "text-success"}`}
-                        >
-                          {formatMoney(Math.abs(remaining), currency, true)}{" "}
-                          {remaining < 0 ? "over" : "remaining"}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </Card>
-          )}
-
           {/*
            * `items-start` because the rail beside it is three cards tall: a
            * stretched donut card would hold a chart's worth of content in a
@@ -417,11 +435,12 @@ export function DashboardView() {
               {/* Fuel — renders nothing until there is a fill to report on. */}
               <FuelCard />
 
-              <Card>
-                <CardHeader className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <CardTitle>Smart insights</CardTitle>
-                </CardHeader>
+              <CollapsingCard
+                icon={Sparkles}
+                iconClassName="text-primary"
+                title="Smart insights"
+                count={insights.length}
+              >
                 <CardContent className="space-y-2 pt-2">
                   {insights.map((t, i) => (
                     <motion.div
@@ -436,13 +455,14 @@ export function DashboardView() {
                     </motion.div>
                   ))}
                 </CardContent>
-              </Card>
+              </CollapsingCard>
 
-              <Card>
-                <CardHeader className="flex items-center gap-2">
-                  <CalendarClock className="h-4 w-4 text-warning" />
-                  <CardTitle>Upcoming bills</CardTitle>
-                </CardHeader>
+              <CollapsingCard
+                icon={CalendarClock}
+                iconClassName="text-warning"
+                title="Upcoming bills"
+                count={nextBills.length}
+              >
                 <CardContent className="space-y-2 pt-2">
                   {nextBills.length === 0 && (
                     <p className="flex items-center justify-center gap-1.5 py-4 text-xs text-muted">
@@ -477,7 +497,7 @@ export function DashboardView() {
                     </div>
                   )}
                 </CardContent>
-              </Card>
+              </CollapsingCard>
             </div>
           </div>
 
@@ -545,6 +565,61 @@ export function DashboardView() {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * A card that is a tappable one-line summary on a phone and an ordinary open
+ * card from `lg` up.
+ *
+ * Insights and upcoming bills are both secondary to Safe-to-Spend, and both
+ * were adding four or five rows to a screen that already scrolls. Collapsed,
+ * they cost one row each and still say how much is inside; the count is the
+ * part someone needs at a glance ("2 bills coming"), and the detail is one tap
+ * away. Desktop has the column space, so nothing is hidden there.
+ */
+function CollapsingCard({
+  icon: Icon,
+  iconClassName,
+  title,
+  count,
+  children,
+}: {
+  icon: LucideIcon;
+  iconClassName?: string;
+  title: string;
+  count: number;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Card>
+      <button
+        type="button"
+        onClick={() => setOpen((previous) => !previous)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2.5 rounded-2xl p-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-(--ring) lg:hidden"
+      >
+        <Icon className={cn("h-4 w-4 shrink-0", iconClassName)} />
+        <span className="flex-1 text-sm font-semibold">{title}</span>
+        {count > 0 && (
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 text-[11px] font-semibold text-primary">
+            {count}
+          </span>
+        )}
+        <ChevronDown
+          className={cn("h-4 w-4 shrink-0 text-muted transition-transform", open && "rotate-180")}
+        />
+      </button>
+
+      <CardHeader className="hidden items-center gap-2 lg:flex">
+        <Icon className={cn("h-4 w-4", iconClassName)} />
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+
+      <div className={cn("lg:block", open ? "block" : "hidden")}>{children}</div>
+    </Card>
   );
 }
 

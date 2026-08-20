@@ -79,16 +79,19 @@ export function SafeToSpendHero({
 
         {/* The rule keeps the two smaller figures reading as a separate group
             rather than as a continuation of the headline number. */}
-        <div className="flex gap-6 sm:border-l sm:border-border sm:pl-6">
+        <div className="flex shrink-0 gap-6 sm:border-l sm:border-border sm:pl-6">
           <div>
-            <div className="flex items-center gap-1.5 text-xs text-muted">
-              <CalendarDays className="h-3.5 w-3.5" />
+            {/* These two labels are the whole width of their column. Left to
+                wrap, "Days to salary" broke onto three lines at tablet widths
+                while the number below it sat alone. */}
+            <div className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted">
+              <CalendarDays className="h-3.5 w-3.5 shrink-0" />
               Days to salary
             </div>
             <p className="mt-1 text-2xl font-bold">{summary.daysRemaining}</p>
           </div>
           <div>
-            <p className="text-xs text-muted">Balance left</p>
+            <p className="whitespace-nowrap text-xs text-muted">Balance left</p>
             <p className="mt-1 text-2xl font-bold">
               {formatMoney(Math.max(0, summary.remaining), currency, true)}
             </p>

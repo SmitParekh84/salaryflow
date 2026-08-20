@@ -246,7 +246,9 @@ export function CategoryDonut({
   return (
     <div
       className={
-        stacked ? "flex flex-col items-center gap-3" : "flex flex-col items-center gap-4 sm:flex-row"
+        stacked
+          ? "flex flex-col items-center gap-3"
+          : "flex flex-col items-center gap-4 sm:flex-row"
       }
     >
       <ResponsiveContainer width="100%" height={200} className="!w-[200px] shrink-0">
@@ -357,7 +359,11 @@ const BUCKET_FILL: Record<string, string> = {
 
 export function CashFlowBars({ flow, currency }: { flow: CashFlow; currency: string }) {
   const data = useMemo(
-    () => flow.buckets.map((bucket) => ({ ...bucket, value: Math.round(bucket.amount) })),
+    () =>
+      flow.buckets.map((bucket) => ({
+        ...bucket,
+        value: Math.round(bucket.amount),
+      })),
     [flow],
   );
 
@@ -405,7 +411,11 @@ export function CategoryMonthlyBars({
   currency: string;
 }) {
   const data = useMemo(
-    () => detail.monthly.map((month) => ({ ...month, value: Math.round(month.amount) })),
+    () =>
+      detail.monthly.map((month) => ({
+        ...month,
+        value: Math.round(month.amount),
+      })),
     [detail],
   );
 
