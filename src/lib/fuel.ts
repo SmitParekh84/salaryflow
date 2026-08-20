@@ -1,5 +1,5 @@
 import type { Expense, Vehicle } from "./types";
-import { parseFinancialDate } from "./utils";
+import { newestFirst, parseFinancialDate } from "./utils";
 
 /**
  * The vehicle a profile falls back to before the user has set one.
@@ -137,4 +137,80 @@ export function previousOdometer(
     .map((point) => point.odometerKm);
 
   return readings.length > 0 ? Math.max(...readings) : null;
+}
+
+export type FuelFilter = "all" | "with-km" | "without-km";
+
+export interface FuelSummary {
+  /** Null rather than zero when there is nothing to measure. */
+  kmpl: number | null;
+  costPerKm: number | null;
+  totalDistanceKm: number;
+  totalLitres: number;
+  /** Every fuel expense under the active filter, measured or not. */
+  totalSpend: number;
+  includedSegments: number;
+  confidence: "none" | "provisional" | "settled";
+  segments: FuelSegment[];
+  /** Fills under the active filter, newest first. */
+  fills: Expense[];
+}
+
+function hasOdometer(expense: Expense): boolean {
+  return typeof expense.fuel?.odometerKm === "number";
+}
+
+function total<T>(items: T[], pick: (item: T) => number): number {
+  return items.reduce((running, item) => running + pick(item), 0);
+}
+
+/**
+ * Everything the card and the report display.
+ *
+ * The lifetime figures are totals over totals, never the mean of the segment
+ * figures: a 20 km hop must not weigh the same as a 300 km run. Excluding a
+ * segment removes its distance from the numerator and its litres from the
+ * denominator together, so dropping a bad row never distorts the rest.
+ */
+export function fuelSummary(
+  expenses: Expense[],
+  vehicle: Vehicle,
+  filter: FuelFilter = "all",
+): FuelSummary {
+  const fills = newestFirst(
+    expenses.filter((expense) => {
+      if (!isFuelExpense(expense)) return false;
+      if (filter === "with-km") return hasOdometer(expense);
+      if (filter === "without-km") return !hasOdometer(expense);
+      return true;
+    }),
+  );
+
+  // The "without-km" view contains no readings by definition, so it reports
+  // spend and says so, rather than printing a figure from an empty set.
+  const segments = filter === "without-km" ? [] : buildSegments(fills, vehicle);
+  const included = segments.filter((segment) => segment.included);
+
+  const totalDistanceKm = total(included, (segment) => segment.distanceKm);
+  const totalLitres = total(included, (segment) => segment.litres);
+  const measuredSpend = total(included, (segment) => segment.amount);
+
+  return {
+    kmpl: totalLitres > 0 ? totalDistanceKm / totalLitres : null,
+    costPerKm: totalDistanceKm > 0 ? measuredSpend / totalDistanceKm : null,
+    totalDistanceKm,
+    totalLitres,
+    totalSpend: total(fills, (expense) => expense.amount),
+    includedSegments: included.length,
+    confidence: included.length === 0 ? "none" : included.length < 4 ? "provisional" : "settled",
+    segments,
+    fills,
+  };
+}
+
+/** "provisional · 2 fills" while a partial-fill average is still settling. */
+export function confidenceLabel(summary: FuelSummary): string | null {
+  if (summary.confidence !== "provisional") return null;
+  const count = summary.includedSegments;
+  return `provisional · ${count} fill${count === 1 ? "" : "s"}`;
 }

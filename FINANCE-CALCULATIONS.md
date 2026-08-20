@@ -353,6 +353,46 @@ A recycled goal can be restored only when every linked account still exists and 
 | Credit-card outstanding | `creditCardUsage(...).outstanding`      |
 | Funding plan            | Sum of remaining funding items          |
 
+## Fuel and Mileage
+
+A fill-up is an expense with category `Fuel` carrying `fuel.odometerKm`,
+`fuel.litres` and `fuel.ratePerLitre`. Litres and rate are frozen at save time
+and never re-derived from a current price, so a past month's mileage cannot
+change when pump prices move.
+
+Fills are ordered by odometer. A segment runs between consecutive fills and is
+measured by the litres of the **later** fill, because the fuel added at a stop
+replaces what was burned reaching it.
+
+```text
+distance_i = odo_(i+1) - odo_i
+mileage_i  = distance_i / L_(i+1)
+cost_i     = A_(i+1) / distance_i
+```
+
+Lifetime figures are totals over totals, not the mean of the segment figures:
+
+```text
+overall kmpl = sum(distance_i) / sum(L_(i+1))
+overall Rs/km = sum(A_(i+1))   / sum(distance_i)
+```
+
+Both sums run over included segments only. A segment whose mileage falls outside
+the vehicle's plausible range (35-65 kmpl for the Activa 125) is flagged and
+excluded — the dominant cause is a fill the user forgot to record, which inflates
+the next segment believably. `fuel.includeInAverage` overrides the flag in either
+direction.
+
+The first fill has no predecessor and yields no segment. A segment is skipped
+when the odometer did not advance or the fill held no litres. Fewer than two
+readings, or the "without km" filter, produce a null mileage that the UI renders
+as an em dash, never as a number.
+
+Fuel expenses without an odometer count toward fuel spend and take no part in
+any distance figure.
+
+Rules here are enforced by `src/lib/fuel.test.ts`. Update it when they change.
+
 ## Validation Contract
 
 Calculation changes should pass:
