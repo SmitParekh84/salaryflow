@@ -110,7 +110,7 @@ export function ExpenseForm({
   const updateExpense = useFinanceStore((s) => s.updateExpense);
   const accounts = useFinanceStore((s) => s.accounts);
   const creditCards = useFinanceStore((s) => s.creditCards);
-  const syncWithServer = useFinanceStore((s) => s.syncWithServer);
+  const queueSync = useFinanceStore((s) => s.queueSync);
   const expenses = useFinanceStore((s) => s.expenses);
   const merchantOptions = useMemo(() => merchantSuggestions(expenses), [expenses]);
   const friendOptions = useMemo(() => friendNameSuggestions(expenses), [expenses]);
@@ -155,8 +155,23 @@ export function ExpenseForm({
     if (current === undefined || current === "") setValue("ratePerLitre", suggestedRate);
   }, [isFuel, suggestedRate, getValues, setValue]);
 
+  /**
+   * Re-initialise the fields when the sheet opens, or when it is handed a
+   * different record — never on unrelated store churn.
+   *
+   * `accounts` used to be a dependency, and `updateExpense` rebuilds that array
+   * on every save whether or not a balance moved. So saving an edit re-ran this
+   * effect while the sheet was still open and reset the fields back to the
+   * stored record: a date changed from the 17th to the 16th visibly reverted to
+   * the 17th, and stayed wrong on screen until the sheet finally closed. The
+   * value written to the store was right the whole time.
+   *
+   * Reading accounts through `getState()` keeps the default-account lookup
+   * without subscribing this effect to a slice that changes constantly.
+   */
   useEffect(() => {
     if (open) {
+      const currentAccounts = useFinanceStore.getState().accounts;
       reset(
         editing
           ? {
@@ -180,7 +195,7 @@ export function ExpenseForm({
               ratePerLitre: editing.fuel?.ratePerLitre,
             }
           : (() => {
-              const defaultAccount = accounts.find(
+              const defaultAccount = currentAccounts.find(
                 (account) =>
                   account.status === "active" && account.defaultFor?.includes("everyday"),
               );
@@ -207,7 +222,11 @@ export function ExpenseForm({
             })(),
       );
     }
-  }, [open, editing, reset, accounts, isSharedForm, sharedMode, defaultDate]);
+    // `editing?.id` rather than `editing`: the parent hands us a fresh object
+    // on every render, and re-running on that would clobber whatever the user
+    // had typed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editing?.id, reset, isSharedForm, sharedMode, defaultDate]);
 
   const onSubmit = async (values: FormValues) => {
     const parsed = schema.parse(values);
@@ -288,9 +307,18 @@ export function ExpenseForm({
         });
       }
     }
-    await syncWithServer();
+    // The record is already written and already persisted — the store is
+    // synchronous and zustand mirrors it to localStorage on the spot. Waiting
+    // on the upload before closing bought nothing and cost seconds on a phone,
+    // because every sync posts the whole account. `queueSync` batches it, and
+    // the pagehide/visibilitychange flush in the store means a user who leaves
+    // immediately still gets it sent.
+    queueSync();
+
     if (payload.shared?.inviteRequested && payload.shared.friendEmail) {
-      await fetch("/api/shared-invites", {
+      // Emailing a friend is not something to hold the sheet open for either;
+      // a failure here must not look like a failed save.
+      void fetch("/api/shared-invites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -303,8 +331,9 @@ export function ExpenseForm({
           ownerPaid: payload.shared.userPaid,
           friendPaid: payload.shared.friendPaid,
         }),
-      });
+      }).catch(() => null);
     }
+
     onClose();
   };
 
