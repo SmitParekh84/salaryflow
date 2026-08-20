@@ -3,6 +3,7 @@
 import { getCategoryColor } from "@/components/category-icon";
 import { financialYearMonths } from "@/lib/financial-year";
 import type { FuelSegment } from "@/lib/fuel";
+import type { CashFlow, CategoryDetail } from "@/lib/reports";
 import { CHART_COLORS } from "@/lib/theme";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense, Income, SalaryHistoryEntry } from "@/lib/types";
@@ -19,6 +20,7 @@ import {
   LineChart,
   Pie,
   PieChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -242,85 +244,6 @@ export function CategoryDonut({ expenses, currency }: { expenses: Expense[]; cur
   );
 }
 
-export function IncomeExpenseBars({
-  income,
-  expenses,
-  savings,
-  currency,
-}: {
-  income: number;
-  expenses: number;
-  savings: number;
-  currency: string;
-}) {
-  const data = [
-    { name: "Income", value: Math.round(income), color: "var(--primary)" },
-    { name: "Expenses", value: Math.round(expenses), color: CHART_COLORS.expense },
-    { name: "Savings", value: Math.round(savings), color: "var(--success)" },
-  ];
-  return (
-    <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-        <XAxis
-          dataKey="name"
-          tick={{ fontSize: 11, fill: "var(--muted)" }}
-          tickLine={false}
-          axisLine={false}
-        />
-        <Tooltip
-          cursor={{ fill: "color-mix(in srgb, var(--muted) 10%, transparent)" }}
-          contentStyle={{
-            background: "var(--surface)",
-            border: "1px solid var(--border)",
-            borderRadius: 12,
-            fontSize: 12,
-          }}
-          formatter={(v) => formatMoney(Number(v), currency)}
-        />
-        <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={56}>
-          {data.map((d) => (
-            <Cell key={d.name} fill={d.color} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
-
-export function MonthlyBars({
-  data,
-  currency,
-}: {
-  data: { label: string; income: number; expense: number }[];
-  currency: string;
-}) {
-  return (
-    <ResponsiveContainer width="100%" height={240}>
-      <BarChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-        <XAxis
-          dataKey="label"
-          tick={{ fontSize: 11, fill: "var(--muted)" }}
-          tickLine={false}
-          axisLine={false}
-        />
-        <Tooltip
-          cursor={{ fill: "color-mix(in srgb, var(--muted) 10%, transparent)" }}
-          contentStyle={{
-            background: "var(--surface)",
-            border: "1px solid var(--border)",
-            borderRadius: 12,
-            fontSize: 12,
-          }}
-          formatter={(v) => formatMoney(Number(v), currency)}
-        />
-        <Legend wrapperStyle={{ fontSize: 11 }} />
-        <Bar dataKey="income" name="Income" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-        <Bar dataKey="expense" name="Expense" fill={CHART_COLORS.expense} radius={[6, 6, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
-
 /**
  * Mileage per fill, oldest first.
  *
@@ -377,6 +300,114 @@ export function MileageTrendChart({ segments }: { segments: FuelSegment[] }) {
           dot={{ r: 3 }}
         />
       </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+const BUCKET_FILL: Record<string, string> = {
+  incoming: "var(--primary)",
+  investments: CHART_COLORS.goal,
+  spends: CHART_COLORS.expense,
+  unlinked: "var(--warning)",
+};
+
+export function CashFlowBars({ flow, currency }: { flow: CashFlow; currency: string }) {
+  const data = useMemo(
+    () => flow.buckets.map((bucket) => ({ ...bucket, value: Math.round(bucket.amount) })),
+    [flow],
+  );
+
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <BarChart data={data} margin={{ top: 20, right: 8, left: 8, bottom: 0 }}>
+        <XAxis
+          dataKey="label"
+          tick={{ fontSize: 10, fill: "var(--muted)" }}
+          tickLine={false}
+          axisLine={false}
+        />
+        <Tooltip
+          cursor={{ fill: "color-mix(in srgb, var(--muted) 10%, transparent)" }}
+          contentStyle={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: 12,
+            fontSize: 12,
+          }}
+          formatter={(value) => formatMoney(Number(value), currency)}
+        />
+        <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={48}>
+          {data.map((bucket) => (
+            <Cell key={bucket.key} fill={BUCKET_FILL[bucket.key] ?? "var(--primary)"} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+/**
+ * Six months of one category, with the current one picked out.
+ *
+ * The average line is drawn across every month shown, so a category with gaps
+ * is compared against the whole window rather than only the months it appeared
+ * in.
+ */
+export function CategoryMonthlyBars({
+  detail,
+  currency,
+}: {
+  detail: CategoryDetail;
+  currency: string;
+}) {
+  const data = useMemo(
+    () => detail.monthly.map((month) => ({ ...month, value: Math.round(month.amount) })),
+    [detail],
+  );
+
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <BarChart data={data} margin={{ top: 20, right: 8, left: 8, bottom: 0 }}>
+        <XAxis
+          dataKey="label"
+          tick={{ fontSize: 10, fill: "var(--muted)" }}
+          tickLine={false}
+          axisLine={false}
+        />
+        <Tooltip
+          cursor={{ fill: "color-mix(in srgb, var(--muted) 10%, transparent)" }}
+          contentStyle={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: 12,
+            fontSize: 12,
+          }}
+          formatter={(value) => formatMoney(Number(value), currency)}
+        />
+        <ReferenceLine
+          y={Math.round(detail.average)}
+          stroke="var(--success)"
+          strokeDasharray="4 4"
+          label={{
+            value: `AVG ${formatMoney(detail.average, currency)}`,
+            position: "insideTopLeft",
+            fontSize: 10,
+            fill: "var(--success)",
+          }}
+        />
+        <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={40}>
+          {data.map((month) => (
+            <Cell
+              key={month.label}
+              fill={
+                month.current
+                  ? "var(--primary)"
+                  : "color-mix(in srgb, var(--muted) 25%, transparent)"
+              }
+            />
+          ))}
+        </Bar>
+      </BarChart>
     </ResponsiveContainer>
   );
 }
