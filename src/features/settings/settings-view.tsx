@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { AboutYouForm } from "@/features/chat/about-you-form";
+import { VehicleSettings } from "@/features/fuel/vehicle-settings";
 import { ChangePasswordForm } from "@/features/settings/change-password-form";
 import { useSummary } from "@/hooks/use-summary";
 import { CATEGORIES, COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
@@ -30,6 +31,7 @@ import {
   Download,
   Eye,
   FileJson,
+  Fuel,
   Landmark,
   ListChecks,
   LogOut,
@@ -56,6 +58,7 @@ export type SettingsSection =
   | "accounts"
   | "categories"
   | "planning"
+  | "vehicle"
   | "system";
 
 const SETTINGS_SECTIONS: {
@@ -88,6 +91,12 @@ const SETTINGS_SECTIONS: {
     label: "Goals & rules",
     description: "Targets and budget strategy",
     icon: Target,
+  },
+  {
+    id: "vehicle",
+    label: "Vehicle & fuel",
+    description: "Your vehicle, and the city your rate comes from",
+    icon: Fuel,
   },
   { id: "system", label: "System", description: "Appearance, data and access", icon: MonitorCog },
 ];
@@ -745,6 +754,15 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                   }
                 />
               </div>
+            </SettingsPane>
+          )}
+
+          {section === "vehicle" && (
+            <SettingsPane
+              title="Vehicle & fuel"
+              description="Set the vehicle your fill-ups belong to and the city whose petrol rate should be used."
+            >
+              <VehicleSettings />
             </SettingsPane>
           )}
 

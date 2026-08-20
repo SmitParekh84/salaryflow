@@ -70,3 +70,8 @@ export const MonthlyBars = dynamic(() => import("./charts").then((m) => m.Monthl
   ssr: false,
   loading: () => <ChartFallback height={240} />,
 });
+
+export const MileageTrendChart = dynamic(
+  () => import("./charts").then((m) => m.MileageTrendChart),
+  { ssr: false, loading: () => <ChartFallback height={200} /> },
+);
