@@ -30,6 +30,19 @@ const ExpenseSchema = new Schema(
       ),
       required: false,
     },
+    fuel: {
+      type: new Schema(
+        {
+          odometerKm: { type: Number, min: 0 },
+          litres: { type: Number, required: true, min: 0 },
+          ratePerLitre: { type: Number, required: true, min: 0 },
+          rateSource: { type: String, default: "manual" },
+          includeInAverage: { type: Boolean },
+        },
+        { _id: false },
+      ),
+      required: false,
+    },
   },
   { timestamps: true },
 );
@@ -69,6 +82,19 @@ const SalaryProfileSchema = new Schema(
         { _id: false },
       ),
     ],
+    city: String,
+    vehicle: {
+      type: new Schema(
+        {
+          name: { type: String, required: true },
+          year: Number,
+          minKmpl: { type: Number, required: true, min: 1 },
+          maxKmpl: { type: Number, required: true, min: 1 },
+        },
+        { _id: false },
+      ),
+      required: false,
+    },
   },
   { timestamps: true },
 );

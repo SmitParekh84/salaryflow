@@ -75,6 +75,7 @@ export interface Expense {
   billingMonth?: string;
   balanceApplied?: boolean;
   shared?: SharedExpenseDetails;
+  fuel?: FuelFill;
 }
 
 export interface SharedExpenseDetails {
@@ -84,6 +85,30 @@ export interface SharedExpenseDetails {
   userPaid: number;
   friendPaid: number;
   inviteRequested?: boolean;
+}
+
+export interface FuelFill {
+  /**
+   * Odometer reading in km at this fill. Optional: a user who did not read the
+   * meter still gets their litres and rate recorded and the entry still counts
+   * toward fuel spend. It simply takes no part in any distance figure.
+   */
+  odometerKm?: number;
+  /** Frozen at save. Never re-derived from a later price. */
+  litres: number;
+  /** Frozen at save. Kept so an odd mileage can be traced back to its rate. */
+  ratePerLitre: number;
+  rateSource: "live" | "last-used" | "manual";
+  /** User override of the plausibility flag. Undefined = automatic. */
+  includeInAverage?: boolean;
+}
+
+export interface Vehicle {
+  name: string;
+  year?: number;
+  /** Plausible mileage range. Segments outside it are flagged, not trusted. */
+  minKmpl: number;
+  maxKmpl: number;
 }
 
 export type IncomeType =
@@ -198,6 +223,8 @@ export interface SalaryProfile {
   investmentAmount: number;
   financialYearStart?: number;
   customCategories?: CustomCategory[];
+  city?: string;
+  vehicle?: Vehicle;
 }
 
 export interface UserProfile {
