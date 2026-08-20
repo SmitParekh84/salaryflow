@@ -250,6 +250,27 @@ describe("currency formatting", () => {
   it("uses the currency locale grouping for non-Indian currencies", () => {
     expect(formatMoney(100_000, "USD")).toBe("$100,000");
   });
+
+  /**
+   * Paise are worth showing when they exist and worth hiding when they do not.
+   * Rounding them away made a ₹150.50 fill read as ₹151 everywhere, so the
+   * amount on screen never matched the one that had been typed in.
+   */
+  it("shows paise when an amount has them", () => {
+    expect(formatMoney(150.5, "INR")).toBe("₹150.50");
+    expect(formatMoney(150.55, "INR")).toBe("₹150.55");
+    expect(formatMoney(1234.5, "USD")).toBe("$1,234.50");
+  });
+
+  it("leaves a whole amount unchanged rather than padding it", () => {
+    expect(formatMoney(150, "INR")).toBe("₹150");
+    expect(formatMoney(100_000, "INR")).toBe("₹1,00,000");
+  });
+
+  it("rounds a longer fraction to two places instead of spilling", () => {
+    expect(formatMoney(1234.5678, "INR")).toBe("₹1,234.57");
+    expect(formatMoney(1 / 3, "INR")).toBe("₹0.33");
+  });
 });
 
 describe("closing account transfers", () => {

@@ -195,6 +195,8 @@ export function GoalsView() {
               <Label>Target amount</Label>
               <Input
                 type="number"
+                step="0.01"
+                inputMode="decimal"
                 value={form.target || ""}
                 onChange={(e) => setForm({ ...form, target: Number(e.target.value) })}
               />
@@ -203,6 +205,8 @@ export function GoalsView() {
               <Label>Monthly contribution</Label>
               <Input
                 type="number"
+                step="0.01"
+                inputMode="decimal"
                 value={form.monthlyContribution || ""}
                 onChange={(e) => setForm({ ...form, monthlyContribution: Number(e.target.value) })}
               />

@@ -1,6 +1,7 @@
 "use client";
 
 import { CategoryIcon } from "@/components/category-icon";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Checkbox, Input, Label, Select, Textarea } from "@/components/ui/input";
@@ -14,7 +15,12 @@ import { optionalNumber } from "@/lib/schemas/primitives";
 import { friendNameSuggestions, merchantSuggestions } from "@/lib/suggestions";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
-import { dateInputToIso, localDateInputValue, parseFinancialDate } from "@/lib/utils";
+import {
+  currencySymbol,
+  dateInputToIso,
+  localDateInputValue,
+  parseFinancialDate,
+} from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -111,6 +117,7 @@ export function ExpenseForm({
   const accounts = useFinanceStore((s) => s.accounts);
   const creditCards = useFinanceStore((s) => s.creditCards);
   const queueSync = useFinanceStore((s) => s.queueSync);
+  const currency = useFinanceStore((s) => s.profile.currency);
   const expenses = useFinanceStore((s) => s.expenses);
   const merchantOptions = useMemo(() => merchantSuggestions(expenses), [expenses]);
   const friendOptions = useMemo(() => friendNameSuggestions(expenses), [expenses]);
@@ -354,13 +361,21 @@ export function ExpenseForm({
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <Label>{sharedEnabled ? "I paid" : "Amount"}</Label>
-          <Input
-            type="number"
-            step="1"
-            inputMode="decimal"
-            placeholder="0"
-            autoFocus
-            {...register("amount")}
+          <Controller
+            control={control}
+            name="amount"
+            render={({ field }) => (
+              <AmountInput
+                placeholder="0"
+                autoFocus
+                prefix={currencySymbol(currency)}
+                invalid={Boolean(errors.amount)}
+                value={field.value === undefined || field.value === null ? "" : String(field.value)}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                name={field.name}
+              />
+            )}
           />
           {errors.amount && <p className="mt-1 text-xs text-danger">{errors.amount.message}</p>}
         </div>
@@ -540,12 +555,23 @@ export function ExpenseForm({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Total bill</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="1"
-                    inputMode="decimal"
-                    {...register("totalAmount")}
+                  <Controller
+                    control={control}
+                    name="totalAmount"
+                    render={({ field }) => (
+                      <AmountInput
+                        prefix={currencySymbol(currency)}
+                        invalid={Boolean(errors.totalAmount)}
+                        value={
+                          field.value === undefined || field.value === null
+                            ? ""
+                            : String(field.value)
+                        }
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                      />
+                    )}
                   />
                   {errors.totalAmount && (
                     <p className="mt-1 text-xs text-danger">{errors.totalAmount.message}</p>
@@ -553,12 +579,23 @@ export function ExpenseForm({
                 </div>
                 <div>
                   <Label>Friend paid</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="1"
-                    inputMode="decimal"
-                    {...register("friendPaid")}
+                  <Controller
+                    control={control}
+                    name="friendPaid"
+                    render={({ field }) => (
+                      <AmountInput
+                        prefix={currencySymbol(currency)}
+                        invalid={Boolean(errors.friendPaid)}
+                        value={
+                          field.value === undefined || field.value === null
+                            ? ""
+                            : String(field.value)
+                        }
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                      />
+                    )}
                   />
                   {errors.friendPaid && (
                     <p className="mt-1 text-xs text-danger">{errors.friendPaid.message}</p>

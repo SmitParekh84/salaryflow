@@ -274,7 +274,9 @@ export function FundingPlanView() {
                   <Label>Amount paid</Label>
                   <Input
                     type="number"
-                    min={1}
+                    step="0.01"
+                    inputMode="decimal"
+                    min={0.01}
                     value={row.amount || ""}
                     onChange={(event) =>
                       setPaymentRows((current) =>

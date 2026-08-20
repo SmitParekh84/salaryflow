@@ -25,20 +25,37 @@ export function currencySymbol(code: string): string {
   return CURRENCY_SYMBOLS[code] ?? code + " ";
 }
 
+/**
+ * Money, with paise shown only when there are paise to show.
+ *
+ * `minimumFractionDigits: 0` keeps whole amounts looking the way they always
+ * did — ₹1,00,000 rather than ₹1,00,000.00 — while a fractional amount survives
+ * to two places. Rounding every figure used to mean a ₹150.50 fuel fill was
+ * entered correctly, stored correctly, and then displayed as ₹151 on every
+ * screen, so the number on screen never matched the one that was typed.
+ */
 export function formatMoney(amount: number, currency = "INR", _compact = false): string {
   void _compact;
   const locale = CURRENCY_LOCALES[currency] ?? "en-US";
+  // Round to paise before deciding, so a computed 149.999 reads as ₹150 rather
+  // than ₹150.00, and so the choice is made on what will actually be printed.
+  // Both digit counts are pinned: leaving the minimum at 0 gives ₹150.5, which
+  // is not how money is written.
+  const rounded = Math.round(amount * 100) / 100;
+  const fractionDigits = Number.isInteger(rounded) ? 0 : 2;
   try {
     return new Intl.NumberFormat(locale, {
       style: "currency",
       currency,
       currencyDisplay: "narrowSymbol",
-      maximumFractionDigits: 0,
-    }).format(Math.round(amount));
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    }).format(rounded);
   } catch {
     return `${currencySymbol(currency)}${new Intl.NumberFormat(locale, {
-      maximumFractionDigits: 0,
-    }).format(Math.round(amount))}`;
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    }).format(rounded)}`;
   }
 }
 
