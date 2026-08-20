@@ -61,6 +61,30 @@ export const CategoryDonut = dynamic(() => import("./charts").then((m) => m.Cate
   loading: () => <DonutFallback />,
 });
 
+/**
+ * Same chart, `stacked` arrangement. It needs its own entry because `loading`
+ * receives no props: a placeholder shaped like the side-by-side layout would
+ * reserve the wrong height for the column the dashboard puts this in, and the
+ * cards below it would jump when the chart arrived.
+ */
+function StackedDonutFallback() {
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <Skeleton className="h-[200px] w-[200px] shrink-0 rounded-full" />
+      <div className="grid w-full grid-cols-2 gap-1.5">
+        {[0, 1, 2, 3, 4, 5].map((row) => (
+          <Skeleton key={row} className="h-4 rounded-md" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export const CategoryDonutStacked = dynamic(
+  () => import("./charts").then((m) => m.CategoryDonut),
+  { ssr: false, loading: () => <StackedDonutFallback /> },
+);
+
 export const MileageTrendChart = dynamic(
   () => import("./charts").then((m) => m.MileageTrendChart),
   { ssr: false, loading: () => <ChartFallback height={200} /> },

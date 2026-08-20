@@ -145,13 +145,19 @@ export function InvestmentsView() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{inv.name}</p>
-                  <p className="text-xs text-muted">
+                  {/*
+                    Truncated like the name above it. This line stacks type, SIP
+                    amount and account name, so it is the longest thing in the
+                    row and the row does not wrap — without this it ran straight
+                    out of its own box on a narrow phone.
+                  */}
+                  <p className="truncate text-xs text-muted">
                     {inv.type}
                     {inv.monthly ? ` · ${formatMoney(inv.monthly, currency)}/mo` : ""}
                     {account ? ` · ${account.bankName}` : ""}
                   </p>
                 </div>
-                <div className="text-right">
+                <div className="shrink-0 text-right">
                   <p className="text-sm font-bold">{formatMoney(inv.currentValue, currency)}</p>
                   <p className={cn("text-xs font-medium", g >= 0 ? "text-success" : "text-danger")}>
                     {g >= 0 ? "+" : ""}

@@ -77,7 +77,9 @@ export function SafeToSpendHero({
           </div>
         </div>
 
-        <div className="flex gap-6">
+        {/* The rule keeps the two smaller figures reading as a separate group
+            rather than as a continuation of the headline number. */}
+        <div className="flex gap-6 sm:border-l sm:border-border sm:pl-6">
           <div>
             <div className="flex items-center gap-1.5 text-xs text-muted">
               <CalendarDays className="h-3.5 w-3.5" />

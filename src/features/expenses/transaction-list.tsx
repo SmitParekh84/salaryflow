@@ -13,11 +13,19 @@ export function TransactionList({
   currency,
   onEdit,
   compact = false,
+  dense = false,
 }: {
   expenses: Expense[];
   currency: string;
   onEdit?: (e: Expense) => void;
   compact?: boolean;
+  /**
+   * For narrow columns — the dashboard runs two of these lists side by side in
+   * a half-width card. The payment method and account name are the first things
+   * to go: at ~220px they truncate to nothing useful anyway, and the category
+   * alone still tells you what the row is.
+   */
+  dense?: boolean;
 }) {
   const deleteExpense = useFinanceStore((s) => s.deleteExpense);
   const toggleFavorite = useFinanceStore((s) => s.toggleFavorite);
@@ -58,27 +66,50 @@ export function TransactionList({
                   : undefined
               }
               className={cn(
-                "group flex items-center gap-3 py-3",
+                "group flex items-center gap-3",
+                dense ? "py-2.5" : "py-3",
                 onEdit &&
                   "cursor-pointer rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-(--ring)",
               )}
             >
               <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
+                className={cn(
+                  "flex shrink-0 items-center justify-center rounded-xl text-lg",
+                  dense ? "h-9 w-9" : "h-10 w-10",
+                )}
                 style={{
                   backgroundColor: `color-mix(in srgb, ${categoryColor} 15%, transparent)`,
                 }}
               >
-                <CategoryIcon category={e.category} className="h-5 w-5" />
+                <CategoryIcon
+                  category={e.category}
+                  className={dense ? "h-4.5 w-4.5" : "h-5 w-5"}
+                />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{e.merchant || e.category}</p>
-                <p className="truncate text-xs text-muted">
-                  {e.category} · {e.paymentMethod}
-                  {sourceName ? ` · ${sourceName}` : ""}
-                  {showNote ? ` · ${note}` : ""}
+                <p className="flex items-center gap-1 text-sm font-medium">
+                  <span className="truncate">{e.merchant || e.category}</span>
+                  {e.shared && dense && (
+                    <Users
+                      className="h-3 w-3 shrink-0 text-primary"
+                      aria-label="Shared expense"
+                    />
+                  )}
                 </p>
-                {e.shared && (
+                <p className={cn("truncate text-muted", dense ? "text-[11px]" : "text-xs")}>
+                  {dense ? (
+                    e.category
+                  ) : (
+                    <>
+                      {e.category} · {e.paymentMethod}
+                      {sourceName ? ` · ${sourceName}` : ""}
+                      {showNote ? ` · ${note}` : ""}
+                    </>
+                  )}
+                </p>
+                {/* The split breakdown wraps to three lines in a narrow column,
+                    which would make one row twice the height of its neighbours. */}
+                {e.shared && !dense && (
                   <p className="mt-1 flex items-center gap-1 text-xs text-primary">
                     <Users className="h-3 w-3" />
                     You {formatMoney(e.shared.userPaid, currency)} · {e.shared.friendName}{" "}

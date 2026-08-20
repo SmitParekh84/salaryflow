@@ -533,12 +533,20 @@ export function AccountsView() {
                       <CalendarClock className="h-4 w-4" />
                     )}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">
+                  {/*
+                    A floor on the label, so the row wraps instead of crushing
+                    it. `flex-1 min-w-0` alone let this column shrink past the
+                    point of usefulness — at 320px it collapsed to 46px and both
+                    lines spilled out of their own box rather than pushing the
+                    amount onto the next line, which is what flex-wrap is here
+                    for. Truncation backs it up for a genuinely long bank name.
+                  */}
+                  <div className="min-w-36 flex-1">
+                    <p className="truncate text-sm font-medium">
                       {source?.bankName ?? "Unknown account"} to{" "}
                       {destination?.bankName ?? "Unknown account"}
                     </p>
-                    <p className="text-xs text-muted">
+                    <p className="truncate text-xs text-muted">
                       {formatDate(transfer.date)} ·{" "}
                       {transfer.status === "completed" ? "Transferred" : "Scheduled"}
                       {transfer.status === "completed" && countsAsSavings
@@ -550,7 +558,9 @@ export function AccountsView() {
                       {transfer.note ? ` · ${transfer.note}` : ""}
                     </p>
                   </div>
-                  <p className="text-sm font-bold">{formatMoney(transfer.amount, currency)}</p>
+                  <p className="shrink-0 text-sm font-bold">
+                    {formatMoney(transfer.amount, currency)}
+                  </p>
                   {transfer.status === "scheduled" && (
                     <Button
                       size="sm"

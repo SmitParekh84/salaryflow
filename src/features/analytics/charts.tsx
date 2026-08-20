@@ -7,7 +7,7 @@ import type { CashFlow, CategoryDetail } from "@/lib/reports";
 import { CHART_COLORS } from "@/lib/theme";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense, Income, SalaryHistoryEntry } from "@/lib/types";
-import { formatMoney, parseFinancialDate } from "@/lib/utils";
+import { cn, currencySymbol, formatMoney, parseFinancialDate } from "@/lib/utils";
 import { useMemo } from "react";
 import {
   Area,
@@ -26,6 +26,24 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+
+/**
+ * Axis ticks, not prose. `formatMoney` prints every digit — six of them per tick
+ * eats the plot area, so an axis gets ₹1L / ₹75K instead. Lakh/crore steps
+ * because the axis is read next to amounts the rest of the app writes that way.
+ */
+function compactMoney(value: number, currency: string): string {
+  const symbol = currencySymbol(currency);
+  const abs = Math.abs(value);
+  const indian = currency === "INR";
+  const round = (n: number) => Number(n.toFixed(n < 10 ? 1 : 0));
+
+  if (indian && abs >= 1e7) return `${symbol}${round(value / 1e7)}Cr`;
+  if (indian && abs >= 1e5) return `${symbol}${round(value / 1e5)}L`;
+  if (!indian && abs >= 1e6) return `${symbol}${round(value / 1e6)}M`;
+  if (abs >= 1000) return `${symbol}${round(value / 1000)}K`;
+  return `${symbol}${Math.round(value)}`;
+}
 
 export function SpendTrendChart({
   expenses,
@@ -152,6 +170,14 @@ export function CashFlowChart({
           interval="preserveStartEnd"
           minTickGap={20}
         />
+        {/* Bars alone say which month was heavier; the axis says by how much. */}
+        <YAxis
+          tick={{ fontSize: 10, fill: "var(--muted)" }}
+          tickLine={false}
+          axisLine={false}
+          width={46}
+          tickFormatter={(value) => compactMoney(Number(value), currency)}
+        />
         <Tooltip
           cursor={{ fill: "color-mix(in srgb, var(--muted) 10%, transparent)" }}
           contentStyle={{
@@ -162,21 +188,35 @@ export function CashFlowChart({
           }}
           formatter={(value, name) => [
             formatMoney(Number(value), currency),
-            name === "inflow" ? "Money in" : "Money out",
+            name === "inflow" ? "Income" : "Spending",
           ]}
         />
         <Legend
-          formatter={(value) => (value === "inflow" ? "Money in" : "Money out")}
+          formatter={(value) => (value === "inflow" ? "Income" : "Spending")}
           wrapperStyle={{ fontSize: 11 }}
         />
-        <Bar dataKey="inflow" fill="var(--success)" radius={[5, 5, 0, 0]} maxBarSize={34} />
+        <Bar dataKey="inflow" fill={CHART_COLORS.income} radius={[5, 5, 0, 0]} maxBarSize={34} />
         <Bar dataKey="outflow" fill={CHART_COLORS.expense} radius={[5, 5, 0, 0]} maxBarSize={34} />
       </BarChart>
     </ResponsiveContainer>
   );
 }
 
-export function CategoryDonut({ expenses, currency }: { expenses: Expense[]; currency: string }) {
+export function CategoryDonut({
+  expenses,
+  currency,
+  stacked = false,
+}: {
+  expenses: Expense[];
+  currency: string;
+  /**
+   * Legend below the chart in two columns instead of beside it. `sm:` variants
+   * key off the viewport, not the container, so a half-width card on a desktop
+   * still gets the side-by-side legend — and at ~320px that squeezes the labels
+   * down to a single letter. Cards narrower than the chart pass this.
+   */
+  stacked?: boolean;
+}) {
   const storedCustomCategories = useFinanceStore((state) => state.profile.customCategories);
   const data = useMemo(() => {
     const customCategories = storedCustomCategories ?? [];
@@ -204,7 +244,11 @@ export function CategoryDonut({ expenses, currency }: { expenses: Expense[]; cur
   }
 
   return (
-    <div className="flex flex-col items-center gap-4 sm:flex-row">
+    <div
+      className={
+        stacked ? "flex flex-col items-center gap-3" : "flex flex-col items-center gap-4 sm:flex-row"
+      }
+    >
       <ResponsiveContainer width="100%" height={200} className="!w-[200px] shrink-0">
         <PieChart>
           <Pie
@@ -231,7 +275,7 @@ export function CategoryDonut({ expenses, currency }: { expenses: Expense[]; cur
           />
         </PieChart>
       </ResponsiveContainer>
-      <div className="grid w-full grid-cols-1 gap-1.5">
+      <div className={cn("grid w-full gap-1.5", stacked ? "grid-cols-2" : "grid-cols-1")}>
         {data.slice(0, 6).map((d) => (
           <div key={d.name} className="flex items-center gap-2 text-xs">
             <span className="h-2.5 w-2.5 rounded-full" style={{ background: d.color }} />

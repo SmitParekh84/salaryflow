@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DEFAULT_VEHICLE, confidenceLabel, fuelSummary } from "@/lib/fuel";
 import { useFinanceStore } from "@/lib/store";
 import { formatDate, formatMoney } from "@/lib/utils";
-import { Fuel } from "lucide-react";
+import { ChevronRight, Fuel } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 
@@ -23,38 +23,52 @@ export function FuelCard() {
 
   return (
     <Card>
-      <CardContent className="p-5">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <Fuel className="h-4 w-4 text-muted" />
-          {vehicle.name}
-          {vehicle.year && <span className="text-muted">· {vehicle.year}</span>}
-        </div>
+      {/*
+       * The whole card is the link to the fuel report. It shares a dashboard
+       * column with insights and bills, so it earns its height by showing the
+       * two numbers someone actually checks — mileage and cost per km — and
+       * leaving the fill history to the report.
+       */}
+      <CardContent className="p-0">
+        <Link
+          href="/analytics"
+          className="group flex items-center gap-3.5 rounded-2xl p-4 outline-none transition-colors hover:bg-surface-2/50 focus-visible:ring-2 focus-visible:ring-(--ring)"
+        >
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-danger/10 text-danger">
+            <Fuel className="h-5 w-5" />
+          </div>
 
-        <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-1">
-          <p className="text-2xl font-bold tracking-tight">
-            {summary.kmpl === null ? "—" : `${summary.kmpl.toFixed(1)} kmpl`}
-          </p>
-          <p className="text-sm text-muted">
-            {summary.costPerKm === null ? "—" : `${formatMoney(summary.costPerKm, currency)} / km`}
-          </p>
-        </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold">
+              {vehicle.name}
+              {vehicle.year && <span className="font-normal text-muted"> · {vehicle.year}</span>}
+            </p>
+            {/*
+             * Both numbers on one line rather than in two labelled columns: at
+             * the width of this column a two-column split truncated "50.3 km/l"
+             * to "50.3 k…", and the units already say which number is which.
+             */}
+            <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-sm">
+              <span className="font-semibold">
+                {summary.kmpl === null ? "—" : `${summary.kmpl.toFixed(1)} km/l`}
+              </span>
+              <span className="text-muted">
+                {summary.costPerKm === null
+                  ? ""
+                  : `· ${formatMoney(summary.costPerKm, currency)} / km`}
+              </span>
+            </p>
+            {/* Saying how green the number is beats printing it bare: one
+                partial top-up is not yet evidence of anything. */}
+            <p className="mt-2 truncate text-[11px] text-muted">
+              {provisional ??
+                (summary.kmpl === null
+                  ? "Add an odometer reading at your next fill"
+                  : `Last fill ${formatDate(latest.date)} · ${formatMoney(latest.amount, currency)}`)}
+            </p>
+          </div>
 
-        {/* Saying how green the number is beats printing it bare: one partial
-            top-up is not yet evidence of anything. */}
-        <p className="mt-1 text-[11px] text-muted">
-          {provisional ??
-            (summary.kmpl === null
-              ? "Add an odometer reading at your next fill to see mileage"
-              : `${Math.round(summary.totalDistanceKm)} km measured`)}
-        </p>
-
-        <div className="mt-4 border-t border-border pt-3 text-xs text-muted">
-          Last fill {formatDate(latest.date)} · {formatMoney(latest.amount, currency)}
-          {latest.fuel?.odometerKm != null && ` · ${latest.fuel.odometerKm} km`}
-        </div>
-
-        <Link href="/analytics" className="mt-3 inline-block text-xs font-medium text-primary">
-          Fuel report →
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
         </Link>
       </CardContent>
     </Card>
