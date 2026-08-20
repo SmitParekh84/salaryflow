@@ -3,8 +3,10 @@ import {
   BankAccountModel,
   BillModel,
   BudgetRuleModel,
+  ChatMessageModel,
   CreditCardModel,
   ExpenseModel,
+  FinancialProfileModel,
   GoalModel,
   IncomeModel,
   InvestmentModel,
@@ -139,6 +141,14 @@ interface ExpenseRow {
   billingMonth?: string;
   balanceApplied: boolean;
   shared?: SharedSplit;
+  fuel?: FuelFill;
+}
+
+interface FuelFill {
+  litres: number;
+  ratePerLitre: number;
+  odometerKm?: number;
+  rateSource?: string;
 }
 
 interface IncomeRow {
@@ -309,7 +319,54 @@ type ExpenseSeed = {
   favorite?: boolean;
   accountId?: string;
   billId?: string;
+  fuel?: FuelFill;
 };
+
+/** The pump rate for month `index`, drifting the way a real one does. */
+function fuelRate(index: number): number {
+  return 102 + (index % 4) * 1.5;
+}
+
+/** The spend on the fuel fill in month `index`. Kept next to `fuelFill`. */
+function fuelAmount(index: number): number {
+  return 1400 + (index % 3) * 210;
+}
+
+/**
+ * One month's fill, with an odometer reading that makes the mileage real.
+ *
+ * `buildSegments` measures a segment as (this odometer − the previous one) over
+ * *this* fill's litres, so the readings have to be a running total rather than
+ * anything derived from `index` alone — hence the walk from zero. Targeting
+ * 46–54 kmpl keeps every segment inside the Activa's plausible band
+ * (`DEFAULT_VEHICLE`), so the lifetime average settles instead of being thrown
+ * out as implausible.
+ *
+ * One month deliberately records no reading. That is the forgotten fill the
+ * fuel module exists to catch: the next segment then spans two months of riding
+ * against one month of petrol, lands near double the real figure, and is
+ * flagged and dropped from the average on its own. It is also what gives the
+ * report's "Without km" filter something to list — a demo where every fill is
+ * perfectly logged never shows either behaviour.
+ */
+const FUEL_START_KM = 18_400;
+const FUEL_UNRECORDED_MONTH = 5;
+
+function fuelFill(index: number): FuelFill {
+  let odometer = FUEL_START_KM;
+  for (let month = 1; month <= index; month++) {
+    const litres = fuelAmount(month) / fuelRate(month);
+    // 46, 48, 50, 52, 54 — a spread, so the trend line is not a flat rule.
+    odometer += Math.round(litres * (46 + (month % 5) * 2));
+  }
+
+  const ratePerLitre = fuelRate(index);
+  return {
+    litres: Number((fuelAmount(index) / ratePerLitre).toFixed(2)),
+    ratePerLitre,
+    odometerKm: index === FUEL_UNRECORDED_MONTH ? undefined : odometer,
+  };
+}
 
 /** The repeating monthly shape. `index` varies amounts so charts are not flat. */
 function monthlyExpenses(index: number, rent: number): ExpenseSeed[] {
@@ -404,12 +461,40 @@ function monthlyExpenses(index: number, rent: number): ExpenseSeed[] {
     {
       slug: "fuel",
       day: 9,
-      amount: 1400 + (index % 3) * 210,
+      amount: fuelAmount(index),
       category: "Fuel",
       merchant: "HP Petrol",
       paymentMethod: "Card",
       tags: ["commute"],
       accountId: ACCOUNTS.salary,
+      fuel: { ...fuelFill(index), rateSource: "manual" },
+    },
+    {
+      // The Investment category is what `bucketOf` in src/lib/reports.ts reads
+      // to fill the reports page's Investments bucket. Without a contribution
+      // recorded as spending, that bucket reads zero however large the holdings
+      // on /investments are, and its drill-down opens empty.
+      slug: "sip",
+      day: 5,
+      amount: 10000,
+      category: "Investment",
+      merchant: "Groww SIP",
+      paymentMethod: "Bank Transfer",
+      recurring: true,
+      accountId: ACCOUNTS.invest,
+    },
+    {
+      // Deliberately account-less. `bucketOf` sends an expense with no
+      // accountId to the Unlinked bucket, which is the whole point of that
+      // bucket — money the visitor has not attributed yet. Every other row here
+      // names an account, so without this one the bucket can never be anything
+      // but zero and the demo never shows what it is for.
+      slug: "cash",
+      day: 14,
+      amount: 480 + (index % 4) * 90,
+      category: "Food",
+      merchant: "Street food",
+      paymentMethod: "Cash",
     },
     {
       slug: "wellness",
@@ -457,6 +542,7 @@ export function buildDemoDataset(now = new Date()) {
         // bill paid for that cycle (see src/lib/bill-cycle.ts).
         billingMonth: seed.billId ? key : undefined,
         balanceApplied: Boolean(seed.accountId),
+        fuel: seed.fuel,
       }));
   });
 
@@ -1109,6 +1195,14 @@ export async function reseedDemoAccount(now = new Date()) {
     SharedExpenseInviteModel.deleteMany({
       $or: [{ ownerId: DEMO_EMAIL }, { friendEmail: DEMO_EMAIL }],
     }),
+    // Nothing here is re-inserted below: the assistant's two collections are
+    // wiped rather than seeded. Every visitor shares this one account, so a
+    // conversation left behind is replayed to the next one by GET /api/chat,
+    // along with whatever personal detail the previous visitor typed into it —
+    // which the assistant also persists to FinancialProfile. A demo that is
+    // rebuilt every window must clear them, or they accumulate forever.
+    ChatMessageModel.deleteMany({ userId: DEMO_EMAIL }),
+    FinancialProfileModel.deleteMany({ userId: DEMO_EMAIL }),
   ]);
 
   await Promise.all([
