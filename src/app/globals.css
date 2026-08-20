@@ -56,11 +56,22 @@
   --grey-50: #f3f7fa;
   --grey-500: #607080;
   --grey-900: #152333;
-  --grey-dark-0: #020912;
-  --grey-dark-50: #071321;
-  --grey-dark-100: #102133;
-  --grey-dark-500: #9aabba;
-  --grey-dark-900: #f2f7fa;
+  /*
+   * Dark steps are elevations, not shades of off.
+   *
+   * These used to start at #020912 — near black — with cards at #071321. The
+   * step between them is real in relative terms but tiny in absolute light, so
+   * a card never read as sitting *on* anything: the whole screen collapsed into
+   * one void and the only thing separating a surface from the page was its
+   * border. Dark mode conveys depth through lightness, the way Apple's system
+   * greys do, so each step here is roughly 1.8x the light of the one below and
+   * the ramp starts high enough that the first step is still visible.
+   */
+  --grey-dark-0: #151d29;
+  --grey-dark-50: #202a38;
+  --grey-dark-100: #2c3849;
+  --grey-dark-500: #a4b5c6;
+  --grey-dark-900: #f4f8fb;
 
   /* Status */
   --green-500: #16a34a;
@@ -120,8 +131,8 @@
   --danger: var(--red-500);
   --ring: color-mix(in srgb, var(--brand-600) 35%, transparent);
 
-  --glass: rgba(255, 255, 255, 0.82);
-  --glass-border: transparent;
+  --glass: color-mix(in srgb, var(--grey-0) 85%, transparent);
+  --glass-border: rgba(255, 255, 255, 0.6);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 8px rgba(0, 0, 0, 0.035);
 
   /* Gradients */
@@ -180,7 +191,12 @@
   --surface-2: var(--grey-dark-100);
   --foreground: var(--grey-dark-900);
   --muted: var(--grey-dark-500);
-  --border: rgba(84, 84, 88, 0.5);
+  /*
+   * A hairline of light rather than a grey rule. The old rgba(84,84,88,.5) was
+   * doing the work the elevation ramp above now does, and against a lifted
+   * surface it reads as a drawn line instead of an edge catching light.
+   */
+  --border: rgba(255, 255, 255, 0.09);
 
   /* The cyan ribbon brightens in dark mode while retaining dark label ink. */
   --primary: var(--brand-400);
@@ -193,8 +209,18 @@
   --danger: var(--red-400);
   --ring: color-mix(in srgb, var(--brand-400) 40%, transparent);
 
-  --glass: rgba(28, 28, 30, 0.82);
-  --glass-border: transparent;
+  /*
+   * An elevated material, derived from the ramp rather than pinned to a colour.
+   *
+   * This was rgba(28, 28, 30, 0.82) — a neutral iOS grey with no relationship to
+   * the navy palette around it, and darker than the surface it floated above, so
+   * the hero card read as a hole rather than a raised pane. Lifting the ramp
+   * could never reach it. Taking the top step of the ramp puts the material
+   * above the cards, which is what Apple uses lighter materials for: drawing
+   * attention to the element that matters most on the screen.
+   */
+  --glass: color-mix(in srgb, var(--grey-dark-100) 90%, transparent);
+  --glass-border: rgba(255, 255, 255, 0.08);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 4px 8px rgba(0, 0, 0, 0.2);
 
   --brand-gradient: linear-gradient(100deg, #1d77bb, var(--brand-300) 62%, #43d7b0);
@@ -270,6 +296,12 @@ label,
   background: var(--glass);
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
+  /*
+   * A brighter top edge, the way light catches the lip of a real pane. It is
+   * what stops a large translucent surface reading as a flat painted rectangle,
+   * and `--glass-border` was already declared for it but never spent.
+   */
+  box-shadow: inset 0 1px 0 var(--glass-border);
 }
 
 .card-shadow {
