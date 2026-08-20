@@ -107,7 +107,7 @@ export function TopBar({
         }}
       >
         <PopoverPrimitive.Trigger asChild>
-          <Button variant="secondary" size="icon" aria-label="Notifications">
+          <Button variant="secondary" size="icon" aria-label="Notifications" className="relative">
             <Bell className="h-4 w-4" />
             {unread > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
