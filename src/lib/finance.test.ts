@@ -723,11 +723,32 @@ describe("ordinary expense balance deduction", () => {
     expect(useFinanceStore.getState().expenses[0].balanceApplied).toBe(false);
   });
 
-  it("refuses an expense the selected account cannot cover", () => {
+  /**
+   * An expense is a record of something that already happened. The bank has
+   * taken the money whether or not this app's mirror of the balance agrees, so
+   * refusing the entry does not undo the payment — it only stops the app from
+   * knowing about it, and leaves the mirror drifting further from the truth
+   * with every spend that cannot be entered.
+   */
+  it("records a spend the mirrored balance cannot cover and lets it go negative", () => {
     expect(useFinanceStore.getState().addExpense({ ...spend, amount: 6_000, accountId: "icici" }))
-      .toBe(false);
+      .toBe(true);
+    expect(useFinanceStore.getState().accounts[0].balance).toBe(-1_000);
+    expect(useFinanceStore.getState().expenses).toHaveLength(1);
+  });
+
+  it("returns the balance to where it was when that spend is deleted", () => {
+    useFinanceStore.getState().addExpense({ ...spend, amount: 6_000, accountId: "icici" });
+    useFinanceStore.getState().deleteExpense(useFinanceStore.getState().expenses[0].id);
     expect(useFinanceStore.getState().accounts[0].balance).toBe(5_000);
-    expect(useFinanceStore.getState().expenses).toHaveLength(0);
+  });
+
+  it("lets an edit push the balance below zero rather than rejecting the correction", () => {
+    useFinanceStore.getState().addExpense({ ...spend, accountId: "icici" });
+    const id = useFinanceStore.getState().expenses[0].id;
+
+    expect(useFinanceStore.getState().updateExpense(id, { amount: 6_000 })).toBe(true);
+    expect(useFinanceStore.getState().accounts[0].balance).toBe(-1_000);
   });
 });
 

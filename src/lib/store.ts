@@ -322,7 +322,13 @@ export const useFinanceStore = create<FinanceState>()(
         // Credit cards are absent from `accounts`, so a card-funded expense
         // still finds no account here and stays out of cash balances.
         const balanceApplied = Boolean(account);
-        if (balanceApplied && account!.balance < expense.amount) return false;
+        // No affordability check. An expense records something that has already
+        // happened: the bank took the money whether or not this balance agrees.
+        // Refusing the entry never undid the payment, it only kept the app from
+        // knowing about it — and once the mirror drifted low, nothing could be
+        // recorded against that account again, so it drifted further with every
+        // spend. A balance below zero is the honest signal that the figure here
+        // needs updating, and the UI says so.
         set((state) => ({
           expenses: [{ ...expense, balanceApplied, id: uid("exp") }, ...state.expenses],
           accounts: balanceApplied
@@ -342,15 +348,10 @@ export const useFinanceStore = create<FinanceState>()(
         const nextAccount = updated.accountId
           ? get().accounts.find((candidate) => candidate.id === updated.accountId)
           : undefined;
-        const restoredBalance = nextAccount
-          ? nextAccount.balance +
-            (existing.balanceApplied && existing.accountId === updated.accountId
-              ? existing.amount
-              : 0)
-          : 0;
         const shouldApplyBalance = Boolean(nextAccount);
-        if (shouldApplyBalance && restoredBalance < updated.amount) return false;
-
+        // Same reasoning as `addExpense`: correcting a recorded amount upwards
+        // must not be refused because the mirrored balance has fallen behind.
+        // Blocking the correction is what kept the two further apart.
         set((state) => ({
           expenses: state.expenses.map((expense) =>
             expense.id === id ? { ...updated, balanceApplied: shouldApplyBalance } : expense,
@@ -663,12 +664,10 @@ export const useFinanceStore = create<FinanceState>()(
             if (!account) {
               return { ok: false, reason: "The linked payment account no longer exists." };
             }
-            if (account.balance < expense.amount) {
-              return {
-                ok: false,
-                reason: `Only ${account.balance} remains in ${account.bankName}.`,
-              };
-            }
+            // A missing account is a genuine blocker — there is nowhere to
+            // re-apply the deduction. A balance too small is not: the spend
+            // really happened, and refusing to bring it back only leaves the
+            // record deleted and the balance wrong in the other direction.
           }
         }
 

@@ -18,6 +18,7 @@ import type { Expense } from "@/lib/types";
 import {
   currencySymbol,
   dateInputToIso,
+  formatMoney,
   localDateInputValue,
   parseFinancialDate,
 } from "@/lib/utils";
@@ -153,6 +154,20 @@ export function ExpenseForm({
   const category = useWatch({ control, name: "category" });
   const isFuel = category === "Fuel";
   const { rate: suggestedRate, source: suggestedRateSource } = useFuelRate(open && isFuel);
+
+  const watchedAmount = useWatch({ control, name: "amount" });
+  const overdrawnAccount = accounts.find((account) => account.id === selectedAccountId);
+  const overdrawnBy = (() => {
+    if (!overdrawnAccount) return null;
+    const amount = Number(watchedAmount);
+    if (!Number.isFinite(amount) || amount <= 0) return null;
+    // Editing an existing spend already funded by this account: only the
+    // increase can push the balance further down.
+    const alreadyDeducted =
+      editing?.balanceApplied && editing.accountId === selectedAccountId ? editing.amount : 0;
+    const shortfall = amount - alreadyDeducted - overdrawnAccount.balance;
+    return shortfall > 0 ? shortfall : null;
+  })();
 
   // Prefill only an untouched field. Overwriting a rate the user has just typed
   // because a lookup landed a moment later would be maddening.
@@ -290,11 +305,11 @@ export function ExpenseForm({
           }
         : undefined,
     };
+    // Neither call refuses on an insufficient balance any more — the spend
+    // already happened. `updateExpense` still reports a record that has gone.
     const expenseSaved = editing ? updateExpense(editing.id, payload) : addExpense(payload);
     if (!expenseSaved) {
-      setError("amount", {
-        message: "The selected account does not have enough balance for this payment",
-      });
+      setError("amount", { message: "That expense no longer exists" });
       return;
     }
     if (!editing) {
@@ -420,6 +435,16 @@ export function ExpenseForm({
                   ? "Your payment reduces the selected bank-account balance. Credit cards track usage instead."
                   : "The amount is deducted from the selected bank account. Credit-card purchases appear in card usage instead."}
             </p>
+            {/* Said before saving, and never as a reason to refuse. The spend
+                has already happened; a balance that cannot cover it means the
+                figure held here is stale, which is worth knowing but is not the
+                user's problem to solve before they can record a fill-up. */}
+            {overdrawnBy !== null && (
+              <p className="mt-1 text-xs text-warning">
+                This takes {overdrawnAccount?.bankName} to −{formatMoney(overdrawnBy, currency)}.
+                It will still be recorded — your balance here is probably out of date.
+              </p>
+            )}
           </div>
         )}
 

@@ -440,7 +440,20 @@ export function AccountsView() {
               </div>
               <div className="col-span-2 flex items-center justify-between gap-2 sm:contents">
                 <div className="flex items-center gap-1">
-                  <p className="min-w-20 text-left text-sm font-bold tabular-nums sm:text-right">
+                  {/* A balance below zero is not an error state to hide — it
+                      means more has been recorded against this account than the
+                      figure held here allows for, so the figure is stale. It is
+                      called out so it gets corrected. */}
+                  <p
+                    className={`min-w-20 text-left text-sm font-bold tabular-nums sm:text-right ${
+                      account.balance < 0 && !account.maskBalance ? "text-danger" : ""
+                    }`}
+                    title={
+                      account.balance < 0 && !account.maskBalance
+                        ? "More spending is recorded than this balance covers — update it from your bank."
+                        : undefined
+                    }
+                  >
                     {account.maskBalance ? "••••••" : formatMoney(account.balance, currency)}
                   </p>
                   <Button
