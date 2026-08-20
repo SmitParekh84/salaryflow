@@ -6,6 +6,13 @@
  */
 export const BRAND = {
   name: "Aartha",
+  /**
+   * The in-app adviser. Named, because "Assistant" is a category rather than a
+   * thing — it left the nav item, the page title and the model's own answers
+   * each calling it something slightly different. One name, used everywhere,
+   * including in the system prompt so it introduces itself the same way.
+   */
+  assistantName: "Aartha AI",
   domain: "aartha.app",
   url: "https://aartha.app",
   linkedin: "https://www.linkedin.com/company/aartha-app",

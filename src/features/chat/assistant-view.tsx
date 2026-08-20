@@ -2,6 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
+import { BRAND } from "@/lib/brand";
+import { useFinanceStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Info, Send, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -36,6 +38,10 @@ export function AssistantView() {
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const navMode = useFinanceStore((state) => state.user.navMode ?? "bottom");
+  // The tab bar's height, taken from the bar itself; nothing sits at the bottom
+  // in hamburger mode, and the bar is hidden from `lg` up.
+  const bottomOffset = navMode === "bottom" ? "calc(4rem + env(safe-area-inset-bottom))" : "0px";
 
   useEffect(() => {
     let cancelled = false;
@@ -93,23 +99,30 @@ export function AssistantView() {
   const empty = loaded && messages.length === 0;
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-9rem)] w-full max-w-3xl flex-col lg:h-[calc(100dvh-6rem)]">
-      <header className="mb-4 shrink-0">
+    /*
+     * One scroll surface, not two.
+     *
+     * This used to be a fixed `h-[calc(100dvh-9rem)]` column with its own
+     * scrolling log. The 9rem was a guess at the app chrome, and it was wrong:
+     * `main` already reserves the top bar plus `calc(5rem + safe-area)` at the
+     * bottom for the tab bar, so the guessed height was *added* to that padding
+     * and the page overflowed by exactly the difference — the whole page
+     * scrolled behind an inner scroller, and the send row sat 14px underneath
+     * the tab bar. Now the page scrolls, and the composer sticks above whatever
+     * the current nav mode puts at the bottom of the screen.
+     */
+    <div className="mx-auto flex w-full max-w-3xl flex-col">
+      <header className="mb-4">
         <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground">
           <Sparkles className="size-5 text-primary" aria-hidden />
-          Assistant
+          {BRAND.assistantName}
         </h1>
         <p className="mt-1 text-sm text-muted">
           Ask about your money. Answers use your own salary, spending, bills and investments.
         </p>
       </header>
 
-      <div
-        className="flex-1 space-y-4 overflow-y-auto pb-4"
-        role="log"
-        aria-live="polite"
-        aria-label="Conversation"
-      >
+      <div className="space-y-4 pb-4" role="log" aria-live="polite" aria-label="Conversation">
         {empty ? (
           <div className="rounded-2xl border border-border bg-surface/60 p-5">
             <p className="text-sm font-medium text-foreground">Not sure where to start?</p>
@@ -149,7 +162,16 @@ export function AssistantView() {
         <div ref={endRef} />
       </div>
 
-      <div className="shrink-0 border-t border-border pt-3">
+      {/*
+       * Sticks above the bottom bar rather than at the viewport edge, which
+       * would put it behind one. The offset is the tab bar's own height — the
+       * same expression the bar itself uses — and zero when the user has
+       * switched to the hamburger nav, which has no bottom bar.
+       */}
+      <div
+        className="sticky bottom-(--composer-offset) z-10 -mx-4 border-t border-border bg-background/90 px-4 pb-3 pt-3 backdrop-blur-xl lg:mx-0 lg:bottom-0 lg:px-0"
+        style={{ "--composer-offset": bottomOffset } as React.CSSProperties}
+      >
         <form
           onSubmit={(event) => {
             event.preventDefault();

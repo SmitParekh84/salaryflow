@@ -16,6 +16,7 @@ import { friendNameSuggestions, merchantSuggestions } from "@/lib/suggestions";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
 import {
+  cn,
   currencySymbol,
   dateInputToIso,
   formatMoney,
@@ -23,6 +24,7 @@ import {
   parseFinancialDate,
 } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Heart, Trash2 } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -115,6 +117,8 @@ export function ExpenseForm({
   const addExpense = useFinanceStore((s) => s.addExpense);
   const addBill = useFinanceStore((s) => s.addBill);
   const updateExpense = useFinanceStore((s) => s.updateExpense);
+  const deleteExpense = useFinanceStore((s) => s.deleteExpense);
+  const toggleFavorite = useFinanceStore((s) => s.toggleFavorite);
   const accounts = useFinanceStore((s) => s.accounts);
   const creditCards = useFinanceStore((s) => s.creditCards);
   const queueSync = useFinanceStore((s) => s.queueSync);
@@ -721,7 +725,64 @@ export function ExpenseForm({
         )}
 
         <ModalFooter>
-          <Button type="button" variant="secondary" onClick={onClose}>
+          {/*
+           * Deleting lives here, next to the record it deletes.
+           *
+           * A transaction row used to carry its own overflow menu on a phone,
+           * which put a dot-menu on every line of the list for the sake of two
+           * actions. Tapping the row already opens this editor, so the actions
+           * belong at the bottom of it — and it goes to the recycle bin, so no
+           * confirmation step is needed.
+           */}
+          {editing && (
+            <>
+              {/* Icon only: four labelled buttons do not fit a 390px footer, and
+                  a filled heart already says which state it is in. */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  toggleFavorite(editing.id);
+                  onClose();
+                }}
+                aria-pressed={Boolean(editing.favorite)}
+                aria-label={editing.favorite ? "Remove from favourites" : "Add to favourites"}
+                title={editing.favorite ? "Remove from favourites" : "Add to favourites"}
+                // `min-w-0` defeats the footer's min-width, which is meant for
+                // labelled buttons and would make this one 112px wide.
+                className="mr-auto min-w-0"
+              >
+                <Heart
+                  className={cn(
+                    "h-4 w-4",
+                    editing.favorite ? "fill-danger text-danger" : "text-muted",
+                  )}
+                  aria-hidden
+                />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  deleteExpense(editing.id);
+                  onClose();
+                }}
+                className="text-danger hover:bg-danger/10"
+              >
+                <Trash2 className="h-4 w-4" aria-hidden /> Delete
+              </Button>
+            </>
+          )}
+          {/* Cancel is desktop-only while editing: with Delete alongside it,
+              four buttons overflow a phone footer, and the sheet's own ✕ already
+              closes it without saving. */}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            className={cn(editing && "hidden sm:inline-flex")}
+          >
             Cancel
           </Button>
           <Button type="submit" loading={isSubmitting}>
