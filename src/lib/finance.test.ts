@@ -1125,6 +1125,126 @@ describe("credit cards", () => {
     expect(usage.charges).toBe(2_736);
     expect(usage.outstanding).toBe(2_736);
   });
+
+  /**
+   * A closed statement and the one still accruing are two obligations with two
+   * due dates. Reporting a single total against the upcoming close told a user
+   * that money already owed was not needed until next month.
+   */
+  describe("splitting a closed statement from the one still open", () => {
+    const card: CreditCard = {
+      id: "icici",
+      name: "ICICI",
+      bankName: "ICICI",
+      creditLimit: 100_000,
+      statementDay: 5,
+      status: "active",
+    };
+    // Statement closed 5 Aug and was not paid. Today is 20 Aug.
+    const now = new Date(2026, 7, 20, 12, 0);
+    const billed = expense({
+      id: "billed",
+      amount: 4_000,
+      accountId: "icici",
+      date: new Date(2026, 6, 28, 12, 0).toISOString(),
+    });
+    const accruing = expense({
+      id: "accruing",
+      amount: 1_000,
+      accountId: "icici",
+      date: new Date(2026, 7, 18, 12, 0).toISOString(),
+    });
+
+    it("separates what is already due from what is still accruing", () => {
+      const usage = creditCardUsage(card, [billed, accruing], [], now);
+
+      expect(usage.billedOutstanding).toBe(4_000);
+      expect(usage.currentOutstanding).toBe(1_000);
+      expect(usage.outstanding).toBe(5_000);
+      expect(usage.previousStatementEnd.getMonth()).toBe(7); // closed in August
+      expect(usage.end.getMonth()).toBe(8); // next closes in September
+    });
+
+    it("keeps the two parts summing to the running total", () => {
+      const usage = creditCardUsage(card, [billed, accruing], [], now);
+      expect(usage.billedOutstanding + usage.currentOutstanding).toBe(usage.outstanding);
+    });
+
+    it("pays the closed statement off before the open one", () => {
+      const payment = {
+        id: "payment",
+        amount: 4_000,
+        type: "Other" as const,
+        source: "Card payment",
+        accountId: "icici",
+        date: new Date(2026, 7, 19, 12, 0).toISOString(),
+      };
+      const usage = creditCardUsage(card, [billed, accruing], [payment], now);
+
+      expect(usage.billedOutstanding).toBe(0);
+      expect(usage.currentOutstanding).toBe(1_000);
+      expect(usage.outstanding).toBe(1_000);
+    });
+
+    it("spills an overpayment onto the open statement rather than going negative", () => {
+      const payment = {
+        id: "payment",
+        amount: 4_500,
+        type: "Other" as const,
+        source: "Card payment",
+        accountId: "icici",
+        date: new Date(2026, 7, 19, 12, 0).toISOString(),
+      };
+      const usage = creditCardUsage(card, [billed, accruing], [payment], now);
+
+      expect(usage.billedOutstanding).toBe(0);
+      expect(usage.currentOutstanding).toBe(500);
+    });
+
+    it("bills nothing when every charge is on the open statement", () => {
+      const usage = creditCardUsage(card, [accruing], [], now);
+
+      expect(usage.billedOutstanding).toBe(0);
+      expect(usage.currentOutstanding).toBe(1_000);
+    });
+
+    it("gives the closed statement its own funding line, dated to when it closed", () => {
+      const plan = buildFundingPlan({
+        accounts: [],
+        bills: [],
+        creditCards: [card],
+        expenses: [billed, accruing],
+        incomes: [],
+        investments: [],
+        monthlyIncome: 50_000,
+        now,
+      });
+
+      const due = plan.items.find((item) => item.id === "card-icici-due");
+      const open = plan.items.find((item) => item.id === "card-icici-open");
+
+      expect(due?.amount).toBe(4_000);
+      expect(due?.timing).toContain("Aug");
+      expect(open?.amount).toBe(1_000);
+      expect(open?.timing).toContain("Sep");
+    });
+
+    it("emits only the open line when nothing has been billed yet", () => {
+      const plan = buildFundingPlan({
+        accounts: [],
+        bills: [],
+        creditCards: [card],
+        expenses: [accruing],
+        incomes: [],
+        investments: [],
+        monthlyIncome: 50_000,
+        now,
+      });
+
+      expect(plan.items.find((item) => item.id === "card-icici-due")).toBeUndefined();
+      expect(plan.items.find((item) => item.id === "card-icici-open")?.amount).toBe(1_000);
+    });
+  });
 });
 
 describe("bills and funding plan", () => {

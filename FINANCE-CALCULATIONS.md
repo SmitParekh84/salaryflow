@@ -115,6 +115,25 @@ availableCredit = max(0, creditLimit - outstanding)
 utilizationPercent = outstanding / creditLimit * 100
 ```
 
+A card can owe two things at once, and they are not due on the same day. Charges dated before the active period opened sit on a statement that has already been issued; charges since then are still accruing.
+
+```text
+billedCharges = linked charges dated before the period start
+currentCharges = charges - billedCharges
+
+billedOutstanding = max(0, billedCharges - credits)
+unusedCredits = max(0, credits - billedCharges)
+currentOutstanding = max(0, currentCharges - unusedCredits)
+
+outstanding = billedOutstanding + currentOutstanding
+```
+
+Payments clear the oldest debt first, the way an issuer applies them, and an overpayment spills onto the open statement. The split is exactly equal to `max(0, charges - credits)` in every case, so the running total is unchanged.
+
+`billedOutstanding` is due **now** and is dated to `previousStatementEnd`. `currentOutstanding` is dated to `end`, the next close. The funding plan emits them as separate items, because charging the whole balance to the next close told users that money already overdue could wait another month.
+
+Rules here are enforced by `src/lib/finance.test.ts`.
+
 ## Cash Saved This Cycle
 
 Cash saved is evidence of new savings activity, not the current balance of a savings account and not a goal label.
