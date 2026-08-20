@@ -8,6 +8,7 @@ import {
   MonthlyBars,
   SpendTrendChart,
 } from "@/features/analytics/lazy-charts";
+import { FuelReport } from "@/features/fuel/fuel-report";
 import { useSummary } from "@/hooks/use-summary";
 import { countsAsEarnedIncome } from "@/lib/calculations";
 import {
@@ -157,6 +158,9 @@ export function AnalyticsView() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Renders nothing until there is a fuel expense to report on. */}
+      <FuelReport />
     </div>
   );
 }

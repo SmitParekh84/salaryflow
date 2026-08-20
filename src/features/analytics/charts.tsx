@@ -2,6 +2,7 @@
 
 import { getCategoryColor } from "@/components/category-icon";
 import { financialYearMonths } from "@/lib/financial-year";
+import type { FuelSegment } from "@/lib/fuel";
 import { CHART_COLORS } from "@/lib/theme";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense, Income, SalaryHistoryEntry } from "@/lib/types";
@@ -14,11 +15,14 @@ import {
   BarChart,
   Cell,
   Legend,
+  Line,
+  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
+  YAxis,
 } from "recharts";
 
 export function SpendTrendChart({
@@ -313,6 +317,66 @@ export function MonthlyBars({
         <Bar dataKey="income" name="Income" fill="var(--primary)" radius={[6, 6, 0, 0]} />
         <Bar dataKey="expense" name="Expense" fill={CHART_COLORS.expense} radius={[6, 6, 0, 0]} />
       </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+/**
+ * Mileage per fill, oldest first.
+ *
+ * Only included segments are plotted. A flagged one is nearly always the
+ * artefact of a fill that went unrecorded, and drawing it would put a spike on
+ * the chart that describes the user's record-keeping rather than their bike.
+ */
+export function MileageTrendChart({ segments }: { segments: FuelSegment[] }) {
+  const data = useMemo(
+    () =>
+      segments
+        .filter((segment) => segment.included)
+        .map((segment) => ({
+          label: parseFinancialDate(segment.date).toLocaleDateString("en-US", {
+            day: "numeric",
+            month: "short",
+          }),
+          kmpl: Number(segment.kmpl.toFixed(1)),
+        })),
+    [segments],
+  );
+
+  return (
+    <ResponsiveContainer width="100%" height={200}>
+      <LineChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+        <XAxis
+          dataKey="label"
+          tick={{ fontSize: 10, fill: "var(--muted)" }}
+          tickLine={false}
+          axisLine={false}
+          interval="preserveStartEnd"
+          minTickGap={24}
+        />
+        <YAxis
+          tick={{ fontSize: 10, fill: "var(--muted)" }}
+          tickLine={false}
+          axisLine={false}
+          width={34}
+        />
+        <Tooltip
+          contentStyle={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: 12,
+            fontSize: 12,
+          }}
+          formatter={(value) => [`${Number(value)} kmpl`, "Mileage"]}
+        />
+        <Line
+          type="monotone"
+          dataKey="kmpl"
+          stroke="var(--primary)"
+          strokeWidth={2}
+          dot={{ r: 3 }}
+        />
+      </LineChart>
     </ResponsiveContainer>
   );
 }
