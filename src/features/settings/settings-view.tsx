@@ -6,6 +6,7 @@ import { AmountInput } from "@/components/ui/amount-input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
+import { Modal, ModalFooter } from "@/components/ui/modal";
 import { AboutYouForm } from "@/features/chat/about-you-form";
 import { AVATARS } from "@/lib/avatars";
 import { VehicleSettings } from "@/features/fuel/vehicle-settings";
@@ -34,6 +35,7 @@ import {
   Eye,
   FileJson,
   Fuel,
+  KeyRound,
   Landmark,
   ListChecks,
   LogOut,
@@ -121,6 +123,28 @@ const SETTINGS_SECTIONS: {
   },
 ];
 
+/** Sheet titles for the money rows, keyed by the row that opened it. */
+const MONEY_ROW_TITLES = {
+  amount: "Salary amount",
+  salaryDay: "Salary day",
+  country: "Country",
+  currency: "Currency",
+  financialYear: "Financial year",
+  savingsGoal: "Monthly savings goal",
+  emergencyFundGoal: "Emergency fund target",
+} as const;
+
+/** "25th", so a row reads as a date rather than a bare number. */
+function ordinalDay(day?: number): string {
+  if (!day) return "Not set";
+  const remainderTen = day % 10;
+  const remainderHundred = day % 100;
+  if (remainderTen === 1 && remainderHundred !== 11) return `${day}st`;
+  if (remainderTen === 2 && remainderHundred !== 12) return `${day}nd`;
+  if (remainderTen === 3 && remainderHundred !== 13) return `${day}rd`;
+  return `${day}th`;
+}
+
 function draftFromProfile(profile: {
   amount?: number;
   salaryDay?: number;
@@ -168,6 +192,7 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
   const [categoryIcon, setCategoryIcon] = useState<CategoryIconName>("package");
   const [categoryColor, setCategoryColor] = useState<string>(PICKER_DEFAULT_COLOR);
   const [categoryError, setCategoryError] = useState("");
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   /**
    * Salary fields are drafted locally rather than written straight to the store.
@@ -251,7 +276,9 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
           parsed.error.issues.map((issue) => [String(issue.path[0]), issue.message]),
         ),
       );
-      return;
+      // Reported so a row's editing sheet can stay open on a rejected value
+      // instead of closing over an unsaved figure.
+      return false;
     }
 
     setPreferenceErrors({});
@@ -266,6 +293,21 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
     await syncWithServer();
     setPreferencesSaved(true);
     setTimeout(() => setPreferencesSaved(false), 1600);
+    return true;
+  };
+
+  /**
+   * Which money row is open for editing, if any.
+   *
+   * One field at a time. The pane used to show every input at once, so a screen
+   * held four settings and no sense of what else the section contained.
+   */
+  const [editingMoney, setEditingMoney] = useState<null | keyof typeof MONEY_ROW_TITLES>(null);
+
+  const closeMoneyEditor = async () => {
+    const ok = await savePreferences();
+    // A rejected value keeps the sheet open with the message beside the field.
+    if (ok) setEditingMoney(null);
   };
 
   const addCategory = async () => {
@@ -423,9 +465,8 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                * changes as you tap — so making it wait behind a submit button
                * would leave people unsure whether it took.
                */}
-              <div className="mb-6">
-                <p className="text-xs font-medium text-foreground">Profile picture</p>
-                <div className="mt-3 flex flex-wrap items-center gap-3">
+              <SettingsGroup title="Profile picture">
+                <div className="flex flex-wrap items-center gap-3">
                   {AVATARS.map((avatar) => {
                     const selected = profile.avatar === avatar.id;
                     return (
@@ -471,40 +512,46 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                     Use initials
                   </Button>
                 </div>
-              </div>
+              </SettingsGroup>
 
               <form
-                className="space-y-4"
+                className="space-y-5"
                 onSubmit={(event) => {
                   event.preventDefault();
                   void saveProfile();
                 }}
               >
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="profile-name">Name</Label>
-                    <Input
-                      id="profile-name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                    />
+                <SettingsGroup title="Your details">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label htmlFor="profile-name">Name</Label>
+                      <Input
+                        id="profile-name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="profile-email">Email</Label>
+                      <Input
+                        id="profile-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="profile-email">Email</Label>
-                    <Input
-                      id="profile-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <Button type="submit" size="sm" disabled={!name.trim() || !email.trim()}>
+                </SettingsGroup>
+                <Button
+                  type="submit"
+                  className="w-full sm:w-auto"
+                  disabled={!name.trim() || !email.trim()}
+                >
                   {saved ? "Saved" : "Save changes"}
                 </Button>
               </form>
 
-              <div className="border-t border-border pt-5">
+              <div className="border-t border-border pt-5 lg:pt-5">
                 <AboutYouForm />
               </div>
             </SettingsPane>
@@ -515,164 +562,248 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
               title="Money setup"
               description="Set the salary cycle and regional formats used throughout the app."
             >
-              <form
-                className="space-y-4"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void savePreferences();
-                }}
+              <SettingRows title="Salary">
+                <SettingRow
+                  label="Salary amount"
+                  value={formatMoney(profile.amount, profile.currency)}
+                  onClick={() => setEditingMoney("amount")}
+                />
+                <SettingRow
+                  label="Salary day"
+                  value={ordinalDay(profile.salaryDay)}
+                  onClick={() => setEditingMoney("salaryDay")}
+                />
+              </SettingRows>
+
+              <SettingRows title="Region">
+                <SettingRow
+                  label="Country"
+                  value={profile.country}
+                  onClick={() => setEditingMoney("country")}
+                />
+                <SettingRow
+                  label="Currency"
+                  value={profile.currency}
+                  onClick={() => setEditingMoney("currency")}
+                />
+                <SettingRow
+                  label="Financial year"
+                  value={financialYearLabel(selectedFinancialYear)}
+                  onClick={() => setEditingMoney("financialYear")}
+                />
+              </SettingRows>
+
+              <SettingRows
+                title="Targets"
+                footnote={
+                  activeBudgetRule
+                    ? `${activeBudgetRule.name} sets the savings target at ${savingsPercentage ?? 0}% of this cycle's confirmed ${formatMoney(summary.salaryIncome, profile.currency)} salary, so the row is not editable. Other income does not raise it.`
+                    : undefined
+                }
               >
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <div>
-                    <Label htmlFor="salary-amount">Salary amount</Label>
-                    <AmountInput
-                      id="salary-amount"
-                      prefix={currencySymbol(profile.currency)}
-                      value={draft.amount}
-                      invalid={Boolean(preferenceErrors.amount)}
-                      onChange={(amount) => setDraft({ ...draft, amount })}
-                    />
-                    {preferenceErrors.amount && (
-                      <p className="mt-1 text-xs text-danger">{preferenceErrors.amount}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="salary-day">Salary day</Label>
-                    <AmountInput
-                      id="salary-day"
-                      decimals={0}
-                      value={draft.salaryDay}
-                      invalid={Boolean(preferenceErrors.salaryDay)}
-                      onChange={(salaryDay) => setDraft({ ...draft, salaryDay })}
-                    />
-                    {preferenceErrors.salaryDay && (
-                      <p className="mt-1 text-xs text-danger">{preferenceErrors.salaryDay}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="profile-country">Country</Label>
-                    <Select
-                      id="profile-country"
-                      value={profile.country}
-                      onChange={(event) => {
-                        const country = event.target.value;
-                        updateProfile({
-                          country,
-                          currency: COUNTRY_CURRENCIES[country] ?? profile.currency,
-                        });
+                <SettingRow
+                  label={activeBudgetRule ? "Monthly savings target" : "Monthly savings goal"}
+                  value={formatMoney(
+                    ruleSavingsTarget ?? (Number(stripGrouping(draft.savingsGoal)) || 0),
+                    profile.currency,
+                  )}
+                  onClick={activeBudgetRule ? undefined : () => setEditingMoney("savingsGoal")}
+                />
+                <SettingRow
+                  label="Emergency fund target"
+                  value={formatMoney(profile.emergencyFundGoal, profile.currency)}
+                  onClick={() => setEditingMoney("emergencyFundGoal")}
+                />
+              </SettingRows>
+
+              {/*
+               * One sheet, whichever row asked for it. Each carries the field's
+               * own helper text, which used to sit permanently in the list and
+               * made a seven-setting screen read like a form.
+               */}
+              <Modal
+                open={editingMoney !== null}
+                onClose={() => setEditingMoney(null)}
+                title={editingMoney ? MONEY_ROW_TITLES[editingMoney] : ""}
+              >
+                <div className="space-y-4">
+                  {editingMoney === "amount" && (
+                    <div>
+                      <Label htmlFor="salary-amount">Salary amount</Label>
+                      <AmountInput
+                        id="salary-amount"
+                        autoFocus
+                        prefix={currencySymbol(profile.currency)}
+                        value={draft.amount}
+                        invalid={Boolean(preferenceErrors.amount)}
+                        onChange={(amount) => setDraft({ ...draft, amount })}
+                      />
+                      <p className={preferenceErrors.amount ? "mt-1.5 text-xs text-danger" : "mt-1.5 text-xs text-muted"}>
+                        {preferenceErrors.amount ?? "What lands in your account each cycle."}
+                      </p>
+                    </div>
+                  )}
+
+                  {editingMoney === "salaryDay" && (
+                    <div>
+                      <Label htmlFor="salary-day">Salary day</Label>
+                      <AmountInput
+                        id="salary-day"
+                        autoFocus
+                        decimals={0}
+                        value={draft.salaryDay}
+                        invalid={Boolean(preferenceErrors.salaryDay)}
+                        onChange={(salaryDay) => setDraft({ ...draft, salaryDay })}
+                      />
+                      <p className={preferenceErrors.salaryDay ? "mt-1.5 text-xs text-danger" : "mt-1.5 text-xs text-muted"}>
+                        {preferenceErrors.salaryDay ?? "Day of the month your salary arrives."}
+                      </p>
+                    </div>
+                  )}
+
+                  {editingMoney === "country" && (
+                    <div>
+                      <Label htmlFor="profile-country">Country</Label>
+                      <Select
+                        id="profile-country"
+                        value={profile.country}
+                        onChange={(event) => {
+                          const country = event.target.value;
+                          updateProfile({
+                            country,
+                            currency: COUNTRY_CURRENCIES[country] ?? profile.currency,
+                          });
+                        }}
+                      >
+                        {COUNTRIES.map((country) => (
+                          <option key={country} value={country}>
+                            {country}
+                          </option>
+                        ))}
+                      </Select>
+                      <p className="mt-1.5 text-xs text-muted">
+                        Sets the currency to the local one, which you can still change.
+                      </p>
+                    </div>
+                  )}
+
+                  {editingMoney === "currency" && (
+                    <div>
+                      <Label htmlFor="profile-currency">Currency</Label>
+                      <Select
+                        id="profile-currency"
+                        value={profile.currency}
+                        onChange={(e) => updateProfile({ currency: e.target.value })}
+                      >
+                        {CURRENCIES.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.code}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                  )}
+
+                  {editingMoney === "financialYear" && (
+                    <div>
+                      <Label htmlFor="financial-year">Financial year</Label>
+                      <Select
+                        id="financial-year"
+                        value={selectedFinancialYear}
+                        onChange={(event) =>
+                          updateProfile({ financialYearStart: Number(event.target.value) })
+                        }
+                      >
+                        {financialYears.map((year) => (
+                          <option key={year} value={year}>
+                            {financialYearLabel(year)}
+                            {year === currentFinancialYear ? " · Current" : ""}
+                          </option>
+                        ))}
+                      </Select>
+                      <p className="mt-1.5 text-xs text-muted">
+                        India financial years run from April 1 to March 31. Historical screens use
+                        this selection.
+                      </p>
+                    </div>
+                  )}
+
+                  {editingMoney === "savingsGoal" && (
+                    <div>
+                      <Label htmlFor="savings-goal">Monthly savings goal</Label>
+                      <AmountInput
+                        id="savings-goal"
+                        autoFocus
+                        prefix={currencySymbol(profile.currency)}
+                        value={draft.savingsGoal}
+                        invalid={Boolean(preferenceErrors.savingsGoal)}
+                        onChange={(savingsGoal) => setDraft({ ...draft, savingsGoal })}
+                      />
+                      <p className={preferenceErrors.savingsGoal ? "mt-1.5 text-xs text-danger" : "mt-1.5 text-xs text-muted"}>
+                        {preferenceErrors.savingsGoal ?? "Used when no budget rule is active."}
+                      </p>
+                    </div>
+                  )}
+
+                  {editingMoney === "emergencyFundGoal" && (
+                    <div>
+                      <Label htmlFor="emergency-target">Emergency fund target</Label>
+                      <AmountInput
+                        id="emergency-target"
+                        autoFocus
+                        prefix={currencySymbol(profile.currency)}
+                        value={draft.emergencyFundGoal}
+                        invalid={Boolean(preferenceErrors.emergencyFundGoal)}
+                        onChange={(emergencyFundGoal) => setDraft({ ...draft, emergencyFundGoal })}
+                      />
+                      {preferenceErrors.emergencyFundGoal ? (
+                        <p className="mt-1.5 text-xs text-danger">
+                          {preferenceErrors.emergencyFundGoal}
+                        </p>
+                      ) : emergencySuggestion ? (
+                        <p className="mt-1.5 text-xs text-muted">
+                          {emergencySuggestion.months} months of your{" "}
+                          {emergencySuggestion.basis === "salary" ? "salary" : "outgoings"} is{" "}
+                          {formatMoney(emergencySuggestion.amount, profile.currency)}.{" "}
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            className="h-auto min-h-0 px-0 text-xs"
+                            onClick={() =>
+                              setDraft({
+                                ...draft,
+                                emergencyFundGoal: String(emergencySuggestion.amount),
+                              })
+                            }
+                          >
+                            Use this
+                          </Button>
+                        </p>
+                      ) : null}
+                    </div>
+                  )}
+
+                  <ModalFooter>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => {
+                        // Drop an unsaved edit rather than leaving it in the
+                        // draft to be committed by an unrelated row later.
+                        setDraft(draftFromProfile(profile));
+                        setPreferenceErrors({});
+                        setEditingMoney(null);
                       }}
                     >
-                      {COUNTRIES.map((country) => (
-                        <option key={country} value={country}>
-                          {country}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="profile-currency">Currency</Label>
-                    <Select
-                      id="profile-currency"
-                      value={profile.currency}
-                      onChange={(e) => updateProfile({ currency: e.target.value })}
-                    >
-                      {CURRENCIES.map((c) => (
-                        <option key={c.code} value={c.code}>
-                          {c.code}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
+                      Cancel
+                    </Button>
+                    <Button type="button" onClick={() => void closeMoneyEditor()}>
+                      {preferencesSaved ? "Saved" : "Done"}
+                    </Button>
+                  </ModalFooter>
                 </div>
-                <div className="max-w-sm">
-                  <Label htmlFor="financial-year">Financial year</Label>
-                  <Select
-                    id="financial-year"
-                    value={selectedFinancialYear}
-                    onChange={(event) =>
-                      updateProfile({ financialYearStart: Number(event.target.value) })
-                    }
-                  >
-                    {financialYears.map((year) => (
-                      <option key={year} value={year}>
-                        {financialYearLabel(year)}
-                        {year === currentFinancialYear ? " · Current" : ""}
-                      </option>
-                    ))}
-                  </Select>
-                  <p className="mt-1.5 text-xs text-muted">
-                    India financial years run from April 1 to March 31. Historical screens use this
-                    selection.
-                  </p>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="savings-goal">
-                      {activeBudgetRule
-                        ? "Monthly savings target (current cycle)"
-                        : "Monthly savings goal"}
-                    </Label>
-                    <AmountInput
-                      id="savings-goal"
-                      prefix={currencySymbol(profile.currency)}
-                      value={
-                        ruleSavingsTarget === undefined
-                          ? draft.savingsGoal
-                          : String(Math.round(ruleSavingsTarget))
-                      }
-                      readOnly={Boolean(activeBudgetRule)}
-                      invalid={Boolean(preferenceErrors.savingsGoal)}
-                      onChange={(savingsGoal) => setDraft({ ...draft, savingsGoal })}
-                    />
-                    {preferenceErrors.savingsGoal && (
-                      <p className="mt-1 text-xs text-danger">{preferenceErrors.savingsGoal}</p>
-                    )}
-                    <p className="mt-1 text-xs text-muted">
-                      {activeBudgetRule
-                        ? `${activeBudgetRule.name} sets ${savingsPercentage ?? 0}% of this cycle's confirmed ${formatMoney(summary.salaryIncome, profile.currency)} salary. Other income does not increase this target.`
-                        : "Used when no budget rule is active."}
-                    </p>
-                  </div>
-                  <div>
-                    <Label htmlFor="emergency-target">Emergency fund target</Label>
-                    <AmountInput
-                      id="emergency-target"
-                      prefix={currencySymbol(profile.currency)}
-                      value={draft.emergencyFundGoal}
-                      invalid={Boolean(preferenceErrors.emergencyFundGoal)}
-                      onChange={(emergencyFundGoal) => setDraft({ ...draft, emergencyFundGoal })}
-                    />
-                    {preferenceErrors.emergencyFundGoal ? (
-                      <p className="mt-1 text-xs text-danger">
-                        {preferenceErrors.emergencyFundGoal}
-                      </p>
-                    ) : emergencySuggestion ? (
-                      <p className="mt-1.5 text-xs text-muted">
-                        {emergencySuggestion.months} months of your{" "}
-                        {emergencySuggestion.basis === "salary" ? "salary" : "outgoings"} is{" "}
-                        {formatMoney(emergencySuggestion.amount, profile.currency)}.{" "}
-                        <Button
-                          type="button"
-                          variant="link"
-                          size="sm"
-                          className="px-0 text-xs"
-                          onClick={() =>
-                            setDraft({
-                              ...draft,
-                              emergencyFundGoal: String(emergencySuggestion.amount),
-                            })
-                          }
-                        >
-                          Use this
-                        </Button>
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-                <Button type="submit" size="sm">
-                  {preferencesSaved ? "Saved" : "Save preferences"}
-                </Button>
-              </form>
+              </Modal>
             </SettingsPane>
           )}
 
@@ -937,8 +1068,27 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                 />
               </div>
 
+              <SettingRows title="Security">
+                <SettingRow
+                  label="Change password"
+                  icon={KeyRound}
+                  onClick={() => setPasswordOpen(true)}
+                />
+              </SettingRows>
+
+              <Modal
+                open={passwordOpen}
+                onClose={() => setPasswordOpen(false)}
+                title="Change password"
+              >
+                <p className="mb-4 text-xs leading-relaxed text-muted">
+                  Your current password is needed to set a new one. Changing it signs you out
+                  everywhere else — this device stays signed in.
+                </p>
+                <ChangePasswordForm embedded />
+              </Modal>
+
               <div className="space-y-5 border-t border-border pt-5">
-                <ChangePasswordForm />
 
                 <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -969,12 +1119,138 @@ function SettingsPane({
 }) {
   return (
     <div>
-      <header className="border-b border-border py-4 lg:px-6">
+      {/*
+       * Desktop only. On a phone this header repeated the title already in the
+       * top bar and then spent three lines describing a screen the user is
+       * looking at — the first thing between them and the settings they came
+       * for. The section list on the way in carries the same description.
+       */}
+      <header className="hidden border-b border-border py-4 lg:block lg:px-6">
         <h2 className="text-base font-semibold">{title}</h2>
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted">{description}</p>
       </header>
-      <div className="space-y-5 py-5 lg:p-6">{children}</div>
+      <div className="space-y-5 py-1 lg:space-y-5 lg:p-6">{children}</div>
     </div>
+  );
+}
+
+/**
+ * One setting, as a row: what it is on the left, what it is set to on the
+ * right, and a chevron if tapping opens something.
+ *
+ * A pane used to be a column of full-width input boxes, so a screen showed four
+ * settings and nothing else — you could not see what a section contained
+ * without scrolling it. A row states the current value, which is the thing
+ * being looked for most of the time, and keeps the input out of sight until it
+ * is actually wanted.
+ */
+function SettingRow({
+  label,
+  value,
+  onClick,
+  icon: Icon,
+  danger,
+}: {
+  label: string;
+  value?: React.ReactNode;
+  onClick?: () => void;
+  icon?: LucideIcon;
+  danger?: boolean;
+}) {
+  const body = (
+    <>
+      {Icon && <Icon className={cn("h-4 w-4 shrink-0", danger ? "text-danger" : "text-muted")} />}
+      <span className={cn("min-w-0 flex-1 text-sm", danger && "text-danger")}>{label}</span>
+      {value !== undefined && (
+        <span className="max-w-[45%] truncate text-sm text-muted">{value}</span>
+      )}
+      {onClick && <ChevronRight className="h-4 w-4 shrink-0 text-muted" />}
+    </>
+  );
+
+  if (!onClick) {
+    return <div className="flex min-h-12 items-center gap-3 px-4 py-3">{body}</div>;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-12 w-full items-center gap-3 px-4 py-3 text-left outline-none transition-colors active:bg-surface-2/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-(--ring)"
+    >
+      {body}
+    </button>
+  );
+}
+
+/** A card of `SettingRow`s, divided like a phone settings list. */
+function SettingRows({
+  title,
+  footnote,
+  children,
+}: {
+  title?: string;
+  footnote?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-2">
+      {title && (
+        <h3 className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted">
+          {title}
+        </h3>
+      )}
+      {/* Card on a phone, plain divided list on desktop — see SettingsGroup. */}
+      <div className="overflow-hidden rounded-2xl bg-surface shadow-[var(--shadow)] lg:rounded-none lg:border-y lg:border-border lg:bg-transparent lg:shadow-none">
+        <div className="divide-y divide-border">{children}</div>
+      </div>
+      {footnote && <p className="px-1 text-[11px] leading-relaxed text-muted">{footnote}</p>}
+    </section>
+  );
+}
+
+/**
+ * One set of related settings.
+ *
+ * A phone showed every pane as one undifferentiated column of full-width
+ * fields — nine labels and nine boxes with nothing saying which belonged
+ * together, so finding "currency" meant reading all of them. Grouping them into
+ * titled cards is the convention every phone settings app uses, and it gives the
+ * eye somewhere to stop.
+ *
+ * Cards on a phone only: from `lg` the pane already sits on its own surface, and
+ * a card on a card draws a boundary nobody can see.
+ */
+function SettingsGroup({
+  title,
+  footnote,
+  children,
+}: {
+  title?: string;
+  /** Group-level note, set below the card the way a phone settings screen does. */
+  footnote?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-2">
+      {title && (
+        <h3 className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted lg:px-0">
+          {title}
+        </h3>
+      )}
+      {/*
+       * `shadow-[var(--shadow)]` rather than the `card-shadow` class: that one
+       * lives outside Tailwind's layers, so a `lg:` variant cannot switch it off
+       * and the card kept its shadow on desktop with nothing behind it to cast
+       * one. Same shadow, expressed as a utility that responds to breakpoints.
+       */}
+      <div className="space-y-4 rounded-2xl bg-surface p-4 shadow-[var(--shadow)] lg:rounded-none lg:bg-transparent lg:p-0 lg:shadow-none">
+        {children}
+      </div>
+      {footnote && (
+        <p className="px-1 text-[11px] leading-relaxed text-muted lg:px-0">{footnote}</p>
+      )}
+    </section>
   );
 }
 

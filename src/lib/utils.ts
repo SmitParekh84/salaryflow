@@ -1,5 +1,20 @@
 import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
+
+/**
+ * `card-shadow` is one of ours, so tailwind-merge has to be told it is a shadow.
+ *
+ * It is a plain class in globals.css, which puts it outside `@layer utilities`
+ * and therefore ahead of every Tailwind utility in the cascade — so
+ * `shadow-none` never removed it. A dozen call sites passed `shadow-none` to a
+ * `Card` believing it did, and every one of them was still casting a shadow;
+ * transparent cards cast them over nothing at all. Grouping it with the shadow
+ * utilities means the last one written wins, which is what those call sites
+ * already assume.
+ */
+const twMerge = extendTailwindMerge({
+  extend: { classGroups: { shadow: ["card-shadow"] } },
+});
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

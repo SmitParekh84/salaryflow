@@ -3,6 +3,7 @@
 import { AmountInput } from "@/components/ui/amount-input";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
+import { BRAND } from "@/lib/brand";
 import { MAX_AGE, MIN_AGE, ageOn, isValidDateOfBirth } from "@/lib/date-of-birth";
 import { toInputValue } from "@/lib/number-input";
 import { useFinanceStore } from "@/lib/store";
@@ -182,13 +183,15 @@ export function AboutYouForm() {
           value={value}
           onChange={(next) => set(field.key, next)}
         />
-        <div className="mt-1.5 flex items-baseline justify-between gap-3">
+        {/* Stacked on a phone: side by side, the hint wrapped to two ragged
+            lines against a link that would not shrink. */}
+        <div className="mt-1.5 flex flex-col items-start gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
           <p className="text-xs text-muted">{isNone ? `You said: ${field.none}` : field.hint}</p>
           <Button
             type="button"
             variant="link"
             size="sm"
-            className="shrink-0 px-0 text-xs"
+            className="h-auto min-h-0 shrink-0 px-0 text-xs"
             onClick={() => set(field.key, value === "" ? "0" : "")}
           >
             {value === "" ? field.none : "Clear"}
@@ -213,14 +216,19 @@ export function AboutYouForm() {
             {status === "loading" ? "Loading…" : `${answered} of ${total} answered`}
           </p>
         </div>
-        <p className="mt-1 text-sm leading-relaxed text-muted">
-          Everything here is optional and only the assistant reads it. Fill in what you like — it
-          asks for anything else when it actually needs it. If something does not apply to you,
-          say so with the link under the field rather than typing a zero.
+        {/* Six lines of explanation before the first field on a phone. The
+            point is that nothing here is required; the rest is discoverable
+            from the fields themselves. */}
+        <p className="mt-1 text-xs leading-relaxed text-muted sm:text-sm">
+          All optional — only {BRAND.assistantName} reads it, and it asks for anything else when it
+          actually needs it. If something does not apply to you, use the link under the field rather
+          than typing a zero.
         </p>
       </div>
 
-      <fieldset className="space-y-4">
+      {/* Card on a phone, plain section from `lg`, matching the grouped settings
+          panes: unseparated fields ran together into one wall. */}
+      <fieldset className="space-y-4 rounded-2xl bg-surface p-4 shadow-[var(--shadow)] lg:rounded-none lg:bg-transparent lg:p-0 lg:shadow-none">
         <legend className="text-xs font-medium tracking-wide text-muted uppercase">You</legend>
 
         <div>
@@ -263,17 +271,21 @@ export function AboutYouForm() {
         {YOU.map(numberField)}
       </fieldset>
 
-      <fieldset className="space-y-4">
+      {/* Card on a phone, plain section from `lg`, matching the grouped settings
+          panes: unseparated fields ran together into one wall. */}
+      <fieldset className="space-y-4 rounded-2xl bg-surface p-4 shadow-[var(--shadow)] lg:rounded-none lg:bg-transparent lg:p-0 lg:shadow-none">
         <legend className="text-xs font-medium tracking-wide text-muted uppercase">
           Cover and obligations
         </legend>
         <div className="grid gap-4 sm:grid-cols-2">{COVER.map(numberField)}</div>
       </fieldset>
 
-      <div className="flex items-center gap-3">
+      {/* Matches the other save buttons on this screen: full width on a phone,
+          sized to its label from `sm`. */}
+      <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-3">
         <Button
           type="submit"
-          size="sm"
+          className="w-full sm:w-auto"
           loading={status === "saving"}
           disabled={status === "loading" || !birthdayValid}
         >

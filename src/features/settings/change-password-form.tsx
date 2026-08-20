@@ -15,7 +15,13 @@ import { useState } from "react";
 
 const EMPTY = { currentPassword: "", newPassword: "", confirmPassword: "" };
 
-export function ChangePasswordForm() {
+/**
+ * `embedded` drops the heading and explanation, for when a sheet around it has
+ * already said what this is. Three password boxes sitting open on the System
+ * screen looked like something the app wanted, rather than something available
+ * if you asked for it.
+ */
+export function ChangePasswordForm({ embedded = false }: { embedded?: boolean }) {
   const [draft, setDraft] = useState(EMPTY);
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [error, setError] = useState("");
@@ -75,13 +81,15 @@ export function ChangePasswordForm() {
         void save();
       }}
     >
-      <div>
-        <h3 className="text-sm font-semibold">Change password</h3>
-        <p className="mt-1 text-xs text-muted">
-          Your current password is needed to set a new one. Changing it signs you out everywhere
-          else — this device stays signed in.
-        </p>
-      </div>
+      {!embedded && (
+        <div>
+          <h3 className="text-sm font-semibold">Change password</h3>
+          <p className="mt-1 text-xs text-muted">
+            Your current password is needed to set a new one. Changing it signs you out everywhere
+            else — this device stays signed in.
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div>

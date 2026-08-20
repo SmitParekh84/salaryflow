@@ -18,6 +18,17 @@ const contentSecurityPolicy = [
 const nextConfig: NextConfig = {
   devIndicators: false,
   poweredByHeader: false,
+  images: {
+    /*
+     * How long the browser may keep an optimised image.
+     *
+     * The optimiser's own default sends `max-age=0, must-revalidate`, so the
+     * profile avatar in the top bar was re-requested on every page load — a
+     * round trip per navigation for a picture that never changes. A week of
+     * freshness matches what `/icons/` already uses below.
+     */
+    minimumCacheTTL: 604800,
+  },
   experimental: {
     /**
      * Every page in the app group is a client component reading from the
@@ -63,6 +74,25 @@ const nextConfig: NextConfig = {
        */
       {
         source: "/icons/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=604800, stale-while-revalidate=2592000",
+          },
+        ],
+      },
+
+      /*
+       * Profile avatars, on the same terms as the icons above.
+       *
+       * `minimumCacheTTL` covers what the browser gets back from the image
+       * optimiser; this covers the file itself, which the optimiser fetches and
+       * anything linking straight to it would hit. Not `immutable`, for the same
+       * reason as the icons: these paths are not content-hashed, so a re-cropped
+       * avatar has to be able to reach installs that already cached one.
+       */
+      {
+        source: "/avatars/:path*",
         headers: [
           {
             key: "Cache-Control",
