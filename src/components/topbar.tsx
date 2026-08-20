@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { GlobalSearch } from "./global-search";
+import { UserAvatar } from "./user-avatar";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "./ui/button";
 
@@ -41,13 +42,6 @@ export function TopBar({
   }, []);
 
   const unread = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
-
-  const initials = (user.name || "SF")
-    .split(" ")
-    .map((s) => s[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 
   const { logout } = useAuth();
   const [openMenu, setOpenMenu] = useState(false);
@@ -197,13 +191,15 @@ export function TopBar({
         }}
       >
         <DropdownMenuPrimitive.Trigger asChild>
+          {/* The button is a plain round frame now; UserAvatar paints either the
+              chosen picture or the initials gradient inside it. */}
           <Button
             variant="ghost"
             size="icon"
-            className="bg-linear-to-br from-primary to-primary/60 text-sm font-bold text-primary-foreground hover:opacity-90"
+            className="overflow-hidden rounded-full p-0 hover:opacity-90"
             aria-label="Account menu"
           >
-            {initials}
+            <UserAvatar size={36} />
           </Button>
         </DropdownMenuPrimitive.Trigger>
         <DropdownMenuPrimitive.Portal>

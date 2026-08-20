@@ -222,6 +222,8 @@ export interface SalaryProfile {
   emergencyFundGoal: number;
   investmentAmount: number;
   financialYearStart?: number;
+  /** Chosen profile picture, by id from src/lib/avatars.ts. */
+  avatar?: string;
   customCategories?: CustomCategory[];
   city?: string;
   vehicle?: Vehicle;

@@ -71,6 +71,13 @@ const SalaryProfileSchema = new Schema(
     emergencyFundGoal: { type: Number, default: 0 },
     investmentAmount: { type: Number, default: 0 },
     financialYearStart: Number,
+    /**
+     * Chosen profile picture, by id. Stored here rather than on the user
+     * document because this is the object sync already carries both ways, so
+     * the choice follows the person to their other devices. An id, not a path —
+     * see src/lib/avatars.ts.
+     */
+    avatar: String,
     customCategories: [
       new Schema(
         {

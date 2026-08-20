@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { AboutYouForm } from "@/features/chat/about-you-form";
+import { AVATARS } from "@/lib/avatars";
 import { VehicleSettings } from "@/features/fuel/vehicle-settings";
 import { ChangePasswordForm } from "@/features/settings/change-password-form";
 import { useSummary } from "@/hooks/use-summary";
@@ -27,6 +28,7 @@ import type { CategoryIconName } from "@/lib/types";
 import { useAuth } from "@/lib/useAuth";
 import { cn, currencySymbol, formatMoney, uid } from "@/lib/utils";
 import {
+  Check,
   ChevronRight,
   Download,
   Eye,
@@ -48,6 +50,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -215,6 +218,20 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
     await syncWithServer();
     setSaved(true);
     setTimeout(() => setSaved(false), 1600);
+  };
+
+  /**
+   * An empty string clears the picture, not `undefined`.
+   *
+   * `JSON.stringify` drops undefined keys, so an unset never reached the server;
+   * the stored id survived the push and the next merge — which replaces the
+   * local profile with the server's — put the old picture straight back. An
+   * empty string survives the round trip and reads as "no avatar" everywhere,
+   * because `avatarById` treats any falsy id as none.
+   */
+  const chooseAvatar = async (avatar: string) => {
+    updateProfile({ avatar });
+    await syncWithServer();
   };
 
   const savePreferences = async () => {
@@ -400,6 +417,62 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
               title="User profile"
               description="Keep the name and email associated with your Aartha account up to date."
             >
+              {/*
+               * Saved on tap, not on "Save changes". Picking a face is a single
+               * decision with an instantly visible result — the top-bar avatar
+               * changes as you tap — so making it wait behind a submit button
+               * would leave people unsure whether it took.
+               */}
+              <div className="mb-6">
+                <p className="text-xs font-medium text-foreground">Profile picture</p>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  {AVATARS.map((avatar) => {
+                    const selected = profile.avatar === avatar.id;
+                    return (
+                      <button
+                        key={avatar.id}
+                        type="button"
+                        onClick={() => void chooseAvatar(avatar.id)}
+                        aria-pressed={selected}
+                        aria-label={avatar.label}
+                        title={avatar.label}
+                        className={cn(
+                          "relative rounded-full outline-none transition-transform active:scale-95 focus-visible:ring-2 focus-visible:ring-(--ring)",
+                          selected
+                            ? "ring-2 ring-primary ring-offset-2 ring-offset-surface"
+                            : "opacity-80 hover:opacity-100",
+                        )}
+                      >
+                        <Image
+                          src={avatar.src}
+                          alt=""
+                          width={56}
+                          height={56}
+                          className="h-14 w-14 rounded-full object-cover"
+                        />
+                        {selected && (
+                          <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                            <Check className="h-3 w-3" />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+
+                  {/* Clearing the choice is a choice too, and the only way back
+                      to the initials once a picture has been set. */}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void chooseAvatar("")}
+                    disabled={!profile.avatar}
+                  >
+                    Use initials
+                  </Button>
+                </div>
+              </div>
+
               <form
                 className="space-y-4"
                 onSubmit={(event) => {
