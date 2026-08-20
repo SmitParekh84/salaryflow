@@ -9,6 +9,21 @@ Ordered by how much it is worth doing, not by effort.
 
 ## 1. Ready to build, waiting on a go-ahead
 
+### Catch-up entry for missed days
+
+Designed and agreed, spec at `docs/superpowers/specs/2026-08-20-catch-up-entry-design.md`.
+Not started — it needs its own implementation plan.
+
+Finds calendar days with no expense between the last entry and today, and walks them
+oldest-first with the date defaulted, seven at a time. Only the days the user calls empty
+need persisting: a day with an expense drops out of the queue by itself. State rides on
+`SalaryProfile` (`catchUpReviewedDates`, `catchUpDismissedUntil`) rather than a new synced
+collection, and must be pruned to 90 days or it grows without bound and is resent on every
+sync.
+
+Blocked on nothing. The only change to existing code is a `defaultDate` prop on
+`ExpenseForm`.
+
 ### Extend autocomplete beyond the expense form
 
 **Title or place** and **Friend's name** now suggest past entries, through `SuggestInput` and
