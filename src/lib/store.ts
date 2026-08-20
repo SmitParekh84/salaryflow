@@ -33,7 +33,8 @@ import type {
   UserProfile,
 } from "./types";
 import { completeTransferWrite } from "./transfer-writes";
-import { uid } from "./utils";
+import { localDateInputValue, uid } from "./utils";
+import { pruneReviewedDates } from "./catch-up";
 
 const STORE_KEY = "aartha-store";
 
@@ -88,6 +89,10 @@ interface FinanceState {
   updateExpense: (id: string, patch: Partial<Expense>) => boolean;
   deleteExpense: (id: string) => void;
   toggleFavorite: (id: string) => void;
+
+  // catch-up
+  markDayReviewed: (date: string) => void;
+  dismissCatchUp: () => void;
 
   // incomes
   addIncome: (i: Omit<Income, "id">) => void;
@@ -385,6 +390,29 @@ export const useFinanceStore = create<FinanceState>()(
         set((s) => ({
           expenses: s.expenses.map((e) => (e.id === id ? { ...e, favorite: !e.favorite } : e)),
         })),
+
+      markDayReviewed: (date) => {
+        set((state) => ({
+          profile: {
+            ...state.profile,
+            catchUpReviewedDates: pruneReviewedDates([
+              ...(state.profile.catchUpReviewedDates ?? []),
+              date,
+            ]),
+          },
+        }));
+        get().queueSync();
+      },
+      dismissCatchUp: () => {
+        // The field names the day the card returns, so dismissing puts it
+        // beyond today rather than on it.
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        set((state) => ({
+          profile: { ...state.profile, catchUpDismissedUntil: localDateInputValue(tomorrow) },
+        }));
+        get().queueSync();
+      },
 
       addIncome: (i) => set((s) => ({ incomes: [{ ...i, id: uid("inc") }, ...s.incomes] })),
       deleteIncome: (id) => {
