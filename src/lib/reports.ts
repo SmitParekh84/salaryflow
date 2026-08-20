@@ -156,3 +156,180 @@ export function cashFlow(input: ReportInput, range: ReportRange): CashFlow {
       .reduce((running, account) => running + account.balance, 0),
   };
 }
+
+export interface BreakdownRow {
+  /** Stable id, and the level 3 route segment. */
+  key: string;
+  label: string;
+  amount: number;
+  percent: number;
+}
+
+/**
+ * One row of the level 3 list, already flattened.
+ *
+ * A union of `Expense[] | Income[]` would push a discriminated check into the
+ * component for every field it renders, and level 3 draws all four buckets
+ * identically.
+ */
+export interface ReportTransaction {
+  id: string;
+  label: string;
+  sublabel: string;
+  amount: number;
+  date: string;
+}
+
+export interface CategoryDetail {
+  label: string;
+  total: number;
+  monthly: { label: string; amount: number; current: boolean }[];
+  average: number;
+  transactions: ReportTransaction[];
+}
+
+const SALARY_KEY = "salary";
+
+function expenseGroupKey(expense: Expense, bucket: BucketKey): string {
+  if (bucket === "investments") return expense.merchant?.trim() || "Investment";
+  return expense.category;
+}
+
+/** Every transaction that belongs to a bucket, already flattened and grouped. */
+function bucketRows(
+  input: ReportInput,
+  range: ReportRange,
+  bucket: BucketKey,
+): { key: string; transaction: ReportTransaction }[] {
+  if (bucket === "incoming") {
+    const { salary, earned } = incomingRecords(input, range);
+    return [
+      ...salary.map((entry, index) => ({
+        key: SALARY_KEY,
+        transaction: {
+          id: entry._id ?? `salary-${index}`,
+          label: entry.source || "Salary",
+          sublabel: "Salary",
+          amount: entry.amount,
+          date: entry.date,
+        },
+      })),
+      ...earned.map((item) => ({
+        key: item.type,
+        transaction: {
+          id: item.id,
+          label: item.source || item.type,
+          sublabel: item.type,
+          amount: item.amount,
+          date: item.date,
+        },
+      })),
+    ];
+  }
+
+  return scopedExpenses(input, range)
+    .filter((expense) => bucketOf(expense) === bucket)
+    .map((expense) => ({
+      key: expenseGroupKey(expense, bucket),
+      transaction: {
+        id: expense.id,
+        label: expense.merchant?.trim() || expense.category,
+        sublabel: expense.category,
+        amount: expense.amount,
+        date: expense.date,
+      },
+    }));
+}
+
+/**
+ * A bucket split into its parts, largest first.
+ *
+ * Percentages are exact here and rounded only for display. Nudging the largest
+ * row so the printed figures total 100 would show a percentage that disagrees
+ * with its own amount.
+ */
+export function bucketBreakdown(
+  input: ReportInput,
+  range: ReportRange,
+  bucket: BucketKey,
+): BreakdownRow[] {
+  const rows = bucketRows(input, range, bucket);
+  const total = rows.reduce((running, row) => running + row.transaction.amount, 0);
+  if (total <= 0) return [];
+
+  const grouped = new Map<string, number>();
+  for (const row of rows) {
+    grouped.set(row.key, (grouped.get(row.key) ?? 0) + row.transaction.amount);
+  }
+
+  return Array.from(grouped.entries())
+    .map(([key, amount]) => ({
+      key,
+      label: key === SALARY_KEY ? "Salary" : key,
+      amount,
+      percent: (amount / total) * 100,
+    }))
+    .sort((a, b) => b.amount - a.amount);
+}
+
+const MONTHS_SHOWN = 6;
+
+function monthKeyOf(date: Date): string {
+  return `${date.getFullYear()}-${date.getMonth()}`;
+}
+
+/**
+ * One line of a breakdown, with six months of history behind it.
+ *
+ * The chart always covers six calendar months regardless of the active range:
+ * its job is to place the current period against recent history, which a chart
+ * clipped to the range could not do.
+ */
+export function categoryDetail(
+  input: ReportInput,
+  range: ReportRange,
+  bucket: BucketKey,
+  key: string,
+  now = new Date(),
+): CategoryDetail | null {
+  const inRangeRows = bucketRows(input, range, bucket).filter((row) => row.key === key);
+
+  // Six months of history needs a window wider than the active range.
+  const historyStart = new Date(now.getFullYear(), now.getMonth() - (MONTHS_SHOWN - 1), 1);
+  const historyRange: ReportRange = {
+    start: historyStart,
+    end: endOfDay(now),
+    label: "",
+    key: range.key,
+  };
+  const historyRows = bucketRows(input, historyRange, bucket).filter((row) => row.key === key);
+
+  if (inRangeRows.length === 0 && historyRows.length === 0) return null;
+
+  const byMonth = new Map<string, number>();
+  for (const row of historyRows) {
+    const monthKey = monthKeyOf(parseFinancialDate(row.transaction.date));
+    byMonth.set(monthKey, (byMonth.get(monthKey) ?? 0) + row.transaction.amount);
+  }
+
+  const monthly = Array.from({ length: MONTHS_SHOWN }, (_, index) => {
+    const month = new Date(now.getFullYear(), now.getMonth() - (MONTHS_SHOWN - 1 - index), 1);
+    return {
+      label: month.toLocaleDateString("en-US", { month: "short" }),
+      amount: byMonth.get(monthKeyOf(month)) ?? 0,
+      current: index === MONTHS_SHOWN - 1,
+    };
+  });
+
+  return {
+    label: key === SALARY_KEY ? "Salary" : key,
+    total: inRangeRows.reduce((running, row) => running + row.transaction.amount, 0),
+    monthly,
+    // Divided by every month shown, including the empty ones — an average that
+    // skipped them would describe only the months you happened to spend in.
+    average: monthly.reduce((running, month) => running + month.amount, 0) / MONTHS_SHOWN,
+    transactions: inRangeRows
+      .map((row) => row.transaction)
+      .sort((a, b) => parseFinancialDate(b.date).getTime() - parseFinancialDate(a.date).getTime()),
+  };
+}
