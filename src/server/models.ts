@@ -95,6 +95,8 @@ const SalaryProfileSchema = new Schema(
       ),
       required: false,
     },
+    catchUpReviewedDates: [String],
+    catchUpDismissedUntil: String,
   },
   { timestamps: true },
 );
