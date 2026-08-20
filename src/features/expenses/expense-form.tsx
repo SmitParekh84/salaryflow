@@ -6,8 +6,11 @@ import { Combobox } from "@/components/ui/combobox";
 import { Checkbox, Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Modal, ModalFooter } from "@/components/ui/modal";
 import { SuggestInput } from "@/components/ui/suggest-input";
+import { resolveRateSource, useFuelRate } from "@/features/fuel/use-fuel-rate";
 import { CATEGORIES, PAYMENT_METHODS } from "@/lib/constants";
+import { previousOdometer } from "@/lib/fuel";
 import { EXPENSE_AMOUNT_MESSAGE, expenseAmountIsValid } from "@/lib/schemas";
+import { optionalNumber } from "@/lib/schemas/primitives";
 import { friendNameSuggestions, merchantSuggestions } from "@/lib/suggestions";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
@@ -35,10 +38,24 @@ const schema = z
     friendEmail: z.union([z.literal(""), z.string().email("Enter a valid email")]).optional(),
     friendPaid: z.coerce.number().nonnegative().optional(),
     inviteRequested: z.boolean().optional(),
+    // `optionalNumber` rather than `z.coerce.number().optional()`: coercion
+    // turns a cleared field into 0, which would record a fill at zero rupees a
+    // litre instead of recording no rate at all.
+    odometerKm: optionalNumber({ label: "odometer reading", min: 0, integer: true }),
+    ratePerLitre: optionalNumber({ label: "rate per litre", min: 1 }),
   })
   .superRefine((values, context) => {
     if (!expenseAmountIsValid(values.amount, Boolean(values.sharedEnabled))) {
       context.addIssue({ code: "custom", path: ["amount"], message: EXPENSE_AMOUNT_MESSAGE });
+    }
+    // Litres are derived from the rate, so a reading with no rate cannot be
+    // measured. Without a reading the entry is spending only and needs neither.
+    if (values.category === "Fuel" && values.odometerKm != null && !values.ratePerLitre) {
+      context.addIssue({
+        code: "custom",
+        path: ["ratePerLitre"],
+        message: "Enter the rate per litre so mileage can be worked out",
+      });
     }
     if (values.planNextPayment && !values.recurrenceDays) {
       context.addIssue({
@@ -99,6 +116,8 @@ export function ExpenseForm({
     control,
     formState: { errors, isSubmitting },
     setError,
+    getValues,
+    setValue,
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -118,6 +137,17 @@ export function ExpenseForm({
   const planNextPayment = useWatch({ control, name: "planNextPayment" });
   const selectedAccountId = useWatch({ control, name: "accountId" });
   const isSharedForm = sharedMode || Boolean(editing?.shared);
+  const category = useWatch({ control, name: "category" });
+  const isFuel = category === "Fuel";
+  const { rate: suggestedRate, source: suggestedRateSource } = useFuelRate(open && isFuel);
+
+  // Prefill only an untouched field. Overwriting a rate the user has just typed
+  // because a lookup landed a moment later would be maddening.
+  useEffect(() => {
+    if (!isFuel || suggestedRate === null) return;
+    const current = getValues("ratePerLitre");
+    if (current === undefined || current === "") setValue("ratePerLitre", suggestedRate);
+  }, [isFuel, suggestedRate, getValues, setValue]);
 
   useEffect(() => {
     if (open) {
@@ -140,6 +170,8 @@ export function ExpenseForm({
               friendEmail: editing.shared?.friendEmail ?? "",
               friendPaid: editing.shared?.friendPaid,
               inviteRequested: editing.shared?.inviteRequested ?? false,
+              odometerKm: editing.fuel?.odometerKm,
+              ratePerLitre: editing.fuel?.ratePerLitre,
             }
           : (() => {
               const defaultAccount = accounts.find(
@@ -163,6 +195,8 @@ export function ExpenseForm({
                 friendEmail: "",
                 friendPaid: undefined,
                 inviteRequested: false,
+                odometerKm: undefined,
+                ratePerLitre: undefined,
               };
             })(),
       );
@@ -171,6 +205,36 @@ export function ExpenseForm({
 
   const onSubmit = async (values: FormValues) => {
     const parsed = schema.parse(values);
+
+    const litres =
+      parsed.ratePerLitre && parsed.ratePerLitre > 0 ? parsed.amount / parsed.ratePerLitre : null;
+    const fuel =
+      parsed.category === "Fuel" && litres !== null
+        ? {
+            odometerKm: parsed.odometerKm,
+            litres,
+            ratePerLitre: parsed.ratePerLitre!,
+            rateSource: resolveRateSource(
+              parsed.ratePerLitre!,
+              suggestedRate,
+              suggestedRateSource,
+            ),
+            includeInAverage: editing?.fuel?.includeInAverage,
+          }
+        : undefined;
+
+    // An odometer that goes backwards would produce a negative distance and a
+    // segment that silently vanishes, so it is refused at the point of entry.
+    if (fuel?.odometerKm != null) {
+      const previous = previousOdometer(expenses, dateInputToIso(parsed.date), editing?.id);
+      if (previous !== null && fuel.odometerKm <= previous) {
+        setError("odometerKm", {
+          message: `Must be higher than the last reading of ${previous} km`,
+        });
+        return;
+      }
+    }
+
     const payload = {
       amount: parsed.amount,
       category: parsed.category as Expense["category"],
@@ -180,6 +244,9 @@ export function ExpenseForm({
       date: dateInputToIso(parsed.date),
       recurring: parsed.recurring,
       accountId: parsed.accountId || undefined,
+      // A category changed away from Fuel yields undefined here, which drops the
+      // sub-object rather than leaving an orphaned odometer on a grocery bill.
+      fuel,
       shared: parsed.sharedEnabled
         ? {
             totalAmount: parsed.totalAmount!,
@@ -387,6 +454,49 @@ export function ExpenseForm({
           <Label>Description</Label>
           <Textarea placeholder="What was this for?" {...register("note")} />
         </div>
+
+        {isFuel && (
+          <div className="rounded-xl border border-border p-4">
+            <p className="text-sm font-medium">Fill-up details</p>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="expense-odometer">Odometer (km)</Label>
+                <Input
+                  id="expense-odometer"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputMode="numeric"
+                  placeholder="42242"
+                  {...register("odometerKm")}
+                />
+                {errors.odometerKm && (
+                  <p className="mt-1 text-xs text-danger">{errors.odometerKm.message}</p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="expense-rate">Rate per litre</Label>
+                <Input
+                  id="expense-rate"
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  inputMode="decimal"
+                  {...register("ratePerLitre")}
+                />
+                {errors.ratePerLitre && (
+                  <p className="mt-1 text-xs text-danger">{errors.ratePerLitre.message}</p>
+                )}
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-muted">
+              {suggestedRateSource === "live"
+                ? "Rate fetched for today. Change it if the pump differs."
+                : "Rate carried over from your last fill. Change it if the price moved."}{" "}
+              Odometer is optional — without it this records the spend only.
+            </p>
+          </div>
+        )}
 
         {isSharedForm && (
           <div className="rounded-xl border border-border p-4">

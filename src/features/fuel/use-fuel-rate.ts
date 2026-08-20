@@ -29,7 +29,7 @@ export function lastUsedRate(expenses: Expense[]): number | null {
  * re-issue the request every time an unrelated expense changed while the form
  * sat open.
  */
-export function useFuelRate(enabled: boolean) {
+export function useFuelRate(enabled: boolean): { rate: number | null; source: RateSource } {
   const city = useFinanceStore((state) => state.profile.city);
   const expenses = useFinanceStore((state) => state.expenses);
   const fallback = useMemo(() => lastUsedRate(expenses), [expenses]);
@@ -59,8 +59,7 @@ export function useFuelRate(enabled: boolean) {
     };
   }, [enabled, city]);
 
-  const rate = live ?? fallback;
-  return { rate, source: (live !== null ? "live" : "last-used") satisfies RateSource };
+  return { rate: live ?? fallback, source: live !== null ? "live" : "last-used" };
 }
 
 /**
