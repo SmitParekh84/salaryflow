@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { CashFlowChart, CategoryDonut, SpendTrendChart } from "@/features/analytics/lazy-charts";
 import { SafeToSpendHero } from "@/features/dashboard/safe-to-spend-hero";
 import { ExpenseForm } from "@/features/expenses/expense-form";
+import { FuelCard } from "@/features/fuel/fuel-card";
 import { SeedPrompt, TransactionList } from "@/features/expenses/transaction-list";
 import { AllocationSheet } from "@/features/goals/allocation-sheet";
 import { useSummary } from "@/hooks/use-summary";
@@ -331,6 +332,9 @@ export function DashboardView() {
         </Card>
 
         <div className="space-y-4">
+          {/* Fuel — renders nothing until there is a fill to report on. */}
+          <FuelCard />
+
           {/* Smart insights */}
           <Card>
             <CardHeader className="flex items-center gap-2">
