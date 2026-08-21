@@ -1,6 +1,9 @@
 import { BRAND } from "@/lib/brand";
 import { Resend } from "resend";
+import { createAdminSignupEmail, type AdminSignupEmailOptions } from "./emails/admin-signup-email";
+import { createApprovalEmail, type ApprovalEmailOptions } from "./emails/approval-email";
 import { createOtpEmail, type OtpEmailOptions } from "./emails/otp-email";
+import { createRejectionEmail, type RejectionEmailOptions } from "./emails/rejection-email";
 
 export type MailResult =
   | { sent: true }
@@ -29,30 +32,62 @@ function getMailConfig() {
   return { client, from: process.env.RESEND_FROM?.trim() || DEFAULT_FROM };
 }
 
-export async function sendOtpEmail(options: OtpEmailOptions): Promise<MailResult> {
+/**
+ * The single send path, shared by every template.
+ *
+ * Extracted from `sendOtpEmail`, which used to own this inline. The subtlety
+ * worth keeping in one place is the `error` check: Resend reports a delivery
+ * rejection in the *payload*, not by throwing, so a caller that only wraps the
+ * await in a try/catch reports success on a rejected send. Every sender below
+ * would have had to remember that independently.
+ *
+ * `label` is only for the log line — it names which template failed, which is
+ * the first thing you want when mail stops arriving.
+ */
+async function send(
+  label: string,
+  to: string | string[],
+  message: { subject: string; text: string; html: string },
+): Promise<MailResult> {
   const config = getMailConfig();
   if (!config) return { sent: false, reason: "not-configured" };
 
-  const { subject, text, html } = createOtpEmail(options);
+  if (Array.isArray(to) && to.length === 0) return { sent: true };
+
   try {
     const { error } = await config.client.emails.send({
       from: config.from,
-      to: options.to,
-      subject,
-      text,
-      html,
+      to,
+      subject: message.subject,
+      text: message.text,
+      html: message.html,
     });
-    // Resend reports delivery rejections in the payload, not as a thrown error.
     if (error) {
-      console.error("[MAIL] OTP delivery failed", error.message);
+      console.error(`[MAIL] ${label} delivery failed`, error.message);
       return { sent: false, reason: "delivery-failed" };
     }
     return { sent: true };
   } catch (error) {
     console.error(
-      "[MAIL] OTP delivery failed",
+      `[MAIL] ${label} delivery failed`,
       error instanceof Error ? error.message : "Unknown error",
     );
     return { sent: false, reason: "delivery-failed" };
   }
+}
+
+export function sendOtpEmail(options: OtpEmailOptions): Promise<MailResult> {
+  return send("OTP", options.to, createOtpEmail(options));
+}
+
+export function sendApprovalEmail(options: ApprovalEmailOptions): Promise<MailResult> {
+  return send("approval", options.to, createApprovalEmail(options));
+}
+
+export function sendRejectionEmail(options: RejectionEmailOptions): Promise<MailResult> {
+  return send("rejection", options.to, createRejectionEmail(options));
+}
+
+export function sendAdminSignupEmail(options: AdminSignupEmailOptions): Promise<MailResult> {
+  return send("admin signup alert", options.to, createAdminSignupEmail(options));
 }

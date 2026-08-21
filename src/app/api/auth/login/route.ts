@@ -1,3 +1,4 @@
+import { accessDecision } from "@/lib/approval";
 import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
 import { clearRateLimit, consumeRateLimit, getClientIp } from "@/lib/rate-limit";
 import { sessionTokenExpiry, sessionTtlSeconds, setSessionCookie } from "@/lib/session-cookie";
@@ -61,6 +62,22 @@ export async function POST(req: Request) {
   const ok = await verifyPassword(parsed.data.password, user?.passwordHash || DUMMY_PASSWORD_HASH);
   if (!user || !user.passwordHash || !ok) {
     return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
+  }
+
+  /*
+   * The approval gate, and it has to sit here rather than earlier.
+   *
+   * Checking before the password would turn this endpoint into an
+   * account-existence oracle: anyone could tell a real pending address from an
+   * unknown one without knowing a password. Behind the password check, the only
+   * person who learns anything is the account owner.
+   *
+   * The "absent means approved" rule lives in lib/approval.ts, with the test
+   * that stops it being inverted.
+   */
+  const access = accessDecision(user.approvalStatus);
+  if (!access.allowed) {
+    return NextResponse.json({ error: access.message }, { status: 403 });
   }
 
   const remember = !!parsed.data.remember;

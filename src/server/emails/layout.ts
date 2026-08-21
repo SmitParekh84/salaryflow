@@ -53,6 +53,18 @@ function assetOrigin() {
 /** The app icon — the same file the dashboard, auth pages and manifest use. */
 const MARK_PX = 34;
 
+/**
+ * Absolute URL for a link in an email.
+ *
+ * Every href has to survive leaving our origin, so a relative path is not an
+ * option — it would resolve against the mail client. Shares `assetOrigin()`
+ * with the logo so a dev send points somewhere that actually exists rather
+ * than at localhost.
+ */
+export function emailLink(path: string) {
+  return `${assetOrigin()}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 export function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -88,6 +100,8 @@ const DARK_SCHEME_CSS = `
     .sp-subtle   { color: ${D.subtle} !important; }
     .sp-panel    { background: ${D.background} !important; border-color: ${D.border} !important; }
     .sp-code     { color: ${D.foreground} !important; }
+    .sp-btn      { background: ${D.brand} !important; }
+    .sp-btn a    { color: ${D.brandOn} !important; }
   }
 `;
 
@@ -150,4 +164,37 @@ export function renderShell({ title, preheader, content }: ShellOptions) {
     </table>
   </body>
 </html>`;
+}
+
+
+type ButtonOptions = {
+  /** Absolute URL. A relative href is meaningless once the mail leaves us. */
+  href: string;
+  label: string;
+};
+
+/**
+ * The one call-to-action button, shared by every template that has somewhere to
+ * send the reader.
+ *
+ * Deliberately absent from the OTP email, which has no destination — its payload
+ * is six digits you retype, and a button would only compete with them. This
+ * exists so the templates that *do* have a destination share one implementation
+ * rather than hand-rolling a table each.
+ *
+ * A table with a background colour on the `td`, not a styled `<a>`: Outlook
+ * ignores padding and background on inline anchors, so a CSS-only button
+ * collapses to bare underlined text there. `mso-padding-alt` and the explicit
+ * line-height keep the Word engine from adding its own leading.
+ */
+export function renderButton({ href, label }: ButtonOptions) {
+  const safeHref = escapeHtml(href);
+  return `
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:26px 0 0;">
+                  <tr>
+                    <td class="sp-btn" align="center" style="border-radius:10px;background:${L.brand};mso-padding-alt:14px 26px;">
+                      <a href="${safeHref}" style="display:inline-block;padding:14px 26px;font-family:${SANS_STACK};font-size:15px;font-weight:600;line-height:1;mso-line-height-rule:exactly;color:${L.brandOn};text-decoration:none;border-radius:10px;">${escapeHtml(label)}</a>
+                    </td>
+                  </tr>
+                </table>`;
 }

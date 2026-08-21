@@ -38,9 +38,18 @@ export function useAuth() {
     [setUser, router, loadFromServer],
   );
 
+  /**
+   * Creates the account and hands the reader to /pending.
+   *
+   * Registering no longer signs anyone in: the account is created pending an
+   * admin decision and the server issues no session, so there is nothing to
+   * put in the store and /onboarding would be an empty shell behind a route
+   * guard. `setUser` is deliberately not called for the same reason — seeding
+   * the store here would make the UI look signed in to a browser holding no
+   * session cookie.
+   */
   const register = useCallback(
     async (name: string | undefined, email: string, password: string, otp?: string) => {
-      // New flow uses verify-register which requires OTP; keep backward-compatible by hitting verify-register
       const res = await fetch("/api/auth/verify-register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -51,14 +60,9 @@ export function useAuth() {
         const j = await res.json().catch(() => ({}));
         throw new Error(j?.error || "Register failed");
       }
-      const j = await res.json();
-      const user = j?.data;
-      if (user) {
-        setUser({ name: user.name || "", email: user.email, onboarded: false });
-        router.replace("/onboarding");
-      }
+      router.replace("/pending");
     },
-    [setUser, router],
+    [router],
   );
 
   const logout = useCallback(async () => {

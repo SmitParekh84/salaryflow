@@ -1,12 +1,8 @@
 import { isJsonRequest, isSameOriginRequest } from "@/lib/api-security";
 import { clearRateLimit, consumeRateLimit, getClientIp } from "@/lib/rate-limit";
-import {
-  REMEMBERED_TTL_SECONDS,
-  sessionTokenExpiry,
-  setSessionCookie,
-} from "@/lib/session-cookie";
-import { hashOtp, hashPassword, signJwt } from "@/server/auth";
+import { hashOtp, hashPassword } from "@/server/auth";
 import { connectDB } from "@/server/db";
+import { sendAdminSignupEmail } from "@/server/mail";
 import { OtpModel, UserModel } from "@/server/models";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -77,24 +73,56 @@ export async function POST(req: Request) {
     passwordHash,
     emailVerified: true,
     onboardingCompleted: false,
+    approvalStatus: "pending",
   });
 
-  const token = signJwt(
-    { sub: String(created._id), email: created.email, sv: 0 },
-    sessionTokenExpiry(REMEMBERED_TTL_SECONDS),
-  );
-  const res = NextResponse.json(
-    {
-      data: {
-        id: created._id,
-        email: created.email,
-        name: created.name,
-        onboardingCompleted: false,
-      },
-    },
+  /*
+   * No session is signed here, and that is the point of the whole change.
+   * This route used to mint a JWT and set the cookie the moment the OTP
+   * checked out, which let a brand new account straight into the app. The
+   * account now exists but cannot be used until an admin approves it, so the
+   * caller gets the status and sends the reader to /pending.
+   *
+   * The email is still verified above: the approval decision is delivered by
+   * email, so an unverified address means an approval nobody ever receives.
+   */
+  await notifyAdmins({ email: created.email, name: created.name ?? null });
+
+  await clearRateLimit("register-verify-email", parsed.data.email);
+  return NextResponse.json(
+    { data: { status: "pending", email: created.email, name: created.name ?? null } },
     { status: 201 },
   );
-  setSessionCookie(res, token, REMEMBERED_TTL_SECONDS);
-  await clearRateLimit("register-verify-email", parsed.data.email);
-  return res;
+}
+
+/**
+ * Tells every admin that someone is waiting.
+ *
+ * Never throws. A signup that already succeeded must not report failure
+ * because the mail provider is down or unconfigured — the account is created
+ * either way and the console still shows it. Same tolerance the OTP send
+ * already has, and the reason this is awaited rather than left dangling is
+ * only that a serverless function can be frozen the moment it responds.
+ */
+async function notifyAdmins(signup: { email: string; name: string | null }) {
+  try {
+    const [admins, pendingCount] = await Promise.all([
+      UserModel.find({ isAdmin: true }).select("email").lean(),
+      UserModel.countDocuments({ approvalStatus: "pending" }),
+    ]);
+    const to = admins.map((admin) => admin.email).filter(Boolean);
+    if (to.length === 0) return;
+
+    await sendAdminSignupEmail({
+      to,
+      signupEmail: signup.email,
+      signupName: signup.name,
+      pendingCount,
+    });
+  } catch (error) {
+    console.error(
+      "[REGISTER] admin alert failed",
+      error instanceof Error ? error.message : "Unknown error",
+    );
+  }
 }

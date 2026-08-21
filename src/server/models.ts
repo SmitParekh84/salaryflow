@@ -295,6 +295,25 @@ const UserSchema = new Schema(
     emailVerified: { type: Boolean, default: false },
     onboardingCompleted: { type: Boolean, default: false },
     isAdmin: { type: Boolean, default: false },
+    /**
+     * Whether an admin has let this account in.
+     *
+     * Deliberately has NO default, and there is no backfill migration.
+     * Mongoose applies defaults when a document is created, never
+     * retroactively, so every user predating this field reads back
+     * `undefined` — and the login gate blocks only an explicit "pending" or
+     * "rejected". Absent therefore means approved, which is what makes
+     * deploying this incapable of locking out an existing account, including
+     * the admins who would otherwise have to approve themselves. Same
+     * defensive read as `onboardingCompleted` in the login route.
+     *
+     * A `default: "pending"` here looks harmless and is the trap: it changes
+     * nothing about existing rows, so any read path treating `undefined` as
+     * pending locks out the whole user base at once.
+     */
+    approvalStatus: { type: String, enum: ["pending", "approved", "rejected"], index: true },
+    approvalDecidedAt: { type: Date },
+    approvalDecidedBy: { type: String },
     sessionVersion: { type: Number, default: 0, select: false },
     /**
      * Demo account only. When the shared demo data was last rebuilt — the demo
@@ -403,7 +422,11 @@ const AdminAuditSchema = new Schema(
   {
     adminId: { type: String, required: true, index: true },
     targetUserId: { type: String, required: true, index: true },
-    action: { type: String, enum: ["promote", "demote", "delete"], required: true },
+    action: {
+      type: String,
+      enum: ["promote", "demote", "delete", "approve", "reject"],
+      required: true,
+    },
   },
   { timestamps: true },
 );

@@ -7,10 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Modal, ModalFooter } from "@/components/ui/modal";
-import { AboutYouForm } from "@/features/chat/about-you-form";
-import { AVATARS } from "@/lib/avatars";
+import { ProfileSection } from "./profile-section";
+import {
+  AccountStat,
+  SettingRow,
+  SettingRows,
+  SettingsLink,
+  SettingsPane,
+} from "./settings-primitives";
 import { VehicleSettings } from "@/features/fuel/vehicle-settings";
-import { ChangePasswordForm } from "@/features/settings/change-password-form";
 import { useSummary } from "@/hooks/use-summary";
 import { CATEGORIES, COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
 import { download, exportExpensesCsv } from "@/lib/export";
@@ -26,19 +31,15 @@ import {
 import { useFinanceStore } from "@/lib/store";
 import { PICKER_DEFAULT_COLOR } from "@/lib/theme";
 import type { CategoryIconName } from "@/lib/types";
-import { useAuth } from "@/lib/useAuth";
 import { cn, currencySymbol, formatMoney, uid } from "@/lib/utils";
 import {
-  Check,
   ChevronRight,
   Download,
   Eye,
   FileJson,
   Fuel,
-  KeyRound,
   Landmark,
   ListChecks,
-  LogOut,
   MonitorCog,
   Moon,
   PiggyBank,
@@ -52,8 +53,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import Image from "next/image";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
@@ -75,7 +74,7 @@ const SETTINGS_SECTIONS: {
   {
     id: "profile",
     label: "Profile",
-    description: "Your personal details",
+    description: "Your details, password and sign-out",
     icon: UserRound,
     accent: "var(--primary)",
   },
@@ -117,7 +116,7 @@ const SETTINGS_SECTIONS: {
   {
     id: "system",
     label: "System",
-    description: "Appearance, data and access",
+    description: "Appearance, exports and deleted records",
     icon: MonitorCog,
     accent: "var(--cat-business)",
   },
@@ -179,7 +178,6 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
   const store = useFinanceStore;
   const summary = useSummary();
   const { theme, setTheme } = useTheme();
-  const { logout } = useAuth();
 
   const requestedSection = searchParams.get("section");
   const hasRequestedSection = SETTINGS_SECTIONS.some((item) => item.id === requestedSection);
@@ -192,7 +190,6 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
   const [categoryIcon, setCategoryIcon] = useState<CategoryIconName>("package");
   const [categoryColor, setCategoryColor] = useState<string>(PICKER_DEFAULT_COLOR);
   const [categoryError, setCategoryError] = useState("");
-  const [passwordOpen, setPasswordOpen] = useState(false);
 
   /**
    * Salary fields are drafted locally rather than written straight to the store.
@@ -455,106 +452,16 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
       <div className={cn("min-w-0", !hasRequestedSection && "hidden lg:block")}>
         <Card className="min-w-0 rounded-none bg-transparent shadow-none lg:rounded-2xl lg:bg-surface">
           {section === "profile" && (
-            <SettingsPane
-              title="User profile"
-              description="Keep the name and email associated with your Aartha account up to date."
-            >
-              {/*
-               * Saved on tap, not on "Save changes". Picking a face is a single
-               * decision with an instantly visible result — the top-bar avatar
-               * changes as you tap — so making it wait behind a submit button
-               * would leave people unsure whether it took.
-               */}
-              <SettingsGroup title="Profile picture">
-                <div className="flex flex-wrap items-center gap-3">
-                  {AVATARS.map((avatar) => {
-                    const selected = profile.avatar === avatar.id;
-                    return (
-                      <button
-                        key={avatar.id}
-                        type="button"
-                        onClick={() => void chooseAvatar(avatar.id)}
-                        aria-pressed={selected}
-                        aria-label={avatar.label}
-                        title={avatar.label}
-                        className={cn(
-                          "relative rounded-full outline-none transition-transform active:scale-95 focus-visible:ring-2 focus-visible:ring-(--ring)",
-                          selected
-                            ? "ring-2 ring-primary ring-offset-2 ring-offset-surface"
-                            : "opacity-80 hover:opacity-100",
-                        )}
-                      >
-                        <Image
-                          src={avatar.src}
-                          alt=""
-                          width={56}
-                          height={56}
-                          className="h-14 w-14 rounded-full object-cover"
-                        />
-                        {selected && (
-                          <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                            <Check className="h-3 w-3" />
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-
-                  {/* Clearing the choice is a choice too, and the only way back
-                      to the initials once a picture has been set. */}
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => void chooseAvatar("")}
-                    disabled={!profile.avatar}
-                  >
-                    Use initials
-                  </Button>
-                </div>
-              </SettingsGroup>
-
-              <form
-                className="space-y-5"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void saveProfile();
-                }}
-              >
-                <SettingsGroup title="Your details">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <Label htmlFor="profile-name">Name</Label>
-                      <Input
-                        id="profile-name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="profile-email">Email</Label>
-                      <Input
-                        id="profile-email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </SettingsGroup>
-                <Button
-                  type="submit"
-                  className="w-full sm:w-auto"
-                  disabled={!name.trim() || !email.trim()}
-                >
-                  {saved ? "Saved" : "Save changes"}
-                </Button>
-              </form>
-
-              <div className="border-t border-border pt-5 lg:pt-5">
-                <AboutYouForm />
-              </div>
-            </SettingsPane>
+            <ProfileSection
+              avatar={profile.avatar}
+              onChooseAvatar={(avatar) => void chooseAvatar(avatar)}
+              name={name}
+              onNameChange={setName}
+              email={email}
+              onEmailChange={setEmail}
+              saved={saved}
+              onSave={() => void saveProfile()}
+            />
           )}
 
           {section === "money" && (
@@ -1006,7 +913,7 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
           {section === "system" && (
             <SettingsPane
               title="System"
-              description="Control appearance, exports, deleted records and account access."
+              description="Control appearance, exports and deleted records."
             >
               <div>
                 <h3 className="text-sm font-semibold">Appearance</h3>
@@ -1068,225 +975,13 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
                 />
               </div>
 
-              <SettingRows title="Security">
-                <SettingRow
-                  label="Change password"
-                  icon={KeyRound}
-                  onClick={() => setPasswordOpen(true)}
-                />
-              </SettingRows>
-
-              <Modal
-                open={passwordOpen}
-                onClose={() => setPasswordOpen(false)}
-                title="Change password"
-              >
-                <p className="mb-4 text-xs leading-relaxed text-muted">
-                  Your current password is needed to set a new one. Changing it signs you out
-                  everywhere else — this device stays signed in.
-                </p>
-                <ChangePasswordForm embedded />
-              </Modal>
-
-              <div className="space-y-5 border-t border-border pt-5">
-
-                <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="text-sm font-semibold">Account access</h3>
-                    <p className="mt-1 text-xs text-muted">Sign out of Aartha on this device.</p>
-                  </div>
-                  <Button variant="secondary" size="sm" onClick={() => void logout()}>
-                    <LogOut className="h-4 w-4" /> Sign out
-                  </Button>
-                </div>
-              </div>
+              {/* Password and sign-out moved to the Profile section: they act on
+                  the account, not on the app. System keeps what is genuinely
+                  app-level — appearance, export, recycle bin. */}
             </SettingsPane>
           )}
         </Card>
       </div>
-    </div>
-  );
-}
-
-function SettingsPane({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      {/*
-       * Desktop only. On a phone this header repeated the title already in the
-       * top bar and then spent three lines describing a screen the user is
-       * looking at — the first thing between them and the settings they came
-       * for. The section list on the way in carries the same description.
-       */}
-      <header className="hidden border-b border-border py-4 lg:block lg:px-6">
-        <h2 className="text-base font-semibold">{title}</h2>
-        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted">{description}</p>
-      </header>
-      <div className="space-y-5 py-1 lg:space-y-5 lg:p-6">{children}</div>
-    </div>
-  );
-}
-
-/**
- * One setting, as a row: what it is on the left, what it is set to on the
- * right, and a chevron if tapping opens something.
- *
- * A pane used to be a column of full-width input boxes, so a screen showed four
- * settings and nothing else — you could not see what a section contained
- * without scrolling it. A row states the current value, which is the thing
- * being looked for most of the time, and keeps the input out of sight until it
- * is actually wanted.
- */
-function SettingRow({
-  label,
-  value,
-  onClick,
-  icon: Icon,
-  danger,
-}: {
-  label: string;
-  value?: React.ReactNode;
-  onClick?: () => void;
-  icon?: LucideIcon;
-  danger?: boolean;
-}) {
-  const body = (
-    <>
-      {Icon && <Icon className={cn("h-4 w-4 shrink-0", danger ? "text-danger" : "text-muted")} />}
-      <span className={cn("min-w-0 flex-1 text-sm", danger && "text-danger")}>{label}</span>
-      {value !== undefined && (
-        <span className="max-w-[45%] truncate text-sm text-muted">{value}</span>
-      )}
-      {onClick && <ChevronRight className="h-4 w-4 shrink-0 text-muted" />}
-    </>
-  );
-
-  if (!onClick) {
-    return <div className="flex min-h-12 items-center gap-3 px-4 py-3">{body}</div>;
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex min-h-12 w-full items-center gap-3 px-4 py-3 text-left outline-none transition-colors active:bg-surface-2/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-(--ring)"
-    >
-      {body}
-    </button>
-  );
-}
-
-/** A card of `SettingRow`s, divided like a phone settings list. */
-function SettingRows({
-  title,
-  footnote,
-  children,
-}: {
-  title?: string;
-  footnote?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-2">
-      {title && (
-        <h3 className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted">
-          {title}
-        </h3>
-      )}
-      {/* Card on a phone, plain divided list on desktop — see SettingsGroup. */}
-      <div className="overflow-hidden rounded-2xl bg-surface shadow-[var(--shadow)] lg:rounded-none lg:border-y lg:border-border lg:bg-transparent lg:shadow-none">
-        <div className="divide-y divide-border">{children}</div>
-      </div>
-      {footnote && <p className="px-1 text-[11px] leading-relaxed text-muted">{footnote}</p>}
-    </section>
-  );
-}
-
-/**
- * One set of related settings.
- *
- * A phone showed every pane as one undifferentiated column of full-width
- * fields — nine labels and nine boxes with nothing saying which belonged
- * together, so finding "currency" meant reading all of them. Grouping them into
- * titled cards is the convention every phone settings app uses, and it gives the
- * eye somewhere to stop.
- *
- * Cards on a phone only: from `lg` the pane already sits on its own surface, and
- * a card on a card draws a boundary nobody can see.
- */
-function SettingsGroup({
-  title,
-  footnote,
-  children,
-}: {
-  title?: string;
-  /** Group-level note, set below the card the way a phone settings screen does. */
-  footnote?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-2">
-      {title && (
-        <h3 className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted lg:px-0">
-          {title}
-        </h3>
-      )}
-      {/*
-       * `shadow-[var(--shadow)]` rather than the `card-shadow` class: that one
-       * lives outside Tailwind's layers, so a `lg:` variant cannot switch it off
-       * and the card kept its shadow on desktop with nothing behind it to cast
-       * one. Same shadow, expressed as a utility that responds to breakpoints.
-       */}
-      <div className="space-y-4 rounded-2xl bg-surface p-4 shadow-[var(--shadow)] lg:rounded-none lg:bg-transparent lg:p-0 lg:shadow-none">
-        {children}
-      </div>
-      {footnote && (
-        <p className="px-1 text-[11px] leading-relaxed text-muted lg:px-0">{footnote}</p>
-      )}
-    </section>
-  );
-}
-
-function SettingsLink({
-  href,
-  icon: Icon,
-  title,
-  description,
-}: {
-  href: string;
-  icon: LucideIcon;
-  title: string;
-  description: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="group flex items-center gap-3 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ring)"
-    >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-muted transition-colors group-hover:text-foreground">
-        <Icon className="h-4 w-4" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium">{title}</span>
-        <span className="mt-0.5 block text-xs leading-relaxed text-muted">{description}</span>
-      </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
-    </Link>
-  );
-}
-
-function AccountStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-surface-2 px-4 py-3">
-      <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 text-sm font-semibold tabular-nums">{value}</p>
     </div>
   );
 }

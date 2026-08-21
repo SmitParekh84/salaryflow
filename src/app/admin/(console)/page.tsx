@@ -11,19 +11,22 @@ import { useFinanceStore } from "@/lib/store";
 import {
   ArrowLeft,
   CheckCircle2,
+  Clock3,
   LogOut,
   RefreshCw,
   Search,
   Shield,
   ShieldCheck,
   Trash2,
-  UserCheck,
   UserRoundPlus,
   Users,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
+type ApprovalStatus = "pending" | "approved" | "rejected";
 
 type AdminUser = {
   id: string;
@@ -32,6 +35,8 @@ type AdminUser = {
   isAdmin: boolean;
   emailVerified: boolean;
   createdAt: string;
+  approvalStatus: ApprovalStatus;
+  approvalDecidedAt: string | null;
 };
 
 type AdminData = {
@@ -41,11 +46,12 @@ type AdminData = {
     adminUsers: number;
     verifiedUsers: number;
     recentUsers: number;
+    pendingUsers: number;
   };
   users: AdminUser[];
 };
 
-type UserFilter = "all" | "admin" | "member" | "unverified";
+type UserFilter = "all" | "pending" | "admin" | "member" | "unverified";
 
 const dateFormatter = new Intl.DateTimeFormat("en-IN", {
   day: "numeric",
@@ -148,6 +154,7 @@ export default function AdminPage() {
       user.name?.toLowerCase().includes(normalizedQuery);
     const matchesFilter =
       filter === "all" ||
+      (filter === "pending" && user.approvalStatus === "pending") ||
       (filter === "admin" && user.isAdmin) ||
       (filter === "member" && !user.isAdmin) ||
       (filter === "unverified" && !user.emailVerified);
@@ -169,6 +176,40 @@ export default function AdminPage() {
       await loadUsers(true);
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : "Unable to update role");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  /**
+   * Approves or rejects a pending account.
+   *
+   * The email is sent server-side as part of the decision, and the response
+   * reports whether it actually left. A decision that stuck but whose email
+   * bounced is surfaced rather than swallowed: the account is genuinely
+   * approved, so failing the whole action would be a lie, but an operator who
+   * is not told will assume the user has been notified.
+   */
+  async function decide(user: AdminUser, decision: "approve" | "reject") {
+    setActionLoading(user.id);
+    setError(null);
+    try {
+      const response = await fetch(`/api/admin/users/${user.id}/approval`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ decision }),
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(json?.error || "Unable to update access");
+      if (json?.data?.emailSent === false) {
+        setError(
+          `${user.email} was ${decision === "approve" ? "approved" : "rejected"}, but the notification email could not be sent.`,
+        );
+      }
+      await loadUsers(true);
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "Unable to update access");
     } finally {
       setActionLoading(null);
     }
@@ -301,7 +342,9 @@ export default function AdminPage() {
             >
               <div className="grid grid-cols-2 lg:grid-cols-4">
                 <Metric label="Total accounts" value={data.stats.totalUsers} icon={Users} />
-                <Metric label="Verified" value={data.stats.verifiedUsers} icon={UserCheck} />
+                {/* Pending sits second because it is the only figure here that
+                    asks the operator to do something. */}
+                <Metric label="Pending approval" value={data.stats.pendingUsers} icon={Clock3} />
                 <Metric label="Administrators" value={data.stats.adminUsers} icon={ShieldCheck} />
                 <Metric
                   label="New in 30 days"
@@ -337,6 +380,7 @@ export default function AdminPage() {
                     className="sm:w-40"
                   >
                     <option value="all">All accounts</option>
+                    <option value="pending">Pending approval</option>
                     <option value="admin">Administrators</option>
                     <option value="member">Members</option>
                     <option value="unverified">Unverified</option>
@@ -382,6 +426,7 @@ export default function AdminPage() {
                             isCurrent={user.id === data.currentUserId}
                             loading={actionLoading === user.id}
                             onRoleChange={() => void updateRole(user)}
+                            onDecide={(decision) => void decide(user, decision)}
                             onDelete={() => {
                               setDeleteTarget(user);
                               setDeleteConfirmation("");
@@ -399,6 +444,7 @@ export default function AdminPage() {
                         isCurrent={user.id === data.currentUserId}
                         loading={actionLoading === user.id}
                         onRoleChange={() => void updateRole(user)}
+                        onDecide={(decision) => void decide(user, decision)}
                         onDelete={() => {
                           setDeleteTarget(user);
                           setDeleteConfirmation("");
@@ -490,14 +536,17 @@ function Metric({
   );
 }
 
-function UserRow({ user, isCurrent, loading, onRoleChange, onDelete }: UserRowProps) {
+function UserRow({ user, isCurrent, loading, onRoleChange, onDecide, onDelete }: UserRowProps) {
   return (
     <tr className="border-t border-border first:border-t-0 hover:bg-surface-2/40">
       <td className="px-5 py-4">
         <UserIdentity user={user} isCurrent={isCurrent} />
       </td>
       <td className="px-4 py-4">
-        <VerificationBadge verified={user.emailVerified} />
+        <div className="flex flex-wrap items-center gap-1.5">
+          <AccessBadge status={user.approvalStatus} />
+          <VerificationBadge verified={user.emailVerified} />
+        </div>
       </td>
       <td className="px-4 py-4">
         <Badge variant={user.isAdmin ? "default" : "secondary"}>
@@ -511,6 +560,7 @@ function UserRow({ user, isCurrent, loading, onRoleChange, onDelete }: UserRowPr
           isCurrent={isCurrent}
           loading={loading}
           onRoleChange={onRoleChange}
+          onDecide={onDecide}
           onDelete={onDelete}
         />
       </td>
@@ -518,7 +568,14 @@ function UserRow({ user, isCurrent, loading, onRoleChange, onDelete }: UserRowPr
   );
 }
 
-function UserMobileRow({ user, isCurrent, loading, onRoleChange, onDelete }: UserRowProps) {
+function UserMobileRow({
+  user,
+  isCurrent,
+  loading,
+  onRoleChange,
+  onDecide,
+  onDelete,
+}: UserRowProps) {
   return (
     <div className="p-4">
       <div className="flex items-start gap-3">
@@ -529,6 +586,7 @@ function UserMobileRow({ user, isCurrent, loading, onRoleChange, onDelete }: Use
       </div>
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
         <div className="flex min-w-0 items-center gap-2">
+          <AccessBadge status={user.approvalStatus} />
           <VerificationBadge verified={user.emailVerified} />
           <span className="truncate text-xs text-muted">{formatDate(user.createdAt)}</span>
         </div>
@@ -537,6 +595,7 @@ function UserMobileRow({ user, isCurrent, loading, onRoleChange, onDelete }: Use
           isCurrent={isCurrent}
           loading={loading}
           onRoleChange={onRoleChange}
+          onDecide={onDecide}
           onDelete={onDelete}
           compact
         />
@@ -550,6 +609,7 @@ type UserRowProps = {
   isCurrent: boolean;
   loading: boolean;
   onRoleChange: () => void;
+  onDecide: (decision: "approve" | "reject") => void;
   onDelete: () => void;
 };
 
@@ -575,9 +635,46 @@ function UserActions({
   isCurrent,
   loading,
   onRoleChange,
+  onDecide,
   onDelete,
   compact = false,
 }: UserRowProps & { compact?: boolean }) {
+  /*
+   * A pending account gets the decision, and only the decision.
+   *
+   * Promote and delete are hidden rather than disabled: neither is a sensible
+   * thing to do to an account nobody has let in yet, and showing four buttons
+   * where two of them are traps makes the queue slower to work through. Both
+   * come back the moment the account is approved.
+   */
+  if (user.approvalStatus === "pending") {
+    return (
+      <div className="flex justify-end gap-2">
+        <Button
+          size="sm"
+          disabled={loading}
+          onClick={() => onDecide("approve")}
+          aria-label={`Approve access for ${user.email}`}
+        >
+          <CheckCircle2 className="h-4 w-4" />
+          {loading ? "Saving…" : "Approve"}
+        </Button>
+        <Button
+          variant="ghost"
+          size={compact ? "icon" : "sm"}
+          disabled={loading}
+          onClick={() => onDecide("reject")}
+          className="text-danger hover:bg-danger/10"
+          aria-label={`Reject access for ${user.email}`}
+          title="Reject access"
+        >
+          <XCircle className="h-4 w-4" />
+          {!compact && "Reject"}
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex justify-end gap-2">
       <Button
@@ -614,6 +711,23 @@ function UserActions({
       </Button>
     </div>
   );
+}
+
+/**
+ * Whether this account can sign in.
+ *
+ * Distinct from VerificationBadge on purpose: a verified address only means
+ * the person owns the mailbox, whereas this is the state the login gate
+ * actually reads. An account can be verified and still locked out.
+ *
+ * "Approved" is rendered as a quiet secondary rather than a success tick,
+ * because it is the ordinary case and a wall of green badges would bury the
+ * pending rows that need attention.
+ */
+function AccessBadge({ status }: { status: ApprovalStatus }) {
+  if (status === "pending") return <Badge variant="warning">Pending</Badge>;
+  if (status === "rejected") return <Badge variant="destructive">Rejected</Badge>;
+  return <Badge variant="secondary">Approved</Badge>;
 }
 
 function VerificationBadge({ verified }: { verified: boolean }) {

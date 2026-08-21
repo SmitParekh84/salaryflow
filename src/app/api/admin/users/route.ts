@@ -1,3 +1,4 @@
+import { displayApprovalStatus } from "@/lib/approval";
 import { getCurrentUser } from "@/lib/server-auth";
 import { connectDB } from "@/server/db";
 import { UserModel } from "@/server/models";
@@ -14,21 +15,23 @@ export async function GET() {
   try {
     await connectDB();
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const [users, totalUsers, adminUsers, verifiedUsers, recentUsers] = await Promise.all([
-      UserModel.find({})
-        .select("email name isAdmin emailVerified createdAt")
-        .sort({ createdAt: -1 })
-        .lean(),
-      UserModel.countDocuments({}),
-      UserModel.countDocuments({ isAdmin: true }),
-      UserModel.countDocuments({ emailVerified: true }),
-      UserModel.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
-    ]);
+    const [users, totalUsers, adminUsers, verifiedUsers, recentUsers, pendingUsers] =
+      await Promise.all([
+        UserModel.find({})
+          .select("email name isAdmin emailVerified createdAt approvalStatus approvalDecidedAt")
+          .sort({ createdAt: -1 })
+          .lean(),
+        UserModel.countDocuments({}),
+        UserModel.countDocuments({ isAdmin: true }),
+        UserModel.countDocuments({ emailVerified: true }),
+        UserModel.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+        UserModel.countDocuments({ approvalStatus: "pending" }),
+      ]);
 
     return NextResponse.json({
       data: {
         currentUserId: String(requester._id),
-        stats: { totalUsers, adminUsers, verifiedUsers, recentUsers },
+        stats: { totalUsers, adminUsers, verifiedUsers, recentUsers, pendingUsers },
         users: users.map((user) => ({
           id: String(user._id),
           email: user.email,
@@ -36,6 +39,9 @@ export async function GET() {
           isAdmin: Boolean(user.isAdmin),
           emailVerified: Boolean(user.emailVerified),
           createdAt: user.createdAt,
+          // Absent means approved; the console never sees `undefined`.
+          approvalStatus: displayApprovalStatus(user.approvalStatus),
+          approvalDecidedAt: user.approvalDecidedAt ?? null,
         })),
       },
     });
