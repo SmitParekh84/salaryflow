@@ -1,14 +1,19 @@
 # 002 — Fix press feedback and hover transitions on the public pages
 
 > [!IMPORTANT]
-> **TODO — accurate as written, run it.**
+> **DONE — executed. Do not run again.**
 >
-> Nothing in the shipped animation work touched press feedback, the
-> `marketing` button's `filter` transition, or hover gating. Every problem
-> described below is still present in `main`. See [README.md](README.md) for
-> the current state of the code and for what is actually left to do.
+> Step 3 was a no-op in `marketing-page.module.css`: all three `:hover` rules
+> there change `text-decoration` only, which is safe on touch, so per the step's
+> own instruction nothing was wrapped. The one hover that did change more than
+> colour was `.footerSocial` in `landing.module.css`, and it is now gated on
+> `(hover: hover)`. Tokens are spelled `--dur-press` / `--dur-fast`, not
+> `--duration-*` — see README.
+>
+> The Problem section below describes the state before this plan ran. See
+> [README.md](README.md) for the verification status of the whole set.
 
-- **Status**: TODO
+- **Status**: DONE
 - **Commit**: 9e2004b
 - **Severity**: HIGH
 - **Category**: Physicality & origin; Performance

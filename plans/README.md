@@ -42,25 +42,43 @@ fade survives so content still announces itself.
 | # | Title | Severity | Status |
 | --- | --- | --- | --- |
 | [001](001-motion-tokens-and-reveal-primitive.md) | Add motion tokens and rebuild the Reveal primitive | HIGH | **DONE** |
-| [002](002-press-and-hover-feedback.md) | Fix press feedback and hover transitions | HIGH | **TODO** |
+| [002](002-press-and-hover-feedback.md) | Fix press feedback and hover transitions | HIGH | **DONE** |
 | [003](003-hero-entrance-and-daily-number.md) | Rebuild the hero entrance, count the daily number up | MEDIUM | **DONE** |
 | [004](004-section-choreography.md) | Choreograph every landing section (stagger) | MEDIUM | **DONE** |
-| [005](005-faq-nav-and-ambient.md) | Animate the FAQ, the nav on scroll, the ambient details | MEDIUM / LOW | **PARTIAL** — B and C done, **A (FAQ) outstanding** |
+| [005](005-faq-nav-and-ambient.md) | Animate the FAQ, the nav on scroll, the ambient details | MEDIUM / LOW | **DONE** |
 
 ### What is actually left
 
-Only two pieces of work remain, and they are independent of each other:
+**Nothing.** All five plans are executed and the set has been verified — see
+"Verifying the set as a whole" below for what was checked at runtime and what
+still needs a human at a browser.
 
-- **002, all of it.** Press feedback still snaps: `.page button:active` sets
-  `transform: scale(.97)` with no `transition`, and it still applies to every
-  `<a>` in the page, so prose links deform when tapped. The `marketing` button's
-  `hover:brightness-[1.12]` still has no ramp because `filter` is missing from
-  its transition list. Bare `:hover` in the CSS modules is still ungated, so iOS
-  applies it on first tap. Nothing in the shipped work touched any of this.
-- **005 part A only.** The FAQ is still a native `<details>`; it teleports open
-  and shoves the page down by the answer's height. Parts B (nav on scroll) and C
-  (ambient) are done — see below — so read 005 for section A and ignore the
-  rest of it.
+Executing 002 and 005A also turned up two defects in the previously shipped
+work, both of which were silent — no error, no warning, nothing in a build log.
+They are recorded here because both are easy to re-introduce:
+
+- **The motion tokens were never actually declared.** `landing.module.css` used
+  `var(--ease-out)`, `var(--ease-in-out)` and `var(--dur-base)` in six places,
+  but no rule anywhere defined them. An invalid `var()` substitution makes the
+  whole declaration invalid at computed-value time, so the aurora never drifted,
+  the payday stops never faded between states, and the allocation bars never
+  filled — the `animation` shorthand carrying `var(--ease-out)` was dropped
+  entirely, taking the animation *name* with it. Only the nav survived, because
+  its rule happened to spell its tokens with literal fallbacks
+  (`var(--dur-base, 320ms)`). The tokens are now declared on `.page`, and
+  `--ease-out` / `--dur-base` are repeated on `.nav` for the legal-page shell,
+  which renders `SiteNav` outside `.page`.
+- **The landmine below had in fact been re-laid.** `.page` was still
+  `overflow: hidden`, so the payday cycle never pinned — the section scrolled
+  past like any other. It is now `overflow-x: clip`.
+
+Note on token names: 002 and 005 refer to `--duration-press`, `--duration-hover`,
+`--duration-panel` and `--duration-popover`. The shipped code uses the shorter
+`--dur-*` spelling, so the tokens actually declared are `--dur-press` (160ms),
+`--dur-fast` (200ms) and `--dur-base` (320ms). Same values, and `--dur-base`'s
+320ms is taken from the fallback the shipped nav rule already declared rather
+than estimated. `--dur-slow` is not declared, because nothing uses it and the
+tables below give no value for it.
 
 ## What shipped
 
@@ -69,6 +87,7 @@ Only two pieces of work remain, and they are independent of each other:
 | `src/features/landing/section.tsx` | rewritten | `SPRING`, `Reveal`, `RevealGroup`, `RevealItem`, `SectionHeading` |
 | `src/features/landing/payday-cycle.tsx` | new | The pinned scroll sequence |
 | `src/features/landing/count-up.tsx` | new | en-IN rupee count-up |
+| `src/features/landing/faq-accordion.tsx` | new | The controlled, interruptible FAQ accordion (005A) |
 | `src/features/landing/landing-hero.tsx` | edited | Hero stagger + parallax; five grids converted to staggered reveals |
 | `src/features/landing/site-nav.tsx` | edited | Condense on scroll, scroll-progress hairline |
 | `src/features/landing/landing.module.css` | edited | Tokens, aurora, pinned stage, scroll-driven bar fill, nav states |
@@ -103,6 +122,13 @@ which **silently disables `position: sticky` on every descendant** — no error,
 no warning, the element simply never sticks. It is now `overflow-x: clip`, which
 still contains the aurora but leaves sticky working. If a pinned section ever
 stops pinning, check this first.
+
+This has already happened once. An earlier revision of this file claimed the
+change had been made when it had not: `.page` was still `overflow: hidden` when
+002 and 005A were picked up, and the payday cycle was not pinning at all. Do not
+trust this paragraph — run the check. `getComputedStyle` on the `.page` element
+must report `overflow-x: clip` **and** `overflow-y: visible`; `overflow: clip`
+on its own sets both axes and is not what you want here.
 
 ## Values these plans share
 
@@ -146,12 +172,46 @@ hold a reader hostage who is flicking past at speed.
 
 ## Verifying the set as a whole
 
-**This has not been done yet for the shipped work.** `pnpm typecheck`,
-`pnpm lint` and `next build` could not be run in the environment that wrote it;
-the five TSX files and the CSS were confirmed to parse, and nothing beyond that
-was checked. Run the full set before trusting any of it.
+**Mechanical checks: done and clean.** `pnpm typecheck`, `pnpm lint`,
+`pnpm build` and `pnpm test` (416 passed, 7 skipped) all pass on the full set.
+Framer Motion 13's typings turned out to be a non-issue — `useScroll`'s
+`target`, `useInView`'s options and `viewport.margin` all typecheck as written,
+so nothing needed loosening.
 
-After 002 and 005A, on `/`:
+**Runtime checks: done in Chrome**, against `next dev`:
+
+- The payday cycle pins. `.cyclePin` holds at `getBoundingClientRect().top === 0`
+  across the full 420vh stage, the rail fills to `scaleX(0.91)` by the last stop,
+  and the five stops light in order.
+- The aurora drifts, on 28s/34s/40s with `cubic-bezier(0.77, 0, 0.175, 1)`.
+- The allocation bars run on a real `ViewTimeline` and resolve to distinct
+  `--bar` percentages (28/18/12/42%).
+- The FAQ animates rather than teleports — a screenshot mid-gesture catches one
+  row collapsing while another expands. `aria-expanded`/`aria-controls` are
+  wired per row, Enter operates it from the keyboard, and every answer's text is
+  in the DOM in both states.
+- Press feedback resolves to `transform 160ms cubic-bezier(0.23, 1, 0.32, 1)` on
+  `.page button`, and `.page a:active` is gone. The marketing button's
+  transition list now carries `filter`.
+- The waitlist shell's focus ring lands on
+  `0 0 0 3px rgba(0, 184, 148, .18)` with `border-color: var(--flow)`, over 200ms.
+
+**Still needs a human at a browser** — none of these can be driven from a
+headless harness, and none of them are confirmed:
+
+1. Reduced motion. Every path is gated in source — `y: still ? 0 : TRAVEL`,
+   `position: static` on `.cyclePin`, `animation: none` on `.ambient i`,
+   `if (still || !inView) return` in `CountUp`, and a `height` duration of 0 in
+   the FAQ — but the media query was never actually flipped. Do item 1 below.
+2. The CPU-throttled Performance profile (item 2). Not run.
+3. The Animations panel at 10% (item 3). Not run, though every curve on the page
+   was read back from `getComputedStyle` and each one is one of the two
+   cubic-beziers in the table above.
+4. Firefox (item 5). Not run. Correct by construction — `animation` is declared
+   before `animation-timeline`, so dropping the unsupported line leaves the 1s
+   time-based fill with `both`, which ends full rather than empty.
+
+The five-point checklist, on `/`:
 
 1. Reload with DevTools → Rendering → **prefers-reduced-motion: reduce**. Scroll
    the whole page and open the FAQ. Nothing should travel, the cycle section

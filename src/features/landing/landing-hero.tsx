@@ -7,7 +7,6 @@ import {
   BarChart3,
   CalendarDays,
   Check,
-  ChevronDown,
   CircleDollarSign,
   Clock3,
   FileText,
@@ -23,6 +22,7 @@ import {
 import { useRef, type CSSProperties } from "react";
 import { CountUp } from "./count-up";
 import { DemoButton } from "./demo-button";
+import { FaqAccordion } from "./faq-accordion";
 import { FAQS } from "./faqs";
 import { PaydayCycle } from "./payday-cycle";
 import styles from "./landing.module.css";
@@ -482,18 +482,11 @@ export function LandingHero() {
           >
             You have questions. <span>We have answers.</span>
           </SectionHeading>
+          {/* FaqAccordion renders the RevealItem rows, so it has to stay inside
+              this group — a RevealItem with no group above it never leaves its
+              hidden state. */}
           <RevealGroup className={styles.faqList} amount={0.05}>
-            {faqs.map(([question, answer], index) => (
-              <RevealItem key={question}>
-                <details open={index === 0}>
-                  <summary>
-                    {question}
-                    <ChevronDown />
-                  </summary>
-                  <p>{answer}</p>
-                </details>
-              </RevealItem>
-            ))}
+            <FaqAccordion items={faqs} />
           </RevealGroup>
         </section>
 

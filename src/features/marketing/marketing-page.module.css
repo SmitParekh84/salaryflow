@@ -189,10 +189,11 @@
     margin-top: 22px
 }
 
+/* Solid deep teal, matching the headline accents and the daily number in
+   landing.module.css. `--green` comes from `landing.page`, which is this
+   page's root. */
 .planPrice strong {
-    background: var(--ribbon-gradient);
-    background-clip: text;
-    color: transparent;
+    color: var(--green);
     font-size: clamp(3.4rem, 6vw, 4.6rem);
     line-height: 1
 }

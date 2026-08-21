@@ -1,7 +1,6 @@
 "use client";
 
 import { Brand } from "@/components/brand";
-import { Button } from "@/components/ui/button";
 import { BRAND } from "@/lib/brand";
 import { motion, useMotionValueEvent, useScroll, useSpring } from "framer-motion";
 import { Menu, X } from "lucide-react";
@@ -16,21 +15,22 @@ import styles from "./landing.module.css";
  * both surfaces render it and the landing page owns this palette - the same
  * reasoning that already puts the footer here.
  *
- * The section links point at landing anchors. On the landing page those are
- * in-page hashes; anywhere else they have to be prefixed with the home route
- * or they resolve against a page that has no such section.
+ * Every link here is a real route. These used to be in-page hashes into the
+ * landing page (`#how-it-works`, `#features`, `#privacy`, `#faq`), which meant
+ * the bar navigated nowhere on the home page and had to be rewritten as
+ * `/#hash` everywhere else. Pages remove both problems: the same four links
+ * behave identically on every surface, and `next/link` prefetches them.
  */
-const SECTIONS = [
-  { hash: "#how-it-works", label: "How it works" },
-  { hash: "#features", label: "Features" },
-  { hash: "#privacy", label: "Privacy" },
-  { hash: "#faq", label: "FAQ" },
+const NAV_LINKS = [
+  { href: "/about", label: "About" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/download", label: "Download" },
+  { href: "/contact", label: "Contact" },
 ];
 
 export function SiteNav({ onLanding = false }: { onLanding?: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [condensed, setCondensed] = useState(false);
-  const href = (hash: string) => (onLanding ? hash : `/${hash}`);
 
   // Read progress. `scaleX` rather than `width` so the hairline is composited
   // and never triggers layout, and spring-smoothed so a trackpad flick does not
@@ -53,24 +53,23 @@ export function SiteNav({ onLanding = false }: { onLanding?: boolean }) {
         <Brand size="lg" />
       </Link>
       <nav className={styles.desktopNav} aria-label="Main navigation">
-        {SECTIONS.map((section) => (
-          <a key={section.hash} href={href(section.hash)}>
-            {section.label}
-          </a>
+        {NAV_LINKS.map((link) => (
+          <Link key={link.href} href={link.href}>
+            {link.label}
+          </Link>
         ))}
       </nav>
+      {/*
+       * One action, not three. The bar used to carry a Download link, a Log in
+       * link and a gradient Join waitlist button; Download is now one of the
+       * nav links above, and the sign-up path is the waitlist form in the hero
+       * and the closing CTA rather than a fourth thing competing in the header.
+       * What is left is the one thing a returning visitor comes to the bar for.
+       */}
       <div className={styles.navActions}>
-        <Link href="/download">Download app</Link>
-        <Link href="/login">Log in</Link>
-        <Button asChild variant="marketing" size="md">
-          {/*
-           * On the home page this scrolls to the section that is already there;
-           * everywhere else it goes to /waitlist, which is the same form as a
-           * page of its own. Sending the whole site to the page would mean a
-           * navigation away from a hero that carries the form itself.
-           */}
-          {onLanding ? <a href="#waitlist">Join waitlist</a> : <Link href="/waitlist">Join waitlist</Link>}
-        </Button>
+        <Link href="/login" className={styles.navLogin}>
+          <span className={styles.navLoginLead}>Already have access?</span> Log in
+        </Link>
       </div>
       <button
         className={styles.menuButton}
@@ -82,15 +81,14 @@ export function SiteNav({ onLanding = false }: { onLanding?: boolean }) {
       </button>
       {menuOpen && (
         <nav className={styles.mobileNav} aria-label="Mobile navigation">
-          {SECTIONS.map((section) => (
-            <a key={section.hash} href={href(section.hash)} onClick={() => setMenuOpen(false)}>
-              {section.label}
-            </a>
+          {NAV_LINKS.map((link) => (
+            <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)}>
+              {link.label}
+            </Link>
           ))}
-          <Link href="/download" onClick={() => setMenuOpen(false)}>
-            Download app
+          <Link href="/login" onClick={() => setMenuOpen(false)}>
+            Already have access? Log in
           </Link>
-          <Link href="/login">Log in</Link>
         </nav>
       )}
     </header>

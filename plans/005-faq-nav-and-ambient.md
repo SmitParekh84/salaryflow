@@ -1,15 +1,16 @@
 # 005 — Animate the FAQ, the nav on scroll, and the ambient details
 
 > [!IMPORTANT]
-> **PARTIAL — run section A only.**
+> **DONE — all three sections are in `main`. Do not run again.**
 >
-> **B (nav on scroll) and C (ambient) are already in `main`** and running them
-> again will conflict. **A (the FAQ accordion) is outstanding** and is still
-> accurate as written — the FAQ is still a native `<details>` that teleports
-> open. See [README.md](README.md) for the current state of the code and for
-> what is actually left to do.
+> B (nav on scroll) and C (ambient) shipped earlier. A (the FAQ accordion) is
+> now done too: `src/features/landing/faq-accordion.tsx`. One deviation from
+> section A as written — under reduced motion the height duration is 0 rather
+> than 0.15s, because the Target above asks for "no height animation, opacity
+> only" and the snippet's single `{ duration: 0.15 }` would have animated both.
+> See [README.md](README.md) for the verification status of the whole set.
 
-- **Status**: PARTIAL
+- **Status**: DONE
 - **Commit**: 9e2004b
 - **Severity**: MEDIUM (FAQ), LOW (nav, ambient)
 - **Category**: Interruptibility; Missed opportunities

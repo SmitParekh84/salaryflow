@@ -12,10 +12,28 @@
     --wash-blue: #edf9fc;
     --border-soft: #dce6ec;
     --navy: #031b3d;
+
+    /* Motion tokens. One easing family for the whole surface: --ease-out for
+       anything entering or leaving, --ease-in-out for anything already on
+       screen that moves. `ease-in` appears nowhere by design — it starts slow,
+       which reads as lag rather than as intent. */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --dur-press: 160ms;
+    --dur-fast: 200ms;
+    --dur-base: 320ms;
+
     background: #fff;
     color: var(--ink);
     min-height: 100vh;
-    overflow: hidden
+
+    /* `overflow-x: clip`, never `overflow: hidden`. `hidden` makes this element
+       a scroll container, which silently disables `position: sticky` on every
+       descendant — no error, no warning, the pinned payday cycle simply never
+       pins. `clip` still contains the aurora's horizontal overhang without
+       creating a scroll container. If a pinned section ever stops pinning,
+       check here first. */
+    overflow-x: clip
 }
 
 .page * {
@@ -34,14 +52,28 @@
     letter-spacing: 0
 }
 
-.page button:active,
-.page a:active {
+/*
+ * Press feedback, and only on buttons. A link is text, not pressable
+ * furniture: deforming a nav item or an inline prose link on tap reads as the
+ * layout breaking rather than as a control responding, so links get colour and
+ * underline feedback instead and are deliberately excluded here.
+ *
+ * The transition is what makes this feel like a press at all — without it the
+ * element teleports to 97% and teleports back, which is the one thing a
+ * physical button never does.
+ */
+.page button {
+    transition: transform var(--dur-press) var(--ease-out)
+}
+
+.page button:active {
     transform: scale(.97)
 }
 
 /*
- * Fixed rather than sticky: `.page` sets `overflow: hidden`, and an overflow
- * ancestor stops `position: sticky` from ever sticking.
+ * Fixed rather than sticky: the bar must stay above the aurora and above the
+ * pinned payday stage at every scroll position, and it is the containing block
+ * for its own scroll-progress hairline.
  *
  * Full-bleed with the content inset by padding, rather than a centred
  * max-width box. A 1280px-wide bar would let the page scroll visibly past its
@@ -50,8 +82,11 @@
 .nav {
     /* Repeated from `.page` rather than inherited: `SiteNav` also renders inside
        the legal-page shell, whose own wrapper declares a smaller set of tokens.
-       Without these the gradient CTA loses its background there. Same values, so
-       the landing page is unaffected. */
+       Without these the gradient CTA loses its background there, and the
+       condense transition below falls back to its literal defaults. Same
+       values, so the landing page is unaffected. */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --dur-base: 320ms;
     --ink: #031b3d;
     --navy: #031b3d;
     --cyan: #00cfd1;
@@ -87,6 +122,19 @@
     font-size: 14px;
     font-weight: 600;
     text-decoration: none
+}
+
+/* The sign-in action reads as one sentence ending in the thing you click, so
+   the lead-in is deliberately quieter than "Log in" rather than a second label
+   of equal weight. `nowrap` because the bar loses 12px of height when it
+   condenses and a two-line action would clip. */
+.navLogin {
+    white-space: nowrap
+}
+
+.navLoginLead {
+    color: var(--muted);
+    font-weight: 500
 }
 
 .menuButton,
@@ -219,12 +267,15 @@
     max-width: 700px
 }
 
+/* One solid deep teal rather than a gradient fill. `background-clip: text`
+   with `color: transparent` has to be repainted for forced-colors mode (which
+   strips background images but honours the transparent colour, rendering the
+   accented words invisible) and it bands on wide-gamut displays at large sizes.
+   A flat colour has neither problem and reads the same at every size. */
 .hero h1 span,
 .page h2 span,
 .green {
-    background: var(--ribbon-gradient);
-    background-clip: text;
-    color: transparent
+    color: var(--green)
 }
 
 .heroLead {
@@ -252,6 +303,15 @@
     box-shadow: 0 12px 35px rgba(9, 31, 55, .08);
     display: flex;
     padding: 5px
+}
+
+/* The input sets `outline: none`, so the ring has to be replaced or the field
+   is unreachable by keyboard. Drawn on the wrapper rather than the input so the
+   ring follows the rounded shell the reader actually sees. */
+.waitlistForm:focus-within {
+    border-color: var(--flow);
+    box-shadow: 0 12px 35px rgba(9, 31, 55, .08), 0 0 0 3px rgba(0, 184, 148, .18);
+    transition: box-shadow var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out)
 }
 
 .waitlistForm input {
@@ -385,9 +445,7 @@
 }
 
 .dailyNumber>strong {
-    background: var(--ribbon-gradient);
-    background-clip: text;
-    color: transparent;
+    color: var(--green);
     display: block;
     font-size: clamp(4.2rem, 7vw, 6rem);
     letter-spacing: 0;
@@ -1000,18 +1058,29 @@
     opacity: 1
 }
 
+/*
+ * The active stop reads as a pill, so it is a button surface and takes the
+ * button gradient — `--marketing-action`, not `--ribbon-gradient`.
+ *
+ * This matters for legibility, not just consistency. The ribbon runs
+ * cyan -> flow -> lime, and white on its lime end is about 1.7:1: a white label
+ * would fade out across its own pill, which is why this used to carry a navy
+ * label that read as a black word on a bright tile. `--marketing-action` is the
+ * same three hues taken deeper, where white clears 4.5:1 on every stop.
+ */
 .cycleToday {
-    background: var(--ribbon-gradient);
+    background: var(--marketing-action);
     border: 0 !important;
     border-radius: 14px;
     box-shadow: 0 15px 30px rgba(0, 184, 148, .24);
-    color: var(--navy);
+    color: #fff;
     transform: scale(1.04)
 }
 
+.cycleToday strong,
 .cycleToday svg,
 .cycleToday span {
-    color: var(--navy)
+    color: #fff
 }
 
 .allocationBoard {
@@ -1268,14 +1337,17 @@
     gap: 12px
 }
 
-.faqList details {
+/* Class-based rather than element-based since FaqAccordion replaced the native
+   `<details>`. Every declaration below is unchanged from the `<details>`
+   version; only the selectors moved. */
+.faqRow {
     background: var(--wash);
     border: 1px solid #e0e7e5;
     border-radius: 14px;
     padding: 0 24px
 }
 
-.faqList summary {
+.faqSummary {
     align-items: center;
     cursor: pointer;
     display: flex;
@@ -1283,25 +1355,35 @@
     font-weight: 700;
     justify-content: space-between;
     list-style: none;
-    min-height: 72px
+    min-height: 72px;
+
+    /* Now a real `<button>`, which arrives with a grey background, a bevelled
+       border, centred text and its own font family. Reset those so the row
+       looks exactly as it did as a `<summary>`. `font-family`, not the `font`
+       shorthand: `font: inherit` would also reset the font-size and
+       font-weight declared above it and the question would render as 16px
+       regular. */
+    background: none;
+    border: 0;
+    color: inherit;
+    font-family: inherit;
+    text-align: left;
+    width: 100%
 }
 
-.faqList summary::-webkit-details-marker {
-    display: none
-}
-
-.faqList summary svg {
+.faqSummary svg {
     color: var(--flow);
+    flex-shrink: 0;
     height: 20px;
-    transition: transform .2s ease;
+    transition: transform var(--dur-fast) var(--ease-out);
     width: 20px
 }
 
-.faqList details[open] summary svg {
+.faqSummary[aria-expanded="true"] svg {
     transform: rotate(180deg)
 }
 
-.faqList details p {
+.faqRow p {
     color: var(--muted);
     line-height: 1.65;
     padding: 0 40px 24px 0
@@ -1471,10 +1553,18 @@
     width: 17px
 }
 
-.footerSocial:hover {
-    background: hsla(0, 0%, 100%, .14);
-    border-color: hsla(0, 0%, 100%, .3);
-    color: #fff
+/* Gated on `(hover: hover)`. iOS applies `:hover` on the first tap and only
+   acts on the second, so an ungated hover that changes background costs a
+   phantom tap on every touch device. Same reasoning as the `hover` variant in
+   globals.css, spelled out here because a CSS module cannot use it.
+   `.footerGroup a:hover` is left ungated on purpose: it changes colour only,
+   which is harmless on touch. */
+@media (hover: hover) {
+    .footerSocial:hover {
+        background: hsla(0, 0%, 100%, .14);
+        border-color: hsla(0, 0%, 100%, .3);
+        color: #fff
+    }
 }
 
 .footerSocial:focus-visible {
@@ -1826,16 +1916,16 @@
         width: 42px
     }
 
-    .faqList details {
+    .faqRow {
         padding: 0 16px
     }
 
-    .faqList summary {
+    .faqSummary {
         font-size: 16px;
         gap: 14px
     }
 
-    .faqList details p {
+    .faqRow p {
         font-size: 14px;
         padding-right: 0
     }
@@ -1911,20 +2001,10 @@
     }
 }
 
-/* Gradient-clipped text paints the letterforms with a background image and sets
-   `color: transparent`. Forced-colors mode strips background images but honours
-   the transparent color, so the accented words in the headlines and the daily
-   number itself would render invisible. Repaint them with a system color. */
-@media(forced-colors:active) {
-
-    .hero h1 span,
-    .page h2 span,
-    .green,
-    .dailyNumber>strong {
-        background: none;
-        color: CanvasText
-    }
-}
+/* No forced-colors repaint is needed for the headline accents or the daily
+   number any more: they are solid colours, not `background-clip: text` over
+   `color: transparent`, so forced-colors mode substitutes a system colour on
+   its own instead of rendering them invisible. */
 @media (max-width: 900px) {
     .cycleStage {
         height: auto
