@@ -1,9 +1,7 @@
 "use client";
 
-import { Brand, BrandMark } from "@/components/brand";
-import { Button } from "@/components/ui/button";
-import { useFinanceStore } from "@/lib/store";
-import { motion } from "framer-motion";
+import { BrandMark } from "@/components/brand";
+import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import {
   ArrowRight,
   BarChart3,
@@ -15,21 +13,23 @@ import {
   FileText,
   Landmark,
   LockKeyhole,
-  Menu,
   PiggyBank,
   ReceiptText,
   ShieldCheck,
   Sparkles,
   TrendingUp,
   Wallet,
-  X,
 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { useRef, type CSSProperties } from "react";
+import { CountUp } from "./count-up";
+import { DemoButton } from "./demo-button";
 import { FAQS } from "./faqs";
+import { PaydayCycle } from "./payday-cycle";
 import styles from "./landing.module.css";
+import { Reveal, RevealGroup, RevealItem, SPRING, SectionHeading } from "./section";
 import { SiteFooter } from "./site-footer";
+import { SiteNav } from "./site-nav";
+import { WaitlistForm } from "./waitlist-form";
 
 const moneyItems = [
   {
@@ -65,37 +65,20 @@ const moneyItems = [
 // Shared with the FAQPage structured data in structured-data.tsx.
 const faqs = FAQS;
 
-function Reveal({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 28 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.15 }}
-      transition={{ type: "spring", bounce: 0, duration: 0.55 }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
+/**
+ * The hero is above the fold, so it plays on mount rather than on scroll. Each
+ * line is released 70ms after the one above it, which reads as the page settling
+ * rather than as six separate animations.
+ */
+const heroGroup = {
+  hidden: {},
+  shown: { transition: { staggerChildren: 0.07, delayChildren: 0.08 } },
+} as const;
 
-function SectionHeading({
-  eyebrow,
-  children,
-  copy,
-}: {
-  eyebrow: string;
-  children: ReactNode;
-  copy?: string;
-}) {
-  return (
-    <Reveal className={styles.sectionHeading}>
-      <p className={styles.eyebrow}>{eyebrow}</p>
-      <h2>{children}</h2>
-      {copy && <p className={styles.sectionCopy}>{copy}</p>}
-    </Reveal>
-  );
-}
+const heroItem = {
+  hidden: { opacity: 0, y: 18 },
+  shown: { opacity: 1, y: 0, transition: SPRING },
+} as const;
 
 function DailyNumber({ compact = false }: { compact?: boolean }) {
   return (
@@ -108,7 +91,9 @@ function DailyNumber({ compact = false }: { compact?: boolean }) {
           </span>
         )}
       </div>
-      <strong>₹1,029</strong>
+      <strong>
+        <CountUp value={1029} />
+      </strong>
       <p>
         <CalendarDays /> 12 days until payday
       </p>
@@ -130,184 +115,57 @@ function DailyNumber({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function WaitlistForm({ id, compact = false }: { id: string; compact?: boolean }) {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [message, setMessage] = useState("");
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    setStatus("loading");
-    setMessage("");
-    try {
-      const response = await fetch("/api/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "Unable to join the waitlist");
-      setStatus("success");
-      setMessage("You’re on the list. We’ll keep you posted.");
-      setEmail("");
-    } catch (error) {
-      setStatus("error");
-      setMessage(error instanceof Error ? error.message : "Unable to join the waitlist");
-    }
-  }
-  return (
-    <div className={compact ? styles.waitlistCompact : styles.waitlistBlock}>
-      <form onSubmit={submit} className={styles.waitlistForm} aria-label="Join the Aartha waitlist">
-        <label htmlFor={id} className="sr-only">
-          Email address
-        </label>
-        <input
-          id={id}
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="you@example.com"
-          disabled={status === "loading"}
-        />
-        <button type="submit" disabled={status === "loading"}>
-          {status === "loading" ? "Joining…" : "Join waitlist"}
-          {status !== "loading" && <ArrowRight />}
-        </button>
-      </form>
-      <p
-        className={`${styles.formMessage} ${status === "error" ? styles.formError : ""}`}
-        role="status"
-        aria-live="polite"
-      >
-        {message || "Early access updates only. No spam."}
-      </p>
-    </div>
-  );
-}
-
-function DemoButton({ secondary = false }: { secondary?: boolean }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const router = useRouter();
-  const resetAll = useFinanceStore((state) => state.resetAll);
-  const updateUser = useFinanceStore((state) => state.updateUser);
-  const loadFromServer = useFinanceStore((state) => state.loadFromServer);
-  const loadSalaryHistory = useFinanceStore((state) => state.loadSalaryHistory);
-  async function openDemo() {
-    setLoading(true);
-    setError("");
-    try {
-      const response = await fetch("/api/auth/demo", { method: "POST" });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "Unable to open demo");
-      if ("caches" in globalThis) {
-        const cacheNames = await caches.keys();
-        await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
-      }
-      resetAll();
-      updateUser({ name: payload.data.name, email: payload.data.email, onboarded: true });
-      await Promise.all([loadFromServer(), loadSalaryHistory()]);
-      router.replace("/dashboard");
-      router.refresh();
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "Unable to open demo");
-      setLoading(false);
-    }
-  }
-  return (
-    <span className={styles.demoWrap}>
-      <Button
-        type="button"
-        size="lg"
-        variant={secondary ? "secondary" : "primary"}
-        onClick={openDemo}
-        disabled={loading}
-        className={styles.demoButton}
-      >
-        {loading ? "Preparing demo…" : "Explore live demo"}
-        {!loading && <ArrowRight />}
-      </Button>
-      {error && <small role="alert">{error}</small>}
-    </span>
-  );
-}
-
 export function LandingHero() {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const heroRef = useRef<HTMLElement>(null);
+  const still = useReducedMotion();
+
+  // Parallax. The card drifts up slightly slower than the page scrolls, which
+  // separates it from the copy beside it without ever leaving its own section.
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const rawLift = useTransform(scrollYProgress, [0, 1], [0, -72]);
+  const lift = useSpring(rawLift, { stiffness: 120, damping: 30, mass: 0.4 });
+  const fade = useTransform(scrollYProgress, [0, 0.85], [1, 0.35]);
+
   return (
     <div className={styles.page}>
-      <header className={styles.nav}>
-        <Link href="/" aria-label="Aartha home">
-          <Brand size="lg" />
-        </Link>
-        <nav className={styles.desktopNav} aria-label="Main navigation">
-          <a href="#how-it-works">How it works</a>
-          <a href="#features">Features</a>
-          <a href="#privacy">Privacy</a>
-          <a href="#faq">FAQ</a>
-        </nav>
-        <div className={styles.navActions}>
-          <Link href="/download">Download app</Link>
-          <Link href="/login">Log in</Link>
-          <a href="#waitlist" className={styles.navCta}>
-            Join waitlist
-          </a>
-        </div>
-        <button
-          className={styles.menuButton}
-          onClick={() => setMenuOpen((open) => !open)}
-          aria-label={menuOpen ? "Close menu" : "Open menu"}
-          aria-expanded={menuOpen}
-        >
-          {menuOpen ? <X /> : <Menu />}
-        </button>
-        {menuOpen && (
-          <nav className={styles.mobileNav} aria-label="Mobile navigation">
-            <a href="#how-it-works" onClick={() => setMenuOpen(false)}>
-              How it works
-            </a>
-            <a href="#features" onClick={() => setMenuOpen(false)}>
-              Features
-            </a>
-            <a href="#privacy" onClick={() => setMenuOpen(false)}>
-              Privacy
-            </a>
-            <a href="#faq" onClick={() => setMenuOpen(false)}>
-              FAQ
-            </a>
-            <Link href="/download" onClick={() => setMenuOpen(false)}>
-              Download app
-            </Link>
-            <Link href="/login">Log in</Link>
-          </nav>
-        )}
-      </header>
+      <SiteNav onLanding />
       <main>
-        <section className={styles.hero}>
+        <section className={styles.hero} ref={heroRef}>
+          <div className={styles.ambient} aria-hidden>
+            <i />
+            <i />
+            <i />
+          </div>
           <div className={styles.heroGlow} />
           <motion.div
             className={styles.heroCopy}
-            initial={{ y: 22 }}
-            animate={{ y: 0 }}
-            transition={{ type: "spring", bounce: 0, duration: 0.6 }}
+            variants={heroGroup}
+            initial="hidden"
+            animate="shown"
           >
-            <p className={styles.eyebrow}>Introducing Aartha</p>
-            <h1>
+            <motion.p className={styles.eyebrow} variants={heroItem}>
+              Introducing Aartha
+            </motion.p>
+            <motion.h1 variants={heroItem}>
               Know what you can <span>safely spend</span> today.
-            </h1>
-            <p className={styles.heroLead}>
+            </motion.h1>
+            <motion.p className={styles.heroLead} variants={heroItem}>
               Your salary, bills, savings, investments, and expenses become one calm daily number,
               paced to your next payday.
-            </p>
-            <WaitlistForm id="hero-email" compact />
-            <div className={styles.heroActions}>
+            </motion.p>
+            <motion.div variants={heroItem}>
+              <WaitlistForm id="hero-email" compact />
+            </motion.div>
+            <motion.div className={styles.heroActions} variants={heroItem}>
               <DemoButton secondary />
               <a href="#how-it-works" className={styles.textLink}>
                 See how it works <ArrowRight />
               </a>
-            </div>
-            <div className={styles.trustRow}>
+            </motion.div>
+            <motion.div className={styles.trustRow} variants={heroItem}>
               <span>
                 <ShieldCheck /> Private by design
               </span>
@@ -317,28 +175,38 @@ export function LandingHero() {
               <span>
                 <Clock3 /> Set up in minutes
               </span>
-            </div>
+            </motion.div>
           </motion.div>
+          {/* Two elements on purpose: the outer one owns the scroll parallax
+              (driven by motion values) and the inner one owns the mount
+              entrance. Putting both on a single element makes Framer arbitrate
+              between a `style` motion value and an `animate` target for the
+              same `y`, and the entrance loses. */}
           <motion.div
-            className={styles.heroVisual}
-            initial={{ scale: 0.96, y: 24 }}
-            animate={{ scale: 1, y: 0 }}
-            transition={{ type: "spring", bounce: 0, duration: 0.7, delay: 0.12 }}
+            className={styles.heroParallax}
+            style={still ? undefined : { y: lift, opacity: fade }}
           >
-            <DailyNumber />
-            <div className={styles.moneyFlow}>
-              <span>
-                <CircleDollarSign /> Salary
-              </span>
-              <i />
-              <span>
-                <ShieldCheck /> Protected
-              </span>
-              <i />
-              <span>
-                <Wallet /> Your pace
-              </span>
-            </div>
+            <motion.div
+              className={styles.heroVisual}
+              initial={{ opacity: 0, scale: 0.97, y: 26 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ ...SPRING, delay: 0.22 }}
+            >
+              <DailyNumber />
+              <div className={styles.moneyFlow}>
+                <span>
+                  <CircleDollarSign /> Salary
+                </span>
+                <i />
+                <span>
+                  <ShieldCheck /> Protected
+                </span>
+                <i />
+                <span>
+                  <Wallet /> Your pace
+                </span>
+              </div>
+            </motion.div>
           </motion.div>
         </section>
 
@@ -387,20 +255,20 @@ export function LandingHero() {
           >
             From payday to payday, <span>your money stays paced.</span>
           </SectionHeading>
-          <div className={styles.stepsGrid}>
+          <RevealGroup className={styles.stepsGrid}>
             {[
               ["01", "Add your salary", "Choose your pay amount and payday.", CircleDollarSign],
               ["02", "Protect what matters", "Add bills, savings, and investments.", ShieldCheck],
               ["03", "Know your number", "See what is safe to spend today.", Wallet],
             ].map(([number, title, copy, Icon]) => (
-              <Reveal key={String(number)} className={styles.stepCard}>
+              <RevealItem key={String(number)} className={styles.stepCard}>
                 <span className={styles.stepNumber}>{String(number)}</span>
                 <Icon />
                 <h3>{String(title)}</h3>
                 <p>{String(copy)}</p>
-              </Reveal>
+              </RevealItem>
             ))}
-          </div>
+          </RevealGroup>
         </section>
 
         <section className={styles.productSection}>
@@ -450,9 +318,9 @@ export function LandingHero() {
           >
             Everything is accounted for. <span>Nothing is hidden.</span>
           </SectionHeading>
-          <div className={styles.featureGrid}>
+          <RevealGroup className={styles.featureGrid}>
             {moneyItems.map((item, index) => (
-              <Reveal className={styles.featureCard} key={item.title}>
+              <RevealItem className={styles.featureCard} key={item.title}>
                 <div className={`${styles.featureIcon} ${styles[item.tone]}`}>
                   <item.icon />
                 </div>
@@ -462,9 +330,9 @@ export function LandingHero() {
                   <p>{item.copy}</p>
                 </div>
                 <strong>{item.value}</strong>
-              </Reveal>
+              </RevealItem>
             ))}
-          </div>
+          </RevealGroup>
         </section>
 
         <section className={styles.calmSection}>
@@ -474,44 +342,22 @@ export function LandingHero() {
           >
             From “Can I afford this?” to <span>“I know I can.”</span>
           </SectionHeading>
-          <div className={styles.compareGrid}>
-            <Reveal className={`${styles.comparePanel} ${styles.beforePanel}`}>
+          <RevealGroup className={styles.compareGrid}>
+            <RevealItem className={`${styles.comparePanel} ${styles.beforePanel}`}>
               <p>Without Aartha</p>
               <strong>₹85,000</strong>
               <span>Rent is due soon…</span>
               <span>How much should I save?</span>
               <span>Will I have enough?</span>
-            </Reveal>
-            <Reveal className={`${styles.comparePanel} ${styles.afterPanel}`}>
+            </RevealItem>
+            <RevealItem className={`${styles.comparePanel} ${styles.afterPanel}`}>
               <p>With Aartha</p>
               <DailyNumber compact />
-            </Reveal>
-          </div>
+            </RevealItem>
+          </RevealGroup>
         </section>
 
-        <section className={styles.cycleSection}>
-          <SectionHeading
-            eyebrow="Built around your payday"
-            copy="Calendar months are arbitrary. Your real financial rhythm begins when your salary arrives."
-          >
-            Your month starts when <span>you get paid.</span>
-          </SectionHeading>
-          <Reveal className={styles.cycleTrack}>
-            {[
-              [CalendarDays, "25 Aug", "Payday"],
-              [ReceiptText, "Protected", "Bills"],
-              [PiggyBank, "Reserved", "Goals"],
-              [Wallet, "₹1,029", "Today"],
-              [CalendarDays, "25 Sep", "Next payday"],
-            ].map(([Icon, title, copy], index) => (
-              <div key={String(title)} className={index === 3 ? styles.cycleToday : ""}>
-                <Icon />
-                <strong>{String(title)}</strong>
-                <span>{String(copy)}</span>
-              </div>
-            ))}
-          </Reveal>
-        </section>
+        <PaydayCycle />
 
         <section className={styles.section}>
           <SectionHeading
@@ -550,29 +396,29 @@ export function LandingHero() {
           >
             Set it up once. <span>Let Aartha do the math.</span>
           </SectionHeading>
-          <div className={styles.setupGrid}>
-            <Reveal className={styles.setupCard}>
+          <RevealGroup className={styles.setupGrid}>
+            <RevealItem className={styles.setupCard}>
               <span>01</span>
               <CircleDollarSign />
               <h3>Your salary</h3>
               <strong>₹85,000</strong>
               <p>Payday: 25th</p>
-            </Reveal>
-            <Reveal className={styles.setupCard}>
+            </RevealItem>
+            <RevealItem className={styles.setupCard}>
               <span>02</span>
               <ShieldCheck />
               <h3>Your commitments</h3>
               <strong>₹50,298</strong>
               <p>Bills, savings, investments</p>
-            </Reveal>
-            <Reveal className={styles.setupCard}>
+            </RevealItem>
+            <RevealItem className={styles.setupCard}>
               <span>03</span>
               <Wallet />
               <h3>Your daily number</h3>
               <strong className={styles.green}>₹1,029</strong>
               <p>You’re ready to go</p>
-            </Reveal>
-          </div>
+            </RevealItem>
+          </RevealGroup>
           <Reveal>
             <WaitlistForm id="middle-email" />
           </Reveal>
@@ -636,9 +482,9 @@ export function LandingHero() {
           >
             You have questions. <span>We have answers.</span>
           </SectionHeading>
-          <div className={styles.faqList}>
+          <RevealGroup className={styles.faqList} amount={0.05}>
             {faqs.map(([question, answer], index) => (
-              <Reveal key={question}>
+              <RevealItem key={question}>
                 <details open={index === 0}>
                   <summary>
                     {question}
@@ -646,9 +492,9 @@ export function LandingHero() {
                   </summary>
                   <p>{answer}</p>
                 </details>
-              </Reveal>
+              </RevealItem>
             ))}
-          </div>
+          </RevealGroup>
         </section>
 
         <section className={styles.finalCta}>

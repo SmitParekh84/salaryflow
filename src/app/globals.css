@@ -46,6 +46,19 @@
   --flow-teal: #08a985;
   --flow-lime: #78d84b;
 
+  /* Marketing ribbon — brighter than the product steps above, because the
+      public pages paint it as a large gradient on white rather than as small
+      text on a surface, and the deeper brand steps go muddy at that size.
+      These three are the only stops in the landing gradient. */
+  --ribbon-cyan: #00cfd1;
+  --ribbon-flow: #00b894;
+  --ribbon-lime: #88e84d;
+  /* Hairline on the public pages, a step lighter than the app's --border. */
+  --ribbon-hairline: #dce6ec;
+  /* The teal end of the button gradient. --flow-teal is two steps too light to
+      hold a white label (3:1); this one clears 4.9:1. */
+  --action-teal: #0a7f63;
+
   /* Brand ink — navy from the app icon backplate */
   --ink-700: #0a376c;
   --ink-800: #062957;
@@ -266,7 +279,52 @@
   --auth-surface-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), 0 3px 12px rgba(0, 0, 0, 0.4);
 }
 
+/* ============================================================================
+   MARKETING SURFACE
+   The public pages (landing, about, pricing, contact, install, legal) fix a
+   light palette: they are read by visitors who are not signed in, and a
+   theme-reactive header on a permanently white hero rendered dark-on-dark for
+   anyone whose app theme was dark. These tokens therefore sit outside the
+   light/dark blocks above and never flip.
+   ============================================================================ */
+:root {
+  --marketing-ink: var(--ink-900);
+  --marketing-surface: var(--grey-0);
+  --marketing-wash: var(--grey-50);
+  --marketing-border: var(--ribbon-hairline);
+  --marketing-ribbon: linear-gradient(
+    105deg,
+    var(--ribbon-cyan) 0%,
+    var(--ribbon-flow) 58%,
+    var(--ribbon-lime) 100%
+  );
+  /*
+   * The button gradient, and deliberately not the ribbon above.
+   *
+   * The ribbon is display decoration: it carries headline words and the daily
+   * number, where the type is large and the colour is the point. It cannot
+   * carry a label. White on its lime end is 3:1 and on its cyan end 8.6:1, so
+   * a white label fades out across its own button; the dark label that passes
+   * on all three stops is the navy one, which reads as a black word on a
+   * bright pill.
+   *
+   * These three stops are the same hues taken deeper, so a white label clears
+   * 4.5:1 on every one of them (4.8:1 at the lightest) and the button still
+   * belongs to the same family as the ribbon beside it.
+   */
+  --marketing-action: linear-gradient(
+    100deg,
+    var(--ink-700) 0%,
+    var(--brand-600) 58%,
+    var(--action-teal) 100%
+  );
+}
+
 @theme inline {
+  --color-marketing-ink: var(--marketing-ink);
+  --color-marketing-surface: var(--marketing-surface);
+  --color-marketing-wash: var(--marketing-wash);
+  --color-marketing-border: var(--marketing-border);
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);

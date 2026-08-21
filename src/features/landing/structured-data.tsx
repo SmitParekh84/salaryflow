@@ -6,7 +6,7 @@ import { FAQS } from "./faqs";
  * Schema.org description of the landing page.
  *
  * Emitted as one `@graph` rather than several script tags so the nodes can
- * reference each other by `@id` — the application node points at the publisher
+ * reference each other by `@id` - the application node points at the publisher
  * instead of restating it, which is what lets a crawler treat them as facts
  * about one entity rather than three unrelated blobs.
  *

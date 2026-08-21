@@ -1,18 +1,17 @@
-import { BrandMark } from "@/components/brand";
 import { SiteFooter } from "@/features/landing/site-footer";
-import { BRAND } from "@/lib/brand";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { SiteNav } from "@/features/landing/site-nav";
 import type { ReactNode } from "react";
 import styles from "./marketing.module.css";
 
 /**
- * Shell for the public content pages.
+ * Shell for the public pages that are read as prose rather than browsed as
+ * sections: the privacy policy and the terms.
  *
- * Reuses the landing footer rather than growing a second one, so the two
- * surfaces stay in step. The header is intentionally simpler than the landing
- * nav: these pages are read, not browsed, and a full section menu would point
- * at anchors that only exist on the home page.
+ * Reuses the landing nav and footer rather than growing a second set, so the
+ * public surface is one site with one header. Everything below the header stays
+ * a single measured column, which is what a legal document wants.
+ *
+ * Pages built out of designed sections use `MarketingPage` instead.
  */
 export function MarketingShell({
   eyebrow,
@@ -30,15 +29,7 @@ export function MarketingShell({
 }) {
   return (
     <div className={styles.page}>
-      <header className={styles.topbar}>
-        <Link href="/" className={styles.lockup}>
-          <BrandMark />
-          <span className={styles.wordmark}>{BRAND.name}</span>
-        </Link>
-        <Link href="/" className={styles.backLink}>
-          <ArrowLeft size={16} /> Back to home
-        </Link>
-      </header>
+      <SiteNav />
 
       <main className={styles.main}>
         <p className={styles.eyebrow}>{eyebrow}</p>

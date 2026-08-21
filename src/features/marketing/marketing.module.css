@@ -1,5 +1,6 @@
 /**
- * Shell and prose styles for the public content pages (about, privacy, terms).
+ * Prose styles for the public pages that are read rather than browsed:
+ * the privacy policy and the terms.
  *
  * Like the landing footer, these deliberately do not use the app's theme
  * tokens: the marketing surface fixes a light palette, so theme-reactive text
@@ -18,52 +19,6 @@
     color: var(--ink);
     min-height: 100vh;
     overflow: hidden
-}
-
-.topbar {
-    align-items: center;
-    background: rgba(255, 255, 255, .88);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border-soft);
-    display: flex;
-    height: 72px;
-    justify-content: space-between;
-    left: 0;
-    padding: 0 max(24px, calc((100% - 880px)/2));
-    position: fixed;
-    right: 0;
-    top: 0;
-    z-index: 20
-}
-
-.lockup {
-    align-items: center;
-    color: var(--ink);
-    display: flex;
-    gap: 10px;
-    text-decoration: none
-}
-
-.wordmark {
-    font-size: 19px;
-    font-weight: 700;
-    letter-spacing: -.02em
-}
-
-.backLink {
-    align-items: center;
-    color: var(--muted);
-    display: flex;
-    font-size: 14px;
-    font-weight: 600;
-    gap: 6px;
-    /* Comfortable target on touch without changing the visual weight. */
-    min-height: 44px;
-    text-decoration: none
-}
-
-.backLink:hover {
-    color: var(--ink)
 }
 
 .main {
@@ -179,11 +134,6 @@
 }
 
 @media(max-width:680px) {
-    .topbar {
-        height: 64px;
-        padding: 0 18px
-    }
-
     .main {
         padding: 108px 20px 72px
     }

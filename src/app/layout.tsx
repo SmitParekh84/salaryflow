@@ -29,10 +29,10 @@ export const metadata: Metadata = {
   // it Next emits relative og:image paths, which every crawler rejects.
   metadataBase: new URL(SITE_ORIGIN),
   title: {
-    default: `${BRAND.name} — ${BRAND.brandline.replace(/\.$/, "")}`,
+    default: `${BRAND.name} - ${BRAND.brandline.replace(/\.$/, "")}`,
     // Sub-pages set only their own name; the brand is appended here so no page
     // has to repeat it and none is left with a bare, ambiguous title.
-    template: `%s — ${BRAND.name}`,
+    template: `%s - ${BRAND.name}`,
   },
   description: BRAND.description,
   applicationName: BRAND.name,
@@ -40,14 +40,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: BRAND.name,
-    title: `${BRAND.name} — ${BRAND.brandline.replace(/\.$/, "")}`,
+    title: `${BRAND.name} - ${BRAND.brandline.replace(/\.$/, "")}`,
     description: BRAND.description,
     url: "/",
     locale: "en_IN",
   },
   twitter: {
     card: "summary_large_image",
-    title: `${BRAND.name} — ${BRAND.brandline.replace(/\.$/, "")}`,
+    title: `${BRAND.name} - ${BRAND.brandline.replace(/\.$/, "")}`,
     description: BRAND.description,
   },
   robots: {

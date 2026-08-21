@@ -48,6 +48,17 @@
  * left and right edges on wider screens.
  */
 .nav {
+    /* Repeated from `.page` rather than inherited: `SiteNav` also renders inside
+       the legal-page shell, whose own wrapper declares a smaller set of tokens.
+       Without these the gradient CTA loses its background there. Same values, so
+       the landing page is unaffected. */
+    --ink: #031b3d;
+    --navy: #031b3d;
+    --cyan: #00cfd1;
+    --flow: #00b894;
+    --lime: #88e84d;
+    --ribbon-gradient: linear-gradient(105deg, var(--cyan) 0%, var(--flow) 58%, var(--lime) 100%);
+
     align-items: center;
     background: rgba(255, 255, 255, .78);
     backdrop-filter: blur(24px) saturate(160%);
@@ -78,13 +89,6 @@
     text-decoration: none
 }
 
-.navCta {
-    background: var(--ribbon-gradient);
-    border-radius: 10px;
-    color: var(--navy) !important;
-    padding: 12px 18px
-}
-
 .menuButton,
 .mobileNav {
     display: none
@@ -111,10 +115,93 @@
     width: 680px
 }
 
+/* ── Ambient ────────────────────────────────────────────────────────────────
+   Three blurred ribbon-coloured blobs drifting behind the hero, plus a grain
+   overlay. Only `transform` and `opacity` animate, so this stays off the main
+   thread. Masked out before the fold ends so the page still reads as white. */
+.ambient {
+    height: 1180px;
+    inset: -180px -8% auto;
+    mask-image: linear-gradient(#000 52%, transparent);
+    -webkit-mask-image: linear-gradient(#000 52%, transparent);
+    pointer-events: none;
+    position: absolute;
+    z-index: 0
+}
+
+.ambient i {
+    border-radius: 50%;
+    display: block;
+    filter: blur(92px);
+    position: absolute;
+    will-change: transform
+}
+
+.ambient i:nth-child(1) {
+    animation: driftA 28s var(--ease-in-out) infinite alternate;
+    background: radial-gradient(circle, rgba(0, 207, 209, .5), transparent 68%);
+    height: 760px;
+    right: -120px;
+    top: -40px;
+    width: 760px
+}
+
+.ambient i:nth-child(2) {
+    animation: driftB 34s var(--ease-in-out) infinite alternate;
+    background: radial-gradient(circle, rgba(0, 184, 148, .38), transparent 68%);
+    height: 620px;
+    left: -180px;
+    top: 180px;
+    width: 620px
+}
+
+.ambient i:nth-child(3) {
+    animation: driftC 40s var(--ease-in-out) infinite alternate;
+    background: radial-gradient(circle, rgba(136, 232, 77, .26), transparent 66%);
+    height: 520px;
+    left: 42%;
+    top: 420px;
+    width: 520px
+}
+
+/* Grain. Kills the banding the blurs would otherwise show on wide gamut
+   displays, and stops the gradient reading as a stock fintech mesh. */
+.ambient::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.34'/%3E%3C/svg%3E");
+    content: "";
+    inset: 0;
+    mix-blend-mode: overlay;
+    opacity: .5;
+    position: absolute
+}
+
+@keyframes driftA {
+    to {
+        transform: translate3d(-90px, 70px, 0) scale(1.12)
+    }
+}
+
+@keyframes driftB {
+    to {
+        transform: translate3d(120px, -60px, 0) scale(1.08)
+    }
+}
+
+@keyframes driftC {
+    to {
+        transform: translate3d(-70px, -90px, 0) scale(1.16)
+    }
+}
+
 .heroCopy,
+.heroParallax,
 .heroVisual {
     position: relative;
     z-index: 1
+}
+
+.heroParallax {
+    will-change: transform
 }
 
 .eyebrow {
@@ -178,37 +265,6 @@
     padding: 0 15px
 }
 
-.waitlistForm button {
-    align-items: center;
-    background: var(--ribbon-gradient);
-    border: 0;
-    border-radius: 10px;
-    color: var(--navy);
-    cursor: pointer;
-    display: flex;
-    font-size: 14px;
-    font-weight: 700;
-    gap: 8px;
-    justify-content: center;
-    min-height: 48px;
-    padding: 0 18px;
-    transition: transform .1s ease-out, background .16s ease
-}
-
-.waitlistForm button:hover {
-    filter: saturate(1.16) brightness(.96)
-}
-
-.waitlistForm button:disabled {
-    cursor: wait;
-    opacity: .7
-}
-
-.waitlistForm button svg {
-    height: 16px;
-    width: 16px
-}
-
 .formMessage {
     color: #6b778c;
     font-size: 12px;
@@ -240,12 +296,11 @@
     font-size: 11px
 }
 
-.demoButton {
-    border-radius: 10px !important;
-    min-height: 48px
-}
-
-.demoButton svg,
+/*
+ * No button styles live in this file. Every action on the public pages is the
+ * app's `Button` in its `marketing` or `marketingOutline` variant, so the two
+ * surfaces share one set of button states instead of maintaining a second.
+ */
 .textLink svg {
     height: 16px;
     width: 16px
@@ -867,7 +922,7 @@
     padding: 30px
 }
 
-.cycleTrack>div {
+.cycleTrack>.cycleStop {
     align-items: center;
     border-right: 1px dashed #b9d8ce;
     display: flex;
@@ -878,7 +933,7 @@
     text-align: center
 }
 
-.cycleTrack>div:last-child {
+.cycleTrack>.cycleStop:last-child {
     border: 0
 }
 
@@ -895,6 +950,54 @@
 .cycleTrack span {
     color: var(--muted);
     font-size: 12px
+}
+
+/* ── Payday cycle: pinned stage ─────────────────────────────────────────────
+   The stage is tall; the pin is one viewport of it stuck to the top. Scroll
+   distance == 100vh per stop, which is what makes the track advance one stop
+   per comfortable scroll gesture rather than blurring through all five. */
+.cycleStage {
+    height: 420vh;
+    position: relative
+}
+
+.cyclePin {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100svh;
+    position: sticky;
+    top: 0
+}
+
+.cycleRail {
+    background: var(--border-soft);
+    border-radius: 2px;
+    grid-column: 1 / -1;
+    height: 3px;
+    margin-bottom: 34px;
+    overflow: hidden;
+    position: relative
+}
+
+.cycleRail i {
+    background: var(--ribbon-gradient);
+    display: block;
+    height: 100%;
+    inset: 0;
+    position: absolute;
+    transform-origin: left center;
+    will-change: transform
+}
+
+.cycleStop {
+    opacity: .34;
+    transition: opacity var(--dur-base) var(--ease-out),
+        transform var(--dur-base) var(--ease-out)
+}
+
+.cycleStopOn {
+    opacity: 1
 }
 
 .cycleToday {
@@ -951,13 +1054,48 @@
     gap: 11px
 }
 
+/* Registering --bar makes it an animatable <percentage> instead of an opaque
+   string, which is what lets the fill below tween at all. Unregistered custom
+   properties jump straight to their end value. */
+@property --bar {
+    syntax: "<percentage>";
+    inherits: false;
+    initial-value: 0%;
+}
+
 .allocationBars span {
     align-items: center;
     background: linear-gradient(90deg, #d5f2f7 var(--bar), #f1f5f7 var(--bar));
     border-radius: 8px;
     display: flex;
     font-size: 13px;
-    padding: 14px
+    padding: 14px;
+    /* Scroll-driven, so the bars fill as the board is read rather than on a
+       timer that may have finished before the reader arrived. No JS, no
+       IntersectionObserver, nothing on the main thread. Where
+       `animation-timeline` is unsupported the animation degrades to a normal
+       one-second fill on load, which still ends in the right place. */
+    animation: fillBar 1s var(--ease-out) both;
+    animation-range: entry 20% cover 45%;
+    animation-timeline: view()
+}
+
+.allocationBars span:nth-child(2) {
+    animation-range: entry 24% cover 49%
+}
+
+.allocationBars span:nth-child(3) {
+    animation-range: entry 28% cover 53%
+}
+
+.allocationBars span:nth-child(4) {
+    animation-range: entry 32% cover 57%
+}
+
+@keyframes fillBar {
+    from {
+        --bar: 0%
+    }
 }
 
 .allocationBars b {
@@ -1405,7 +1543,7 @@
         grid-template-columns: 1fr;
         padding-top: 140px;
         /* The 810px floor is a desktop device. Once the hero stacks, its own
-           content sets the height — and a phone held landscape (844x390) is
+           content sets the height - and a phone held landscape (844x390) is
            wider than the phone breakpoint, so it would otherwise inherit an
            810px hero on a 390px-tall screen. */
         min-height: auto
@@ -1482,7 +1620,7 @@
 
     /* The five-step cycle is the tightest thing on the page: at 768px each
        column gets ~129px for a 36px icon plus two lines of label. It reads as a
-       vertical sequence instead, which is what the phone layout already did —
+       vertical sequence instead, which is what the phone layout already did -
        the rule just starts one breakpoint earlier. */
     .cycleTrack {
         gap: 18px;
@@ -1753,8 +1891,16 @@
     .page *,
     .page *::before,
     .page *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
         scroll-behavior: auto !important;
         transition-duration: .01ms !important
+    }
+
+    /* The aurora stays — it is colour, not motion — but it stops drifting. */
+    .ambient i {
+        animation: none !important;
+        transform: none !important
     }
 }
 
@@ -1777,5 +1923,75 @@
     .dailyNumber>strong {
         background: none;
         color: CanvasText
+    }
+}
+@media (max-width: 900px) {
+    .cycleStage {
+        height: auto
+    }
+
+    .cyclePin {
+        min-height: 0;
+        position: static
+    }
+
+    .cycleStop {
+        opacity: 1
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cycleStage {
+        height: auto
+    }
+
+    .cyclePin {
+        min-height: 0;
+        position: static
+    }
+
+    .cycleStop {
+        opacity: 1;
+        transform: none
+    }
+}
+
+/* ── Nav on scroll ──────────────────────────────────────────────────────────
+   Only `height` animates here, and it is the one exception to the rule against
+   animating layout properties on this page: the header is fixed, out of flow,
+   and has no siblings to reflow, so the cost is a repaint of 72 pixels of bar
+   and nothing else. */
+.navScrolled {
+    background: rgba(255, 255, 255, .9);
+    box-shadow: 0 1px 24px rgba(7, 24, 47, .08);
+    height: 60px
+}
+
+.nav {
+    transition: height var(--dur-base, 320ms) var(--ease-out, ease),
+        background var(--dur-base, 320ms) var(--ease-out, ease),
+        box-shadow var(--dur-base, 320ms) var(--ease-out, ease)
+}
+
+.navProgress {
+    background: var(--ribbon-gradient);
+    bottom: -1px;
+    height: 2px;
+    left: 0;
+    position: absolute;
+    right: 0;
+    transform-origin: left center;
+    will-change: transform
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav {
+        transition: none
+    }
+
+    /* animation:none leaves the inline --bar as the specified value, so the
+       bars simply render full-width with no tween. */
+    .allocationBars span {
+        animation: none
     }
 }

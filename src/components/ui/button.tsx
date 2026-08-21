@@ -6,7 +6,10 @@ import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
 export const buttonVariants = cva(
-  "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap font-medium transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-150 outline-none active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-(--ring) disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  // Icons are sized here rather than at every call site: a bare lucide glyph is
+  // 24px, which dwarfs a 14px label. An explicit `size-*` on the icon still
+  // wins, so the places that want a larger glyph keep it.
+  "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap font-medium transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-150 outline-none active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-(--ring) disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -22,6 +25,22 @@ export const buttonVariants = cva(
         warning: "bg-warning text-white hover:bg-warning/90",
         outline: "bg-transparent text-foreground ring-1 ring-inset ring-border hover:bg-surface-2",
         link: "h-auto min-h-0 min-w-0 text-primary underline-offset-4 hover:underline",
+        /*
+         * The two public-page actions. They are painted from the marketing
+         * tokens rather than the theme ones because that surface fixes a light
+         * palette: `primary` on it was a theme-coloured button on a permanently
+         * white band, and `secondary`'s hover (--surface-2 to --border) washed
+         * its own label out to near-invisible for a reader whose app theme was
+         * dark. Pair them: `marketing` for the one real action, then
+         * `marketingOutline` for everything beside it.
+         */
+        marketing:
+          "bg-[image:var(--marketing-action)] text-white shadow-sm shadow-marketing-ink/15 hover:brightness-[1.12]",
+        marketingOutline:
+          "bg-marketing-surface text-marketing-ink ring-1 ring-inset ring-marketing-border hover:bg-marketing-wash",
+        /* The unselected state inside a marketing `SegmentedControl`. */
+        marketingGhost:
+          "bg-transparent text-marketing-ink/55 hover:bg-marketing-surface/60 hover:text-marketing-ink",
       },
       size: {
         sm: "h-11 rounded-xl px-3 text-xs",

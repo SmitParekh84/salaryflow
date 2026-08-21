@@ -4,10 +4,10 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: `How ${BRAND.name} collects, stores, and handles your personal and financial information — and what it never does.`,
+  description: `How ${BRAND.name} collects, stores, and handles your personal and financial information - and what it never does.`,
   alternates: { canonical: "/privacy" },
   openGraph: {
-    title: `Privacy Policy — ${BRAND.name}`,
+    title: `Privacy Policy - ${BRAND.name}`,
     description: `How ${BRAND.name} collects, stores, and handles your personal and financial information.`,
     url: "/privacy",
   },
@@ -27,7 +27,7 @@ export default function PrivacyPage() {
       <p>
         {BRAND.name} never connects to your bank. It stores only what you type in. It runs no
         advertising trackers and no third-party analytics. Your financial records are not sold,
-        rented, or shared with advertisers — not in aggregate, not anonymised, not ever.
+        rented, or shared with advertisers - not in aggregate, not anonymised, not ever.
       </p>
 
       <h2>What is collected</h2>
@@ -38,7 +38,7 @@ export default function PrivacyPage() {
         <li>Your display name, if you provide one.</li>
         <li>
           A one-way <strong>hash</strong> of your password. The password itself is never stored and
-          cannot be recovered from the hash — only reset.
+          cannot be recovered from the hash - only reset.
         </li>
       </ul>
 
@@ -60,7 +60,7 @@ export default function PrivacyPage() {
         <li>
           A single session cookie, <code>sf_session</code>. It is <strong>httpOnly</strong> (not
           readable by scripts), <strong>SameSite=Strict</strong> (not sent from other sites), and
-          served only over HTTPS in production. It holds a signed session token — no financial data.
+          served only over HTTPS in production. It holds a signed session token - no financial data.
         </li>
         <li>
           Standard server logs kept by the hosting provider, which include IP addresses, for
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
         <li>To calculate and display your daily safe-to-spend figure and related summaries.</li>
         <li>To sign you in and keep you signed in across devices.</li>
         <li>
-          To send transactional email — verification codes and password resets. No marketing email
+          To send transactional email - verification codes and password resets. No marketing email
           is sent without you asking for it.
         </li>
         <li>To keep the service secure, including rate limiting and abuse prevention.</li>
@@ -97,15 +97,15 @@ export default function PrivacyPage() {
       </p>
       <ul>
         <li>
-          <strong>Database hosting</strong> — stores your account and financial records so they
+          <strong>Database hosting</strong> - stores your account and financial records so they
           persist between sessions.
         </li>
         <li>
-          <strong>Email delivery</strong> — receives your email address and the message body in
+          <strong>Email delivery</strong> - receives your email address and the message body in
           order to deliver verification and reset codes.
         </li>
         <li>
-          <strong>Application hosting</strong> — runs the service and keeps standard access logs.
+          <strong>Application hosting</strong> - runs the service and keeps standard access logs.
         </li>
       </ul>
       <p>
@@ -168,8 +168,8 @@ export default function PrivacyPage() {
       <MarketingNote>
         <p>
           This policy describes how the software actually behaves, but it has not been reviewed by a
-          lawyer. Before launching publicly — and particularly before handling users in the EU, the
-          UK, or under India&rsquo;s DPDP Act — have a qualified practitioner check it against the
+          lawyer. Before launching publicly - and particularly before handling users in the EU, the
+          UK, or under India&rsquo;s DPDP Act - have a qualified practitioner check it against the
           obligations that apply to you.
         </p>
       </MarketingNote>

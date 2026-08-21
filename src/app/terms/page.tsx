@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: `The terms you agree to when using ${BRAND.name}, including what the service is, what it is not, and the limits of what it can promise.`,
   alternates: { canonical: "/terms" },
   openGraph: {
-    title: `Terms of Service — ${BRAND.name}`,
+    title: `Terms of Service - ${BRAND.name}`,
     description: `The terms you agree to when using ${BRAND.name}.`,
     url: "/terms",
   },
@@ -21,7 +21,7 @@ export default function TermsPage() {
     <MarketingShell
       eyebrow="Legal"
       title="Terms of Service"
-      lede={`These terms cover what ${BRAND.name} provides, what it expects of you, and — importantly — what it deliberately does not claim to be.`}
+      lede={`These terms cover what ${BRAND.name} provides, what it expects of you, and - importantly - what it deliberately does not claim to be.`}
       updated={UPDATED}
     >
       <h2>Agreement</h2>
@@ -32,8 +32,8 @@ export default function TermsPage() {
 
       <h2>What {BRAND.name} is</h2>
       <p>
-        {BRAND.name} is a personal budgeting tool. It takes figures you enter — salary, bills,
-        goals, investments, spending — and arithmetic you could do yourself, and presents the result
+        {BRAND.name} is a personal budgeting tool. It takes figures you enter - salary, bills,
+        goals, investments, spending - and arithmetic you could do yourself, and presents the result
         as a daily spending figure. It is a calculator and a record, nothing more.
       </p>
 
@@ -47,7 +47,7 @@ export default function TermsPage() {
       </p>
       <p>
         Every number it shows is derived from what you entered. If your inputs are incomplete or out
-        of date, the output will be too — and it cannot know that. Decisions about your money remain
+        of date, the output will be too - and it cannot know that. Decisions about your money remain
         yours, and for anything consequential you should speak to a qualified professional.
       </p>
 
@@ -85,7 +85,7 @@ export default function TermsPage() {
       <p>
         {BRAND.name} is provided on an &ldquo;as is&rdquo; and &ldquo;as available&rdquo; basis. No
         particular level of uptime is guaranteed, and the service may be changed, interrupted, or
-        discontinued. Keep your own copy of anything you cannot afford to lose — the export feature
+        discontinued. Keep your own copy of anything you cannot afford to lose - the export feature
         exists for exactly this.
       </p>
 
@@ -128,7 +128,7 @@ export default function TermsPage() {
       <MarketingNote>
         <p>
           These terms have not been reviewed by a lawyer, and they do not name a governing
-          jurisdiction — that clause depends on where the operating entity is established. Have a
+          jurisdiction - that clause depends on where the operating entity is established. Have a
           qualified practitioner review and complete them before launch.
         </p>
       </MarketingNote>

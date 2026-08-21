@@ -11,7 +11,7 @@ import { ImageResponse } from "next/og";
  * needs an explicit `display: flex`.
  */
 export const runtime = "nodejs";
-export const alt = `${BRAND.name} — ${BRAND.brandline}`;
+export const alt = `${BRAND.name} - ${BRAND.brandline}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

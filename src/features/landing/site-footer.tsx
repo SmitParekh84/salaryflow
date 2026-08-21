@@ -7,25 +7,28 @@ import { FaInstagram, FaLinkedinIn } from "react-icons/fa6";
 import styles from "./landing.module.css";
 
 /**
- * Landing-page footer.
+ * Public site footer, shared by the landing page and the marketing pages.
  *
  * Deliberately not built on the app's theme tokens: the marketing page fixes
  * its own palette (`--ink`, no dark-scheme branch), so a theme-reactive footer
  * would render dark beneath a permanently light hero. It carries the landing
  * palette instead, and stays out of the authenticated app shell.
  *
- * Every link here points at something that exists — the four landing sections,
- * the account routes, and the company pages.
+ * Every link here points at something that exists: the four landing sections,
+ * the account routes, and the company pages. The section links carry the home
+ * route because this footer also renders on the marketing pages, where a bare
+ * hash would resolve against a page that has no such section.
  */
 
 const SECTION_LINKS = [
-  { href: "#how-it-works", label: "How it works" },
-  { href: "#features", label: "Features" },
-  { href: "#privacy", label: "Privacy" },
-  { href: "#faq", label: "FAQ" },
+  { href: "/#how-it-works", label: "How it works" },
+  { href: "/#features", label: "Features" },
+  { href: "/#privacy", label: "Privacy" },
+  { href: "/#faq", label: "FAQ" },
 ];
 
 const ROUTE_LINKS = [
+  { href: "/waitlist", label: "Join the waitlist" },
   { href: "/download", label: "Install the app" },
   { href: "/register", label: "Create an account" },
   { href: "/login", label: "Sign in" },
@@ -60,7 +63,7 @@ export function SiteFooter() {
             <ul>
               {SECTION_LINKS.map((link) => (
                 <li key={link.href}>
-                  <a href={link.href}>{link.label}</a>
+                  <Link href={link.href}>{link.label}</Link>
                 </li>
               ))}
             </ul>

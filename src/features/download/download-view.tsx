@@ -1,26 +1,21 @@
 "use client";
 
-import { BrandMark } from "@/components/brand";
 import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import landing from "@/features/landing/landing.module.css";
+import { Reveal, SectionHeading } from "@/features/landing/section";
+import { MarketingPage, PageCta, PageHero } from "@/features/marketing/marketing-page";
+import styles from "@/features/marketing/marketing-page.module.css";
+import { BRAND } from "@/lib/brand";
 import { usePwaInstall, type PwaPlatform } from "@/lib/usePwaInstall";
-import { cn } from "@/lib/utils";
-import {
-  ArrowLeft,
-  Check,
-  Download,
-  MonitorSmartphone,
-  Share,
-  Smartphone,
-  WifiOff,
-  Zap,
-} from "lucide-react";
+import { ArrowRight, Check, Download, MonitorSmartphone, Share, Smartphone, WifiOff, Zap } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 type Guide = { id: Exclude<PwaPlatform, null>; label: string; browser: string; steps: string[] };
 
 /**
- * Steps are written as what the user sees on screen, not as feature names —
+ * Steps are written as what the user sees on screen, not as feature names -
  * "tap the Share button" is followable; "invoke the share sheet" is not.
  */
 const GUIDES: Guide[] = [
@@ -29,7 +24,7 @@ const GUIDES: Guide[] = [
     label: "iPhone & iPad",
     browser: "Safari",
     steps: [
-      "Open Aartha in Safari. Chrome and Firefox on iOS cannot install apps — Apple restricts it.",
+      "Open Aartha in Safari. Chrome and Firefox on iOS cannot install apps, because Apple restricts it.",
       "Tap the Share button in the toolbar.",
       "Scroll down and choose Add to Home Screen.",
       "Tap Add. Aartha appears on your home screen.",
@@ -58,12 +53,20 @@ const GUIDES: Guide[] = [
 ];
 
 const BENEFITS = [
-  { icon: Zap, title: "Opens instantly", body: "Launches from your home screen like any other app." },
-  { icon: WifiOff, title: "Works offline", body: "Check what's safe to spend without a connection." },
+  {
+    icon: Zap,
+    title: "Opens instantly",
+    body: "Launches from your home screen like any other app, with no browser chrome in the way.",
+  },
+  {
+    icon: WifiOff,
+    title: "Works offline",
+    body: "Check what is safe to spend with no connection at all, on a train or in a basement.",
+  },
   {
     icon: MonitorSmartphone,
     title: "No app store",
-    body: "Installs straight from the browser. No account with Apple or Google needed.",
+    body: "Installs straight from the browser. No account with Apple or Google, and nothing to download from a store.",
   },
 ];
 
@@ -89,122 +92,120 @@ export function DownloadView() {
   }
 
   return (
-    <main className="min-h-dvh bg-background px-5 pb-[max(3rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
-      <div className="mx-auto w-full max-w-xl">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 py-2 text-sm text-muted transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          Back
-        </Link>
+    <MarketingPage>
+      <PageHero
+        eyebrow="Install the app"
+        title={
+          <>
+            {BRAND.name} on your <span>home screen.</span>
+          </>
+        }
+        lede={`${BRAND.name} installs straight from your browser. It takes about ten seconds, works on every phone, and there is no app store in the way.`}
+      />
 
-        <header className="mt-6 flex flex-col items-center text-center">
-          <BrandMark size="lg" />
-          <h1 className="mt-4 text-2xl font-semibold tracking-[-0.02em]">Install Aartha</h1>
-          <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted">
-            Aartha installs straight from your browser — it takes about ten seconds and works on
-            every phone.
-          </p>
-        </header>
-
+      <section className={landing.section}>
         {isInstalled ? (
           // A page called "download" that a user reaches from an installed app
           // should confirm that, not silently offer to install it again.
-          <div className="mt-8 rounded-2xl border border-border bg-surface p-6 text-center">
-            <div className="mx-auto flex size-11 items-center justify-center rounded-full bg-success/10">
-              <Check className="size-5 text-success" aria-hidden="true" />
-            </div>
-            <h2 className="mt-3 font-semibold">Aartha is already installed</h2>
-            <p className="mt-1.5 text-sm text-muted">You&rsquo;re running the installed app.</p>
-            <Button asChild className="mt-5">
-              <Link href="/dashboard">Open Aartha</Link>
+          <Reveal className={styles.installed}>
+            <Check />
+            <h2>{BRAND.name} is already installed</h2>
+            <p>You are running the installed app.</p>
+            <Button asChild size="lg" variant="marketing">
+              <Link href="/dashboard">
+                Open {BRAND.name} <ArrowRight />
+              </Link>
             </Button>
-          </div>
+          </Reveal>
         ) : (
           <>
             {canInstallNatively && (
-              <div className="mt-8 rounded-2xl border border-border bg-surface p-6 text-center">
-                <p className="text-sm text-muted">Your browser can install Aartha directly.</p>
-                <Button onClick={handleInstall} loading={installing} size="lg" className="mt-4">
-                  <Download className="size-4" aria-hidden="true" />
+              <Reveal className={styles.installBox}>
+                <p>Your browser can install {BRAND.name} directly.</p>
+                <Button
+                  type="button"
+                  size="lg"
+                  variant="marketing"
+                  onClick={handleInstall}
+                  loading={installing}
+                >
+                  <Download aria-hidden="true" />
                   Install app
                 </Button>
-              </div>
+              </Reveal>
             )}
 
-            <section className="mt-8">
-              <div
-                role="tablist"
-                aria-label="Choose your device"
-                className="flex gap-1 rounded-xl bg-surface-2 p-1"
-              >
-                {GUIDES.map((entry) => {
-                  const selected = entry.id === active;
-                  return (
-                    <button
-                      key={entry.id}
-                      role="tab"
-                      type="button"
-                      aria-selected={selected}
-                      onClick={() => setOverride(entry.id)}
-                      className={cn(
-                        "min-h-10 flex-1 rounded-lg px-2 text-xs font-medium transition-colors duration-150 active:scale-[0.98]",
-                        selected
-                          ? "bg-surface text-foreground card-shadow"
-                          : "text-muted hover:text-foreground",
-                      )}
-                    >
-                      {entry.label}
-                    </button>
-                  );
-                })}
-              </div>
+            <Reveal className={styles.centered}>
+              <SegmentedControl
+                label="Choose your device"
+                tone="marketing"
+                value={active}
+                onValueChange={setOverride}
+                items={GUIDES.map((entry) => ({ value: entry.id, label: entry.label }))}
+                className={styles.deviceSwitch}
+              />
 
-              <div className="mt-4 rounded-2xl border border-border bg-surface p-6">
-                <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted">
+              <div className={styles.steps}>
+                <p className={styles.stepsBrowser}>
                   {guide.id === "ios" ? (
-                    <Share className="size-3.5" aria-hidden="true" />
+                    <Share aria-hidden="true" />
                   ) : (
-                    <Smartphone className="size-3.5" aria-hidden="true" />
+                    <Smartphone aria-hidden="true" />
                   )}
                   Using {guide.browser}
                 </p>
-                <ol className="mt-4 space-y-4">
+                <ol>
                   {guide.steps.map((step, index) => (
-                    <li key={step} className="flex gap-3">
-                      <span
-                        aria-hidden="true"
-                        className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary"
-                      >
-                        {index + 1}
-                      </span>
-                      <span className="text-sm leading-relaxed text-foreground">{step}</span>
+                    <li key={step}>
+                      <i aria-hidden="true">{index + 1}</i>
+                      <span>{step}</span>
                     </li>
                   ))}
                 </ol>
               </div>
-            </section>
+            </Reveal>
           </>
         )}
+      </section>
 
-        <section className="mt-8 grid gap-3 sm:grid-cols-3">
+      <section className={landing.section}>
+        <SectionHeading
+          eyebrow="Why install it"
+          copy="It is the same app either way. Installed, it just behaves like one."
+        >
+          A real app, <span>without the app store.</span>
+        </SectionHeading>
+        <div className={styles.cards}>
           {BENEFITS.map(({ icon: Icon, title, body }) => (
-            <div key={title} className="rounded-2xl border border-border bg-surface p-4">
-              <Icon className="size-4 text-primary" aria-hidden="true" />
-              <h3 className="mt-2.5 text-sm font-semibold">{title}</h3>
-              <p className="mt-1 text-xs leading-relaxed text-muted">{body}</p>
-            </div>
+            <Reveal key={title} className={styles.card}>
+              <Icon />
+              <h3>{title}</h3>
+              <p>{body}</p>
+            </Reveal>
           ))}
-        </section>
+        </div>
+      </section>
 
-        <p className="mt-8 text-center text-sm text-muted">
-          Already have an account?{" "}
-          <Link href="/login" className="font-medium text-primary hover:underline">
-            Log in
+      <PageCta
+        eyebrow="Once it is installed"
+        title={
+          <>
+            Sign in and <span>set up your cycle.</span>
+          </>
+        }
+        copy="Add your salary, your payday and your regular commitments once. The daily number takes care of itself after that."
+      >
+        <Button asChild size="lg" variant="marketingOutline">
+          <Link href="/login">
+            Log in <ArrowRight />
           </Link>
-        </p>
-      </div>
-    </main>
+        </Button>
+        <Button asChild size="lg" variant="marketing">
+          <Link href="/register">
+            Create an account <ArrowRight />
+          </Link>
+        </Button>
+      </PageCta>
+    </MarketingPage>
   );
 }
