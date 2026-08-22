@@ -37,6 +37,12 @@ const rs = (n) => 'Rs ' + Number(n ?? 0).toLocaleString('en-IN', { maximumFracti
     }
   }
   console.log('\n\nACCOUNT IDS');
-  for (const a of accounts) console.log('  ', String(a.clientId ?? a._id), a.bankName, rs(a.balance));
+  for (const a of accounts) {
+    const verified = a.balanceVerifiedAt
+      ? Math.floor((Date.now() - new Date(a.balanceVerifiedAt)) / 86_400_000) + 'd ago'
+      : 'NEVER';
+    console.log('  ', String(a.clientId ?? a._id), a.bankName.padEnd(22), rs(a.balance).padStart(13),
+      '| verified:', verified, '| adjustments:', (a.adjustments || []).length);
+  }
   await mongoose.disconnect();
 })().catch((e) => { console.error('ERR', e.message); process.exit(1); });

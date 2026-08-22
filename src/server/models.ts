@@ -189,6 +189,18 @@ const BankAccountSchema = new Schema(
     ],
     maskBalance: { type: Boolean, default: false },
     hiddenFromAccounts: { type: Boolean, default: false },
+    balanceVerifiedAt: Date,
+    adjustments: [
+      new Schema(
+        {
+          id: { type: String, required: true },
+          date: { type: Date, required: true },
+          amount: { type: Number, required: true },
+          note: String,
+        },
+        { _id: false },
+      ),
+    ],
   },
   { timestamps: true },
 );

@@ -34,6 +34,7 @@ import type {
 } from "./types";
 import { completeTransferWrite } from "./transfer-writes";
 import { localDateInputValue, uid } from "./utils";
+import { withCorrectedBalance } from "./account-verification";
 import { pruneReviewedDates } from "./catch-up";
 import type { ImportPlan } from "./statement-import";
 import type { ImportResult } from "./statement-import";
@@ -129,6 +130,8 @@ interface FinanceState {
   // accounts
   addAccount: (account: Omit<BankAccount, "id">) => string;
   updateAccount: (id: string, patch: Partial<BankAccount>) => void;
+  /** Set a balance to what the bank says. Stamps verification, logs the delta. */
+  correctBalance: (id: string, actual: number, note: string) => void;
   deleteAccount: (id: string) => { ok: boolean; reason?: string };
   addAccountTransfer: (
     transfer: Omit<AccountTransfer, "id" | "status" | "completedAt">,
@@ -425,14 +428,24 @@ export const useFinanceStore = create<FinanceState>()(
         set((state) => {
           const accounts = [...state.accounts];
 
+          const now = new Date();
           for (const entry of plan.accountsToCreate) {
             const id = uid("acc");
             accountIdByKey.set(entry.key, id);
-            accounts.push({ ...entry.account, id });
+            accounts.push({ ...entry.account, id, balanceVerifiedAt: now.toISOString() });
           }
           for (const entry of plan.accountsToUpdate) {
             const index = accounts.findIndex((account) => account.id === entry.id);
-            if (index >= 0) accounts[index] = { ...accounts[index], balance: entry.balance };
+            // Through the correction path, never a raw overwrite: the delta the
+            // statement exposes is exactly the drift worth keeping on record.
+            if (index >= 0) {
+              accounts[index] = withCorrectedBalance(
+                accounts[index],
+                entry.balance,
+                "Set from statement import",
+                now,
+              );
+            }
           }
 
           const creditCards = [...state.creditCards];
@@ -602,8 +615,23 @@ export const useFinanceStore = create<FinanceState>()(
       // point at it — onboarding does both — can link them without a re-read.
       addAccount: (account) => {
         const id = uid("acct");
-        set((s) => ({ accounts: [...s.accounts, { ...account, id }] }));
+        // The figure typed at creation is a confirmation: the user just read it
+        // off their bank. The staleness clock starts here, not at "never".
+        set((s) => ({
+          accounts: [
+            ...s.accounts,
+            { ...account, id, balanceVerifiedAt: new Date().toISOString() },
+          ],
+        }));
         return id;
+      },
+      correctBalance: (id, actual, note) => {
+        set((s) => ({
+          accounts: s.accounts.map((account) =>
+            account.id === id ? withCorrectedBalance(account, actual, note) : account,
+          ),
+        }));
+        get().queueSync();
       },
       updateAccount: (id, patch) =>
         set((s) => ({

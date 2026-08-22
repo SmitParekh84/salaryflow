@@ -412,6 +412,33 @@ any distance figure.
 
 Rules here are enforced by `src/lib/fuel.test.ts`. Update it when they change.
 
+## Account Balance Integrity
+
+A stored balance is a mirror of a bank account, and it changes in exactly two
+ways:
+
+1. **A record moves it** — an expense, income, or transfer with
+   `balanceApplied`. Derived movement; it does not touch `balanceVerifiedAt`.
+2. **A correction sets it** — the user types the bank's figure, or a statement
+   import supplies it. Corrections go through `withCorrectedBalance` in
+   `src/lib/account-verification.ts`, which stamps `balanceVerifiedAt` and, when
+   the figure moved, appends the signed delta to `adjustments` (newest first,
+   capped at 24).
+
+Raw balance overwrites are forbidden. Every rupee of drift must be visible in
+the adjustment trail — the field's whole purpose is that a discrepancy has
+somewhere to show up.
+
+Adjustments are corrections, not flows: they are never income, never spending,
+and never enter any bucket, cycle, or report (money is counted once).
+
+A balance unconfirmed for more than 14 days (`BALANCE_STALE_AFTER_DAYS`) is
+flagged in the accounts list. Confirming an unchanged figure is real
+information — it resets the clock without logging noise.
+
+Rules enforced by `src/lib/account-verification.test.ts` and the balance suite
+in `src/lib/finance.test.ts`.
+
 ## Validation Contract
 
 Calculation changes should pass:

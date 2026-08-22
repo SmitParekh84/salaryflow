@@ -10,6 +10,7 @@ import { Modal, ModalFooter } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
 import { TransferSheet } from "@/features/accounts/transfer-sheet";
 import { AllocationSheet } from "@/features/goals/allocation-sheet";
+import { verificationStatus } from "@/lib/account-verification";
 import { accountAllocated, accountFree, isOverAllocated } from "@/lib/allocations";
 import { creditCardUsage } from "@/lib/credit-cards";
 import { accountSchema, creditCardSchema } from "@/lib/schemas";
@@ -69,6 +70,7 @@ export function AccountsView() {
   const [allocateAccountId, setAllocateAccountId] = useState<string | null>(null);
   const addAccount = useFinanceStore((state) => state.addAccount);
   const updateAccount = useFinanceStore((state) => state.updateAccount);
+  const correctBalance = useFinanceStore((state) => state.correctBalance);
   const deleteAccount = useFinanceStore((state) => state.deleteAccount);
   const syncWithServer = useFinanceStore((state) => state.syncWithServer);
   const currency = useFinanceStore((state) => state.profile.currency);
@@ -127,7 +129,14 @@ export function AccountsView() {
       return;
     }
     setFormErrors({});
-    const details = { ...form, bankName: parsed.data.bankName, balance: parsed.data.balance };
+    // The balance travels through correctBalance, never through a raw patch:
+    // typing a figure into this form is the user reading it off their bank, and
+    // that confirmation — plus any drift it exposes — is worth keeping.
+    const { balance: confirmedBalance, ...details } = {
+      ...form,
+      bankName: parsed.data.bankName,
+      balance: parsed.data.balance,
+    };
 
     if (editingId) {
       for (const account of accounts) {
@@ -141,6 +150,7 @@ export function AccountsView() {
         }
       }
       updateAccount(editingId, details);
+      correctBalance(editingId, confirmedBalance, "Corrected by hand");
     } else {
       for (const account of accounts) {
         const retainedDefaults = account.defaultFor?.filter(
@@ -150,7 +160,7 @@ export function AccountsView() {
           updateAccount(account.id, { defaultFor: retainedDefaults });
         }
       }
-      addAccount({ ...details, status: "active" });
+      addAccount({ ...details, balance: confirmedBalance, status: "active" });
     }
     setOpen(false);
     await syncWithServer();
@@ -413,6 +423,27 @@ export function AccountsView() {
                   >
                     {account.maskBalance ? "••••••" : formatMoney(account.balance, currency)}
                   </p>
+                  {/* A figure nobody has confirmed in weeks is a guess wearing
+                      bold type. Say how old it is instead of letting it pass
+                      for current — this silence is how one account sat ₹12,071
+                      from the bank for months. */}
+                  {(() => {
+                    const status = verificationStatus(account);
+                    if (status.state === "verified" && status.days === 0) return null;
+                    const label =
+                      status.state === "never"
+                        ? "never checked"
+                        : `checked ${status.days}d ago`;
+                    return (
+                      <span
+                        className={`text-[10px] ${
+                          status.state === "verified" ? "text-muted" : "text-warning"
+                        }`}
+                      >
+                        {label}
+                      </span>
+                    );
+                  })()}
                   <Button
                     variant="ghost"
                     size="icon"
