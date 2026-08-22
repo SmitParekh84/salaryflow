@@ -97,16 +97,21 @@ function dayOf(date: string): string {
  *
  * A matched record is consumed, so two genuinely separate ₹55 payments on one
  * day still import as two.
+ *
+ * Only records ALREADY HELD enter the pool — rows never match other rows from
+ * the same file. A bank statement does not print the same transaction twice,
+ * so two same-day equal-amount rows in one file are two real payments (two
+ * chai stops, a fee and its twin GST line). Pooling file rows collapsed 30
+ * genuine transactions on the first real import.
  */
 function seenMatcher(rows: { date: string; amount: number }[]) {
   const byDay = new Map<string, { amount: number; taken: boolean }[]>();
-  const add = (date: string, amount: number) => {
-    const key = dayOf(date);
+  for (const row of rows) {
+    const key = dayOf(row.date);
     const bucket = byDay.get(key);
-    if (bucket) bucket.push({ amount, taken: false });
-    else byDay.set(key, [{ amount, taken: false }]);
-  };
-  for (const row of rows) add(row.date, row.amount);
+    if (bucket) bucket.push({ amount: row.amount, taken: false });
+    else byDay.set(key, [{ amount: row.amount, taken: false }]);
+  }
 
   return {
     /** True when this row is already held. Consumes the record it matched. */
@@ -119,7 +124,6 @@ function seenMatcher(rows: { date: string; amount: number }[]) {
       hit.taken = true;
       return true;
     },
-    add,
   };
 }
 
@@ -172,7 +176,6 @@ export function buildImportPlan(
       duplicateExpenses += 1;
       continue;
     }
-    seenExpenses.add(row.date, row.amount);
     expenses.push({
       accountKey: row.account,
       expense: {
@@ -218,7 +221,6 @@ export function buildImportPlan(
       duplicateIncomes += 1;
       continue;
     }
-    seenIncomes.add(row.date, row.amount);
     incomes.push({
       accountKey: row.account,
       income: {

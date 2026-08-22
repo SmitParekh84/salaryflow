@@ -94,10 +94,12 @@ describe("buildImportPlan", () => {
     expect(plan.duplicateExpenses).toBe(1);
   });
 
-  it("collapses a repeat inside the same file too", () => {
+  it("trusts the file: two same-day equal rows are two real payments", () => {
+    // A statement never prints the same transaction twice — two Rs 371 rows on
+    // one day are two payments. Only records already held may absorb a row.
     const plan = buildImportPlan(doc({ expenses: [spend, { ...spend }] }), empty);
-    expect(plan.expenses).toHaveLength(1);
-    expect(plan.duplicateExpenses).toBe(1);
+    expect(plan.expenses).toHaveLength(2);
+    expect(plan.duplicateExpenses).toBe(0);
   });
 
   it("keeps two different payments on one day apart", () => {
