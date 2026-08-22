@@ -74,17 +74,53 @@ export function parseImportDoc(raw: unknown): ImportDoc {
 }
 
 /**
- * Identity of a record for duplicate detection.
+ * How far apart two amounts can be and still be the same payment.
  *
- * Day, amount and payee together: importing the same statement twice must not
- * double every figure, and two genuinely separate ₹55 payments to the same
- * person on the same day are rare enough that skipping the second is the safer
- * error. Re-importing an overlapping period is the common case and has to be
- * safe.
+ * A figure typed by hand gets rounded — ₹855 for a ₹855.64 booking, ₹351 for a
+ * ₹350.70 burger. Requiring an exact match lets every one of those back in as a
+ * second copy of a payment the user already recorded.
  */
-function expenseKey(date: string, amount: number, merchant: string): string {
-  const day = parseFinancialDate(date).toDateString();
-  return `${day}|${amount.toFixed(2)}|${merchant.trim().toLowerCase()}`;
+const AMOUNT_TOLERANCE = 1;
+
+function dayOf(date: string): string {
+  return parseFinancialDate(date).toDateString();
+}
+
+/**
+ * Matches an incoming row against records already held.
+ *
+ * Keyed on the day and the amount, deliberately ignoring the payee. The same
+ * payment is spelled one way by hand and another by the bank — "BookMyShow"
+ * against "Bookmyshow", "Narnarayan Fuel" against "Narnarayan Fuel Point" — and
+ * a name-aware rule treats all of those as new. Against real data that was 67
+ * duplicate rows worth ₹27,000.
+ *
+ * A matched record is consumed, so two genuinely separate ₹55 payments on one
+ * day still import as two.
+ */
+function seenMatcher(rows: { date: string; amount: number }[]) {
+  const byDay = new Map<string, { amount: number; taken: boolean }[]>();
+  const add = (date: string, amount: number) => {
+    const key = dayOf(date);
+    const bucket = byDay.get(key);
+    if (bucket) bucket.push({ amount, taken: false });
+    else byDay.set(key, [{ amount, taken: false }]);
+  };
+  for (const row of rows) add(row.date, row.amount);
+
+  return {
+    /** True when this row is already held. Consumes the record it matched. */
+    claim(date: string, amount: number): boolean {
+      const bucket = byDay.get(dayOf(date));
+      const hit = bucket?.find(
+        (entry) => !entry.taken && Math.abs(entry.amount - amount) <= AMOUNT_TOLERANCE,
+      );
+      if (!hit) return false;
+      hit.taken = true;
+      return true;
+    },
+    add,
+  };
 }
 
 export function buildImportPlan(
@@ -128,18 +164,15 @@ export function buildImportPlan(
     });
   }
 
-  const seenExpenses = new Set(
-    existing.expenses.map((e) => expenseKey(e.date, e.amount, e.merchant ?? e.category)),
-  );
+  const seenExpenses = seenMatcher(existing.expenses);
   const expenses: ImportPlan["expenses"] = [];
   let duplicateExpenses = 0;
   for (const row of doc.expenses) {
-    const key = expenseKey(row.date, row.amount, row.merchant);
-    if (seenExpenses.has(key)) {
+    if (seenExpenses.claim(row.date, row.amount)) {
       duplicateExpenses += 1;
       continue;
     }
-    seenExpenses.add(key);
+    seenExpenses.add(row.date, row.amount);
     expenses.push({
       accountKey: row.account,
       expense: {
@@ -177,16 +210,15 @@ export function buildImportPlan(
     });
   }
 
-  const seenIncomes = new Set(existing.incomes.map((i) => expenseKey(i.date, i.amount, i.source)));
+  const seenIncomes = seenMatcher(existing.incomes);
   const incomes: ImportPlan["incomes"] = [];
   let duplicateIncomes = 0;
   for (const row of doc.incomes) {
-    const key = expenseKey(row.date, row.amount, row.source);
-    if (seenIncomes.has(key)) {
+    if (seenIncomes.claim(row.date, row.amount)) {
       duplicateIncomes += 1;
       continue;
     }
-    seenIncomes.add(key);
+    seenIncomes.add(row.date, row.amount);
     incomes.push({
       accountKey: row.account,
       income: {

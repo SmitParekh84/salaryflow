@@ -161,3 +161,59 @@ describe("buildImportPlan", () => {
     expect(plan.cardsToCreate).toEqual([]);
   });
 });
+
+describe("duplicate detection ignores how the payee was spelled", () => {
+  const already: Expense = {
+    id: "e1",
+    amount: 855,
+    category: "Entertainment",
+    merchant: "BookMyShow",
+    paymentMethod: "Card",
+    date: new Date(2026, 6, 26, 12).toISOString(),
+  };
+
+  it("matches the same payment spelled differently by the bank", () => {
+    const plan = buildImportPlan(
+      doc({ expenses: [{ ...spend, date: "2026-07-26", amount: 855, merchant: "Bookmyshow" }] }),
+      { ...empty, expenses: [already] },
+    );
+
+    expect(plan.expenses).toEqual([]);
+    expect(plan.duplicateExpenses).toBe(1);
+  });
+
+  it("matches an amount the user rounded when typing it in", () => {
+    const plan = buildImportPlan(
+      doc({ expenses: [{ ...spend, date: "2026-07-26", amount: 855.64, merchant: "Bookmyshow" }] }),
+      { ...empty, expenses: [already] },
+    );
+
+    expect(plan.duplicateExpenses).toBe(1);
+  });
+
+  it("does not swallow a second genuine payment behind the first", () => {
+    const plan = buildImportPlan(
+      doc({
+        expenses: [
+          { ...spend, date: "2026-07-26", amount: 855.64, merchant: "Bookmyshow" },
+          { ...spend, date: "2026-07-26", amount: 855.64, merchant: "Bookmyshow" },
+        ],
+      }),
+      { ...empty, expenses: [already] },
+    );
+
+    // One matches what is already held; the other is new.
+    expect(plan.duplicateExpenses).toBe(1);
+    expect(plan.expenses).toHaveLength(1);
+  });
+
+  it("keeps amounts further apart than the rounding tolerance", () => {
+    const plan = buildImportPlan(
+      doc({ expenses: [{ ...spend, date: "2026-07-26", amount: 900, merchant: "Bookmyshow" }] }),
+      { ...empty, expenses: [already] },
+    );
+
+    expect(plan.expenses).toHaveLength(1);
+    expect(plan.duplicateExpenses).toBe(0);
+  });
+});
