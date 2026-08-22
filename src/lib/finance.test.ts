@@ -743,6 +743,51 @@ describe("ordinary expense balance deduction", () => {
     expect(useFinanceStore.getState().accounts[0].balance).toBe(5_000);
   });
 
+  it("reports a failed push instead of swallowing it", async () => {
+    // fetch is stubbed to { ok: false } in beforeEach — a rejected push.
+    useFinanceStore.getState().addExpense({ ...spend, accountId: "icici" });
+    await expect(useFinanceStore.getState().syncWithServer()).resolves.toBe(false);
+  });
+
+  it("reports a network failure the same way", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+    useFinanceStore.getState().addExpense({ ...spend, accountId: "icici" });
+    await expect(useFinanceStore.getState().syncWithServer()).resolves.toBe(false);
+  });
+
+  it("reports success only when the server accepted the state", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: {}, syncedAt: new Date().toISOString() }),
+      }),
+    );
+    useFinanceStore.getState().addExpense({ ...spend, accountId: "icici" });
+    await expect(useFinanceStore.getState().syncWithServer()).resolves.toBe(true);
+  });
+
+  it("logs a hand correction with its delta and stamps the confirmation", () => {
+    useFinanceStore.getState().correctBalance("icici", 3.96, "Corrected by hand");
+
+    const corrected = useFinanceStore.getState().accounts[0];
+    expect(corrected.balance).toBe(3.96);
+    expect(corrected.balanceVerifiedAt).toBeTruthy();
+    expect(corrected.adjustments![0].amount).toBeCloseTo(-4_996.04, 2);
+    expect(corrected.adjustments![0].note).toBe("Corrected by hand");
+  });
+
+  it("does not let a record-driven change pass for a confirmation", () => {
+    // An expense moving the balance is derivation, not someone checking the
+    // bank. If it stamped, the staleness warning could never fire.
+    useFinanceStore.getState().addExpense({ ...spend, accountId: "icici" });
+
+    const after = useFinanceStore.getState().accounts[0];
+    expect(after.balance).toBe(3_500);
+    expect(after.balanceVerifiedAt).toBeUndefined();
+    expect(after.adjustments).toBeUndefined();
+  });
+
   it("lets an edit push the balance below zero rather than rejecting the correction", () => {
     useFinanceStore.getState().addExpense({ ...spend, accountId: "icici" });
     const id = useFinanceStore.getState().expenses[0].id;

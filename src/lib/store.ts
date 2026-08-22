@@ -34,7 +34,10 @@ import type {
 } from "./types";
 import { completeTransferWrite } from "./transfer-writes";
 import { localDateInputValue, uid } from "./utils";
+import { withCorrectedBalance } from "./account-verification";
 import { pruneReviewedDates } from "./catch-up";
+import type { ImportPlan } from "./statement-import";
+import type { ImportResult } from "./statement-import";
 
 const STORE_KEY = "aartha-store";
 
@@ -94,6 +97,9 @@ interface FinanceState {
   markDayReviewed: (date: string) => void;
   dismissCatchUp: () => void;
 
+  // statement import
+  applyImport: (plan: ImportPlan) => ImportResult;
+
   // incomes
   addIncome: (i: Omit<Income, "id">) => void;
   deleteIncome: (id: string) => void;
@@ -124,6 +130,8 @@ interface FinanceState {
   // accounts
   addAccount: (account: Omit<BankAccount, "id">) => string;
   updateAccount: (id: string, patch: Partial<BankAccount>) => void;
+  /** Set a balance to what the bank says. Stamps verification, logs the delta. */
+  correctBalance: (id: string, actual: number, note: string) => void;
   deleteAccount: (id: string) => { ok: boolean; reason?: string };
   addAccountTransfer: (
     transfer: Omit<AccountTransfer, "id" | "status" | "completedAt">,
@@ -163,7 +171,8 @@ interface FinanceState {
    * whatever the other device just added.
    */
   lastSyncedAt: string | null;
-  syncWithServer: () => Promise<void>;
+  /** Resolves true only when the server has accepted this device's state. */
+  syncWithServer: () => Promise<boolean>;
   /** Debounced `syncWithServer`, for mutations that fire in bursts. */
   queueSync: () => void;
   loadFromServer: () => Promise<void>;
@@ -404,6 +413,95 @@ export const useFinanceStore = create<FinanceState>()(
         }));
         get().queueSync();
       },
+      /**
+       * Load a reconciled statement in one write.
+       *
+       * Deliberately not routed through `addExpense`: that deducts the amount
+       * from the linked account, and the balances in an import file are already
+       * the closing figures the bank reported. Replaying every deduction on top
+       * would drive each account thousands below where it really sits. The
+       * records go in flat and the balances are set to the stated values.
+       */
+      applyImport: (plan) => {
+        const accountIdByKey = new Map<string, string>();
+        const cardIdByKey = new Map<string, string>();
+
+        set((state) => {
+          const accounts = [...state.accounts];
+
+          const now = new Date();
+          for (const entry of plan.accountsToCreate) {
+            const id = uid("acc");
+            accountIdByKey.set(entry.key, id);
+            accounts.push({ ...entry.account, id, balanceVerifiedAt: now.toISOString() });
+          }
+          for (const entry of plan.accountsToUpdate) {
+            const index = accounts.findIndex((account) => account.id === entry.id);
+            // Through the correction path, never a raw overwrite: the delta the
+            // statement exposes is exactly the drift worth keeping on record.
+            if (index >= 0) {
+              accounts[index] = withCorrectedBalance(
+                accounts[index],
+                entry.balance,
+                "Set from statement import",
+                now,
+              );
+            }
+          }
+
+          const creditCards = [...state.creditCards];
+          for (const entry of plan.cardsToCreate) {
+            const id = uid("card");
+            cardIdByKey.set(entry.key, id);
+            creditCards.push({ ...entry.card, id });
+          }
+
+          // An import key may name an account created just now, one already
+          // present under the same bank name, or a card.
+          const resolve = (key: string): string | undefined => {
+            if (accountIdByKey.has(key)) return accountIdByKey.get(key);
+            if (cardIdByKey.has(key)) return cardIdByKey.get(key);
+            const byName = accounts.find(
+              (account) => account.bankName.trim().toLowerCase() === key.trim().toLowerCase(),
+            );
+            if (byName) return byName.id;
+            const card = creditCards.find(
+              (item) => item.name.trim().toLowerCase() === key.trim().toLowerCase(),
+            );
+            return card?.id;
+          };
+
+          return {
+            accounts,
+            creditCards,
+            expenses: [
+              ...plan.expenses.map((entry) => ({
+                ...entry.expense,
+                id: uid("exp"),
+                accountId: resolve(entry.accountKey),
+              })),
+              ...state.expenses,
+            ],
+            incomes: [
+              ...plan.incomes.map((entry) => ({
+                ...entry.income,
+                id: uid("inc"),
+                accountId: resolve(entry.accountKey),
+              })),
+              ...state.incomes,
+            ],
+          };
+        });
+
+        get().queueSync();
+        return {
+          accountsCreated: plan.accountsToCreate.length,
+          accountsUpdated: plan.accountsToUpdate.length,
+          cardsCreated: plan.cardsToCreate.length,
+          expensesAdded: plan.expenses.length,
+          incomesAdded: plan.incomes.length,
+        };
+      },
       dismissCatchUp: () => {
         // The field names the day the card returns, so dismissing puts it
         // beyond today rather than on it.
@@ -518,8 +616,23 @@ export const useFinanceStore = create<FinanceState>()(
       // point at it — onboarding does both — can link them without a re-read.
       addAccount: (account) => {
         const id = uid("acct");
-        set((s) => ({ accounts: [...s.accounts, { ...account, id }] }));
+        // The figure typed at creation is a confirmation: the user just read it
+        // off their bank. The staleness clock starts here, not at "never".
+        set((s) => ({
+          accounts: [
+            ...s.accounts,
+            { ...account, id, balanceVerifiedAt: new Date().toISOString() },
+          ],
+        }));
         return id;
+      },
+      correctBalance: (id, actual, note) => {
+        set((s) => ({
+          accounts: s.accounts.map((account) =>
+            account.id === id ? withCorrectedBalance(account, actual, note) : account,
+          ),
+        }));
+        get().queueSync();
       },
       updateAccount: (id, patch) =>
         set((s) => ({
@@ -889,7 +1002,7 @@ export const useFinanceStore = create<FinanceState>()(
         const pushing = fingerprint(state);
         // The server already holds exactly this. Saying so again costs a full
         // round trip and changes nothing.
-        if (pushing === syncedFingerprint) return;
+        if (pushing === syncedFingerprint) return true;
 
         if (syncTimer) {
           clearTimeout(syncTimer);
@@ -912,7 +1025,7 @@ export const useFinanceStore = create<FinanceState>()(
             // nothing. Surfacing it beats the old silent return, which is how a
             // failed sync came to look identical to a successful one.
             console.error("[SYNC] push rejected", res.status);
-            return;
+            return false;
           }
           const json = await res.json();
           if (json?.data) {
@@ -940,9 +1053,12 @@ export const useFinanceStore = create<FinanceState>()(
           // through, so recording what was sent would leave the two looking
           // different forever and push again on every call.
           syncedFingerprint = fingerprint(get());
+          return true;
         } catch {
-          // silent fail — keep local state
-          // console.warn('sync failed', e)
+          // Local state is kept; the caller decides whether the failure is
+          // worth surfacing. Importing a year of statements is; a routine
+          // debounced save is not.
+          return false;
         }
       },
 

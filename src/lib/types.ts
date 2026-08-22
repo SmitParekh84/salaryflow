@@ -260,6 +260,18 @@ export interface BankAccount {
   defaultFor?: AccountPurpose[];
   maskBalance?: boolean;
   hiddenFromAccounts?: boolean;
+  /** When a human or a statement last confirmed the balance. Absent = never. */
+  balanceVerifiedAt?: string;
+  /** Recent corrections, newest first. Not income, not spending — provenance. */
+  adjustments?: BalanceAdjustment[];
+}
+
+export interface BalanceAdjustment {
+  id: string;
+  date: string;
+  /** Signed: what the correction added to (or removed from) the stored figure. */
+  amount: number;
+  note?: string;
 }
 
 export type AccountTransferStatus = "scheduled" | "completed";

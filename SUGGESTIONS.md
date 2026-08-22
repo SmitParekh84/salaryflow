@@ -7,6 +7,29 @@ Ordered by how much it is worth doing, not by effort.
 
 ---
 
+## 0. Known data-loss bug
+
+### Reloading discards local changes the server never received
+
+`auth-provider.tsx` calls `loadFromServer()` on every mount, and that replaces
+the whole local state with the server copy. Any change made while a push was
+failing — offline, signed out, server down — is silently erased by the next
+reload. This destroyed a 418-row statement import on 23 Aug: the upload failed
+without a word, the page was reloaded, and the server's 74 expenses overwrote
+the local 492.
+
+The import screen now blocks until the push is confirmed and shouts when it is
+not, so the worst single case is covered. The general case is not: every other
+mutation still relies on a debounced fire-and-forget push.
+
+The obvious fix — push-merge local state on mount instead of pulling — is NOT
+safe as-is: on a shared browser, user B logging in would push user A's
+leftover localStorage into B's account, because the sync route trusts the
+cookie and merges whatever arrives. The fix needs the store to know which
+user its persisted state belongs to before any push happens.
+
+---
+
 ## 1. Ready to build, waiting on a go-ahead
 
 ### Catch-up: offer gaps that sit between recorded days
