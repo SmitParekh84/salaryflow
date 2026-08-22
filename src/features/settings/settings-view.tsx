@@ -16,6 +16,7 @@ import {
   SettingsPane,
 } from "./settings-primitives";
 import { VehicleSettings } from "@/features/fuel/vehicle-settings";
+import { ImportView } from "@/features/import/import-view";
 import { useSummary } from "@/hooks/use-summary";
 import { CATEGORIES, COUNTRIES, COUNTRY_CURRENCIES, CURRENCIES } from "@/lib/constants";
 import { download, exportExpensesCsv } from "@/lib/export";
@@ -57,7 +58,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 export type SettingsSection =
-  "profile" | "money" | "accounts" | "categories" | "planning" | "vehicle" | "system";
+  "profile" | "money" | "accounts" | "categories" | "planning" | "vehicle" | "import" | "system";
 
 /**
  * `accent` tints each row's icon chip. Seven identical grey squares gave the
@@ -112,6 +113,13 @@ const SETTINGS_SECTIONS: {
     description: "Your vehicle and fuel rates",
     icon: Fuel,
     accent: "var(--cat-fuel)",
+  },
+  {
+    id: "import",
+    label: "Import statement",
+    description: "Load a reconciled bank statement",
+    icon: FileJson,
+    accent: "var(--cat-business)",
   },
   {
     id: "system",
@@ -907,6 +915,15 @@ export function SettingsView({ initialSection = "profile" }: { initialSection?: 
               description="Set the vehicle your fill-ups belong to and the city whose petrol rate should be used."
             >
               <VehicleSettings />
+            </SettingsPane>
+          )}
+
+          {section === "import" && (
+            <SettingsPane
+              title="Import statement"
+              description="Load a reconciled statement file. Nothing is written until you confirm."
+            >
+              <ImportView />
             </SettingsPane>
           )}
 

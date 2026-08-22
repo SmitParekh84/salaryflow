@@ -12,6 +12,7 @@ const SETTINGS_SECTIONS = new Set<SettingsSection>([
   "categories",
   "planning",
   "vehicle",
+  "import",
   "system",
 ]);
 

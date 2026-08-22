@@ -35,6 +35,8 @@ import type {
 import { completeTransferWrite } from "./transfer-writes";
 import { localDateInputValue, uid } from "./utils";
 import { pruneReviewedDates } from "./catch-up";
+import type { ImportPlan } from "./statement-import";
+import type { ImportResult } from "./statement-import";
 
 const STORE_KEY = "aartha-store";
 
@@ -93,6 +95,9 @@ interface FinanceState {
   // catch-up
   markDayReviewed: (date: string) => void;
   dismissCatchUp: () => void;
+
+  // statement import
+  applyImport: (plan: ImportPlan) => ImportResult;
 
   // incomes
   addIncome: (i: Omit<Income, "id">) => void;
@@ -403,6 +408,85 @@ export const useFinanceStore = create<FinanceState>()(
           },
         }));
         get().queueSync();
+      },
+      /**
+       * Load a reconciled statement in one write.
+       *
+       * Deliberately not routed through `addExpense`: that deducts the amount
+       * from the linked account, and the balances in an import file are already
+       * the closing figures the bank reported. Replaying every deduction on top
+       * would drive each account thousands below where it really sits. The
+       * records go in flat and the balances are set to the stated values.
+       */
+      applyImport: (plan) => {
+        const accountIdByKey = new Map<string, string>();
+        const cardIdByKey = new Map<string, string>();
+
+        set((state) => {
+          const accounts = [...state.accounts];
+
+          for (const entry of plan.accountsToCreate) {
+            const id = uid("acc");
+            accountIdByKey.set(entry.key, id);
+            accounts.push({ ...entry.account, id });
+          }
+          for (const entry of plan.accountsToUpdate) {
+            const index = accounts.findIndex((account) => account.id === entry.id);
+            if (index >= 0) accounts[index] = { ...accounts[index], balance: entry.balance };
+          }
+
+          const creditCards = [...state.creditCards];
+          for (const entry of plan.cardsToCreate) {
+            const id = uid("card");
+            cardIdByKey.set(entry.key, id);
+            creditCards.push({ ...entry.card, id });
+          }
+
+          // An import key may name an account created just now, one already
+          // present under the same bank name, or a card.
+          const resolve = (key: string): string | undefined => {
+            if (accountIdByKey.has(key)) return accountIdByKey.get(key);
+            if (cardIdByKey.has(key)) return cardIdByKey.get(key);
+            const byName = accounts.find(
+              (account) => account.bankName.trim().toLowerCase() === key.trim().toLowerCase(),
+            );
+            if (byName) return byName.id;
+            const card = creditCards.find(
+              (item) => item.name.trim().toLowerCase() === key.trim().toLowerCase(),
+            );
+            return card?.id;
+          };
+
+          return {
+            accounts,
+            creditCards,
+            expenses: [
+              ...plan.expenses.map((entry) => ({
+                ...entry.expense,
+                id: uid("exp"),
+                accountId: resolve(entry.accountKey),
+              })),
+              ...state.expenses,
+            ],
+            incomes: [
+              ...plan.incomes.map((entry) => ({
+                ...entry.income,
+                id: uid("inc"),
+                accountId: resolve(entry.accountKey),
+              })),
+              ...state.incomes,
+            ],
+          };
+        });
+
+        get().queueSync();
+        return {
+          accountsCreated: plan.accountsToCreate.length,
+          accountsUpdated: plan.accountsToUpdate.length,
+          cardsCreated: plan.cardsToCreate.length,
+          expensesAdded: plan.expenses.length,
+          incomesAdded: plan.incomes.length,
+        };
       },
       dismissCatchUp: () => {
         // The field names the day the card returns, so dismissing puts it
