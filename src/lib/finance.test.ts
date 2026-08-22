@@ -743,6 +743,30 @@ describe("ordinary expense balance deduction", () => {
     expect(useFinanceStore.getState().accounts[0].balance).toBe(5_000);
   });
 
+  it("reports a failed push instead of swallowing it", async () => {
+    // fetch is stubbed to { ok: false } in beforeEach — a rejected push.
+    useFinanceStore.getState().addExpense({ ...spend, accountId: "icici" });
+    await expect(useFinanceStore.getState().syncWithServer()).resolves.toBe(false);
+  });
+
+  it("reports a network failure the same way", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+    useFinanceStore.getState().addExpense({ ...spend, accountId: "icici" });
+    await expect(useFinanceStore.getState().syncWithServer()).resolves.toBe(false);
+  });
+
+  it("reports success only when the server accepted the state", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: {}, syncedAt: new Date().toISOString() }),
+      }),
+    );
+    useFinanceStore.getState().addExpense({ ...spend, accountId: "icici" });
+    await expect(useFinanceStore.getState().syncWithServer()).resolves.toBe(true);
+  });
+
   it("logs a hand correction with its delta and stamps the confirmation", () => {
     useFinanceStore.getState().correctBalance("icici", 3.96, "Corrected by hand");
 

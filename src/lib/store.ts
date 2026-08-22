@@ -171,7 +171,8 @@ interface FinanceState {
    * whatever the other device just added.
    */
   lastSyncedAt: string | null;
-  syncWithServer: () => Promise<void>;
+  /** Resolves true only when the server has accepted this device's state. */
+  syncWithServer: () => Promise<boolean>;
   /** Debounced `syncWithServer`, for mutations that fire in bursts. */
   queueSync: () => void;
   loadFromServer: () => Promise<void>;
@@ -1001,7 +1002,7 @@ export const useFinanceStore = create<FinanceState>()(
         const pushing = fingerprint(state);
         // The server already holds exactly this. Saying so again costs a full
         // round trip and changes nothing.
-        if (pushing === syncedFingerprint) return;
+        if (pushing === syncedFingerprint) return true;
 
         if (syncTimer) {
           clearTimeout(syncTimer);
@@ -1024,7 +1025,7 @@ export const useFinanceStore = create<FinanceState>()(
             // nothing. Surfacing it beats the old silent return, which is how a
             // failed sync came to look identical to a successful one.
             console.error("[SYNC] push rejected", res.status);
-            return;
+            return false;
           }
           const json = await res.json();
           if (json?.data) {
@@ -1052,9 +1053,12 @@ export const useFinanceStore = create<FinanceState>()(
           // through, so recording what was sent would leave the two looking
           // different forever and push again on every call.
           syncedFingerprint = fingerprint(get());
+          return true;
         } catch {
-          // silent fail — keep local state
-          // console.warn('sync failed', e)
+          // Local state is kept; the caller decides whether the failure is
+          // worth surfacing. Importing a year of statements is; a routine
+          // debounced save is not.
+          return false;
         }
       },
 

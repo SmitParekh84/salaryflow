@@ -20,6 +20,7 @@ export function ImportView() {
   const expenses = useFinanceStore((state) => state.expenses);
   const incomes = useFinanceStore((state) => state.incomes);
   const applyImport = useFinanceStore((state) => state.applyImport);
+  const syncWithServer = useFinanceStore((state) => state.syncWithServer);
   const currency = useFinanceStore((state) => state.profile.currency);
 
   const fileRef = useRef<HTMLInputElement>(null);
@@ -27,6 +28,9 @@ export function ImportView() {
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState("");
   const [result, setResult] = useState<ImportResult | null>(null);
+  /** null = no push attempted yet; the local write alone is never "done". */
+  const [pushed, setPushed] = useState<boolean | null>(null);
+  const [pushing, setPushing] = useState(false);
 
   const choose = async (file: File) => {
     setError("");
@@ -47,11 +51,25 @@ export function ImportView() {
     }
   };
 
-  const confirm = () => {
+  const confirm = async () => {
     if (!plan) return;
-    setResult(applyImport(plan));
+    const applied = applyImport(plan);
     setPlan(null);
     if (fileRef.current) fileRef.current.value = "";
+    // The local write is not the finish line. This screen once said "imported"
+    // while the upload failed silently; a reload then pulled the server copy
+    // over the local one and the whole import evaporated. Success is claimed
+    // only after the server confirms.
+    setPushing(true);
+    setPushed(await syncWithServer());
+    setPushing(false);
+    setResult(applied);
+  };
+
+  const retryUpload = async () => {
+    setPushing(true);
+    setPushed(await syncWithServer());
+    setPushing(false);
   };
 
   return (
@@ -117,7 +135,7 @@ export function ImportView() {
             </ul>
 
             <div className="flex gap-3">
-              <Button type="button" onClick={confirm}>
+              <Button type="button" loading={pushing} onClick={() => void confirm()}>
                 Import
               </Button>
               <Button type="button" variant="secondary" onClick={() => setPlan(null)}>
@@ -128,14 +146,31 @@ export function ImportView() {
         </Card>
       )}
 
-      {result && (
+      {result && pushed === true && (
         <p className="flex items-start gap-2 text-sm text-success">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-          Imported {result.expensesAdded} expenses and {result.incomesAdded} income entries.
+          Imported and uploaded to your account: {result.expensesAdded} expenses,{" "}
+          {result.incomesAdded} income entries.
           {result.accountsCreated > 0 && ` Created ${result.accountsCreated} accounts.`}
           {result.accountsUpdated > 0 && ` Updated ${result.accountsUpdated} balances.`}
           {result.cardsCreated > 0 && ` Added ${result.cardsCreated} cards.`}
         </p>
+      )}
+
+      {result && pushed === false && (
+        <Card>
+          <CardContent className="space-y-3 p-5">
+            <p className="flex items-start gap-2 text-sm text-danger">
+              <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+              Imported on this device, but the upload to your account FAILED. Do not close or
+              reload this page — reloading pulls the server copy back over this device and the
+              import is lost. Check you are signed in, then retry.
+            </p>
+            <Button type="button" loading={pushing} onClick={() => void retryUpload()}>
+              Retry upload
+            </Button>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
