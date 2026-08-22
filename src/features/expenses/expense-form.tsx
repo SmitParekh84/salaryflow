@@ -173,6 +173,19 @@ export function ExpenseForm({
     return shortfall > 0 ? shortfall : null;
   })();
 
+  // Ticking "split" on an existing expense prefills the obvious reading: the
+  // whole bill was this amount and the friend has paid nothing yet. Both stay
+  // editable — including down to a 0 share on either side.
+  useEffect(() => {
+    if (!sharedEnabled) return;
+    const total = getValues("totalAmount");
+    if (total === undefined || total === null || total === "") {
+      const amount = Number(getValues("amount"));
+      if (Number.isFinite(amount) && amount > 0) setValue("totalAmount", amount);
+      setValue("friendPaid", 0);
+    }
+  }, [sharedEnabled, getValues, setValue]);
+
   // Prefill only an untouched field. Overwriting a rate the user has just typed
   // because a lookup landed a moment later would be maddening.
   useEffect(() => {
@@ -577,7 +590,14 @@ export function ExpenseForm({
           </div>
         )}
 
-        {isSharedForm && (
+        {/* Any expense can become a split with one tick — the page it was
+            opened from no longer decides. Toggling off removes the split. */}
+        <label className="flex items-center gap-2 text-sm">
+          <Checkbox {...register("sharedEnabled")} />
+          Split with a friend
+        </label>
+
+        {sharedEnabled && (
           <div className="rounded-xl border border-border p-4">
             <p className="text-sm font-medium">Split details</p>
             <div className="mt-4 space-y-3">
