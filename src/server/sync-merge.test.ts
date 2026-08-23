@@ -124,20 +124,120 @@ suite("sync merge — two devices on one account", () => {
     expect(await liveIds()).toEqual(["exp_a", "exp_b"]);
   });
 
+  /**
+   * Mirrors the route exactly: rows are stamped `updatedAt: now` and the same
+   * `now` goes back as `syncedAt`, which the client sends as the next `since`.
+   * The two must line up, or the watermark check would refuse every edit a
+   * device makes after its first save.
+   */
   it("updates in place instead of duplicating on repeated pushes", async () => {
-    const now = new Date();
+    let since: Date | null = null;
     for (let i = 0; i < 3; i += 1) {
+      const now = new Date(Date.now() + i);
       await mergeCollection({
         model: ExpenseModel,
         userId: USER,
         items: [expense("exp_a", 100 + i)],
-        since: null,
+        since,
         now,
       });
+      since = now;
     }
 
     const rows = await ExpenseModel.find({ userId: USER }).lean();
     expect(rows).toHaveLength(1);
     expect((rows[0] as { amount: number }).amount).toBe(102);
+  });
+
+  /**
+   * The bug this pair protects against: fixes applied to the account while a
+   * device was offline were silently undone the moment that device synced,
+   * because every pushed row overwrote the stored one unconditionally.
+   */
+  it("does not let a device that never pulled overwrite a newer correction", async () => {
+    const t0 = new Date(Date.now() - 60_000);
+
+    // Both devices pulled at t0 holding ₹100.
+    await mergeCollection({
+      model: ExpenseModel,
+      userId: USER,
+      items: [expense("exp_a", 100)],
+      since: null,
+      now: t0,
+    });
+
+    // The amount is corrected to ₹250 afterwards — by another device, or by a
+    // maintenance script writing straight to the collection.
+    await mergeCollection({
+      model: ExpenseModel,
+      userId: USER,
+      items: [expense("exp_a", 250)],
+      since: t0,
+      now: new Date(Date.now() - 30_000),
+    });
+
+    // The offline device pushes its stale ₹100, still on the t0 watermark.
+    await mergeCollection({
+      model: ExpenseModel,
+      userId: USER,
+      items: [expense("exp_a", 100)],
+      since: t0,
+      now: new Date(),
+    });
+
+    const rows = await ExpenseModel.find({ userId: USER, removedAt: null }).lean();
+    expect(rows).toHaveLength(1);
+    expect((rows[0] as { amount: number }).amount).toBe(250);
+  });
+
+  it("does not let a stale push resurrect a row deleted after its last pull", async () => {
+    const t0 = new Date(Date.now() - 60_000);
+
+    await mergeCollection({
+      model: ExpenseModel,
+      userId: USER,
+      items: [expense("exp_a", 100), expense("exp_dupe", 29)],
+      since: null,
+      now: t0,
+    });
+
+    // The duplicate is removed after t0.
+    await ExpenseModel.updateOne(
+      { userId: USER, clientId: "exp_dupe" },
+      { $set: { removedAt: new Date(), updatedAt: new Date(Date.now() - 30_000) } },
+    );
+
+    // The offline device still holds it and pushes it back.
+    await mergeCollection({
+      model: ExpenseModel,
+      userId: USER,
+      items: [expense("exp_a", 100), expense("exp_dupe", 29)],
+      since: t0,
+      now: new Date(),
+    });
+
+    expect(await liveIds()).toEqual(["exp_a"]);
+  });
+
+  it("still accepts an edit to a row the client had already pulled", async () => {
+    await mergeCollection({
+      model: ExpenseModel,
+      userId: USER,
+      items: [expense("exp_a", 100)],
+      since: null,
+      now: new Date(Date.now() - 60_000),
+    });
+
+    // The device pulled just now, so its watermark covers the stored version.
+    await mergeCollection({
+      model: ExpenseModel,
+      userId: USER,
+      items: [expense("exp_a", 175)],
+      since: new Date(),
+      now: new Date(),
+    });
+
+    const rows = await ExpenseModel.find({ userId: USER, removedAt: null }).lean();
+    expect((rows[0] as { amount: number }).amount).toBe(175);
   });
 });
