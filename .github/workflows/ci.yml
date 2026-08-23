@@ -21,7 +21,9 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          # No `version`: package.json's `packageManager` already pins pnpm, and
+          # action-setup v4 refuses to run when it is told twice. Naming it here
+          # as well is also how the two drift apart.
           run_install: false
 
       - name: Get pnpm store directory
