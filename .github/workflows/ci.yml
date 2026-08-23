@@ -16,7 +16,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          # Matches the Dockerfile's node:22-alpine, so CI runs what ships.
+          # Next 16 refuses to start below 20.9 anyway.
+          node-version: '22'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
