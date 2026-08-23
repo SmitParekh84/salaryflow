@@ -1,4 +1,4 @@
-import { billCycle, monthlyBillReserve } from "./bill-cycle";
+import { billCycle, monthlyBillCost, monthlyBillReserve } from "./bill-cycle";
 import { budgetAllocationTarget } from "./budget-rules";
 import { creditCardUsage } from "./credit-cards";
 import type {
@@ -199,22 +199,43 @@ export function buildFundingPlan({
   }
 
   for (const bill of bills) {
-    if (bill.frequency === "interval") {
+    /*
+     * Anything that is not billed monthly is held back a slice at a time.
+     *
+     * Only `interval` used to be, and the loop then skipped every remaining
+     * non-monthly bill outright — so a yearly renewal was money the account
+     * genuinely owed that the plan never mentioned, not even in the month it
+     * fell due. Levelising is the honest reserve for all of them: a bill that
+     * arrives once a year still costs a twelfth of itself every month.
+     */
+    if (bill.frequency !== "monthly") {
       const cycle = billCycle(bill, expenses, now);
-      const reserveAmount = monthlyBillReserve(bill);
+      const reserveAmount =
+        bill.frequency === "interval" ? monthlyBillReserve(bill) : monthlyBillCost(bill);
+      // A yearly bill's next occurrence is usually in another year, and "Aug
+      // 11" alone reads as a fortnight ago rather than eleven months away.
+      const nextDue = cycle.occurrenceDate.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+        ...(cycle.occurrenceDate.getFullYear() === now.getFullYear()
+          ? {}
+          : { year: "numeric" as const }),
+      });
       items.push({
         id: `bill-reserve-${bill.id}`,
         kind: "bill",
         label: `${bill.name} reserve`,
         amount: reserveAmount,
         destinationAccountId: bill.accountId ?? reserveAccount?.id,
-        timing: `${formatInterval(bill.intervalDays ?? 90)} · next due ${cycle.occurrenceDate.toLocaleDateString("en-US", { day: "numeric", month: "short" })}`,
+        timing:
+          bill.frequency === "interval"
+            ? `${formatInterval(bill.intervalDays ?? 90)} · next due ${nextDue}`
+            : `${cadence(bill.frequency)} · next due ${nextDue}`,
         paidAmount: 0,
         remainingAmount: reserveAmount,
       });
       continue;
     }
-    if (bill.frequency !== "monthly") continue;
     const kind: FundingPlanKind =
       bill.category === "Investment"
         ? "investment"
@@ -314,4 +335,9 @@ export function buildFundingPlan({
 
 function formatInterval(days: number): string {
   return days === 90 ? "Every 90 days" : `Every ${days} days`;
+}
+
+/** How often the bill lands, for a reserve line that says why it is a slice. */
+function cadence(frequency: Bill["frequency"]): string {
+  return frequency === "yearly" ? "Yearly" : frequency === "weekly" ? "Weekly" : "Recurring";
 }

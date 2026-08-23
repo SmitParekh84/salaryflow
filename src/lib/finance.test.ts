@@ -1428,6 +1428,71 @@ describe("bills and funding plan", () => {
     );
   });
 
+  /**
+   * A yearly bill used to fall out of the plan entirely: the loop reserved
+   * `interval` bills, then skipped everything that was not `monthly`. Two
+   * domain renewals were money the account genuinely owed and the plan showed
+   * nothing for them in any month, including the one they fell due in.
+   */
+  it("reserves a yearly bill month by month instead of dropping it", () => {
+    const renewal: Bill = {
+      id: "domain",
+      name: "smitparekh.co.in domain renewal",
+      amount: 759,
+      dueDay: 3,
+      dueDate: "2026-10-03",
+      frequency: "yearly",
+      category: "Subscriptions",
+      paid: false,
+    };
+
+    const plan = buildFundingPlan({
+      accounts: savingsAccounts,
+      bills: [renewal],
+      creditCards: [],
+      expenses: [],
+      incomes: [],
+      investments: [],
+      monthlyIncome: 30_000,
+      now: new Date(2026, 7, 23, 12),
+    });
+
+    const reserve = plan.items.find((item) => item.id === "bill-reserve-domain");
+    expect(reserve).toBeDefined();
+    expect(reserve?.amount).toBeCloseTo(759 / 12);
+    expect(reserve?.timing).toContain("Yearly");
+    expect(reserve?.timing).toContain("Oct 3");
+    expect(plan.total).toBeCloseTo(759 / 12);
+  });
+
+  it("reserves a weekly bill at its true monthly cost", () => {
+    const weekly: Bill = {
+      id: "weekly",
+      name: "Weekly cleaner",
+      amount: 300,
+      dueDay: 1,
+      dueDate: "2026-08-24",
+      frequency: "weekly",
+      category: "Other",
+      paid: false,
+    };
+
+    const plan = buildFundingPlan({
+      accounts: savingsAccounts,
+      bills: [weekly],
+      creditCards: [],
+      expenses: [],
+      incomes: [],
+      investments: [],
+      monthlyIncome: 30_000,
+      now: new Date(2026, 7, 23, 12),
+    });
+
+    const reserve = plan.items.find((item) => item.id === "bill-reserve-weekly");
+    expect(reserve?.amount).toBeCloseTo((300 * 52) / 12);
+    expect(reserve?.timing).toContain("Weekly");
+  });
+
   it("anchors a legacy bill without dueDate in the current month", () => {
     const legacy = { ...bill, dueDate: undefined, dueDay: 12 };
     expect(billOccurrenceDate(legacy, new Date(2026, 7, 9, 12))).toEqual(new Date(2026, 7, 12));
