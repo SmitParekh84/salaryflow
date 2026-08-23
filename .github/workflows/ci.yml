@@ -51,6 +51,13 @@ jobs:
         run: pnpm typecheck
 
       - name: Build
+        # `next build` loads every route to collect page data, so the API
+        # routes' module-level checks run here. AUTH_SECRET is read at runtime
+        # from the container's environment and is never inlined into the
+        # output, so a throwaway value is enough to get the build to compile
+        # and cannot end up signing anything real.
+        env:
+          AUTH_SECRET: ci-build-only-placeholder-not-a-real-secret
         run: pnpm build
 
       - name: Upload build artifacts
