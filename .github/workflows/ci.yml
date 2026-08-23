@@ -66,3 +66,7 @@ jobs:
         with:
           name: next-build
           path: .next
+          # upload-artifact v4 skips dotfiles unless told otherwise, and the
+          # whole path is one, so this step had been uploading nothing while
+          # still reporting success.
+          include-hidden-files: true
