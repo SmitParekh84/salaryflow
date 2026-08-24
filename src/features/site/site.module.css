@@ -392,8 +392,15 @@
     max-width: 44ch
 }
 
+/* Aligned to the top, not the centre.
+
+   The demo control is a wrapper around its button plus a reserved line for an
+   error message, so its box is 70px against the 46px of a plain button beside
+   it. Centring those two boxes put the two button tops 12px apart and made the
+   pair look broken. Aligning to the start lines the buttons up and lets the
+   error hang below, which is where it belongs and costs no layout shift. */
 .heroActions {
-    align-items: center;
+    align-items: flex-start;
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
@@ -760,6 +767,8 @@
 }
 
 .closeActions {
+    /* Same reason as .heroActions above. */
+    align-items: flex-start;
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
