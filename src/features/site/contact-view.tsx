@@ -63,7 +63,7 @@ export function ContactView() {
           <p className={`${styles.eyebrow} ${styles.reveal}`} data-rise>
             Where to send it
           </p>
-          <h2 className={`${styles.h2} ${styles.reveal}`} data-rise>
+          <h2 className={`${styles.h2} ${styles.reveal}`} data-lines>
             Two mailboxes, on purpose.
           </h2>
         </div>
@@ -87,7 +87,7 @@ export function ContactView() {
           <p className={`${styles.eyebrow} ${styles.reveal}`} data-rise>
             Elsewhere
           </p>
-          <h2 className={`${styles.h2} ${styles.reveal}`} data-rise>
+          <h2 className={`${styles.h2} ${styles.reveal}`} data-lines>
             Not sure where to send it?
           </h2>
           <p className={`${styles.lead} ${styles.reveal}`} data-rise>

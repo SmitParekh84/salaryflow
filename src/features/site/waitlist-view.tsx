@@ -55,7 +55,7 @@ export function WaitlistView() {
           <p className={`${styles.eyebrow} ${styles.reveal}`} data-rise>
             What you get
           </p>
-          <h2 className={`${styles.h2} ${styles.reveal}`} data-rise>
+          <h2 className={`${styles.h2} ${styles.reveal}`} data-lines>
             On the day you are let in.
           </h2>
         </div>

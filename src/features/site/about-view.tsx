@@ -62,7 +62,7 @@ export function AboutView() {
           <p className={`${styles.eyebrow} ${styles.reveal}`} data-rise>
             The problem
           </p>
-          <h2 className={`${styles.h2} ${styles.reveal}`} data-rise>
+          <h2 className={`${styles.h2} ${styles.reveal}`} data-lines>
             Your balance is the least useful number you own.
           </h2>
         </div>
@@ -88,7 +88,7 @@ export function AboutView() {
           <p className={`${styles.eyebrow} ${styles.reveal}`} data-rise>
             How it is built
           </p>
-          <h2 className={`${styles.h2} ${styles.reveal}`} data-rise>
+          <h2 className={`${styles.h2} ${styles.reveal}`} data-lines>
             Four decisions everything else follows from.
           </h2>
         </div>
@@ -109,7 +109,7 @@ export function AboutView() {
           <p className={`${styles.eyebrow} ${styles.reveal}`} data-rise>
             Where it is
           </p>
-          <h2 className={`${styles.h2} ${styles.reveal}`} data-rise>
+          <h2 className={`${styles.h2} ${styles.reveal}`} data-lines>
             Early access, and honest about it.
           </h2>
           <p className={`${styles.lead} ${styles.reveal}`} data-rise>

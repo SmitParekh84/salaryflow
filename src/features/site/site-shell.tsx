@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import styles from "./site.module.css";
 import { SiteNavMenu } from "./site-nav-menu";
 import { ThemeSwitch } from "./theme-switch";
-import { ScrollTrigger, revealIn, showNow, useScene } from "./use-gsap";
+import { ScrollTrigger, revealIn, revealLines, showNow, useScene } from "./use-gsap";
 
 /* ---------------------------------------------------------------------------
    The public site's chrome and its shared primitives.
@@ -161,9 +161,21 @@ export function Rise({
 }) {
   const ref = useScene<HTMLElement>((api, root) => {
     const items = root.querySelectorAll<HTMLElement>("[data-rise]");
-    if (!items.length) return;
-    api.motion(() => revealIn(items, { trigger: root, stagger }));
-    api.still(() => showNow(items));
+    // Headings opt into a line-by-line reveal instead of the block fade.
+    const headings = root.querySelectorAll<HTMLElement>("[data-lines]");
+    if (!items.length && !headings.length) return;
+
+    api.motion(() => {
+      if (items.length) revealIn(items, { trigger: root, stagger });
+      // Deliberately not awaited: the block reveals must not wait on the font
+      // load that revealLines needs before it can measure line breaks.
+      if (headings.length) void revealLines(headings);
+    });
+
+    api.still(() => {
+      showNow(items);
+      showNow(headings);
+    });
   });
 
   return (
@@ -242,7 +254,7 @@ export function SectionPage({
           <p className={`${styles.eyebrow} ${styles.reveal}`} data-rise>
             {hero.eyebrow}
           </p>
-          <h1 className={`${styles.display} ${styles.reveal}`} data-rise>
+          <h1 className={`${styles.display} ${styles.reveal}`} data-lines>
             {hero.title}
           </h1>
           {hero.lede ? (

@@ -161,7 +161,7 @@ export function DownloadView() {
           <p className={`${styles.eyebrow} ${styles.reveal}`} data-rise>
             Why install it
           </p>
-          <h2 className={`${styles.h2} ${styles.reveal}`} data-rise>
+          <h2 className={`${styles.h2} ${styles.reveal}`} data-lines>
             It is the same app either way.
           </h2>
           <p className={`${styles.lead} ${styles.reveal}`} data-rise>

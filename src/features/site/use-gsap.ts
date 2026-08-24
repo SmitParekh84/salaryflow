@@ -2,6 +2,7 @@
 
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { SplitText } from "gsap/SplitText";
 import { useEffect, useRef, type RefObject } from "react";
 
 /* ---------------------------------------------------------------------------
@@ -28,9 +29,10 @@ let registered = false;
 
 function register() {
   if (registered) return;
-  // ScrollTrigger only. This draft has no pinned stage and nothing draggable,
-  // so Draggable and InertiaPlugin are not registered and never get bundled.
-  gsap.registerPlugin(ScrollTrigger);
+  // ScrollTrigger for the reveals, SplitText for the line-by-line headings.
+  // Draggable and InertiaPlugin are deliberately absent — nothing on the public
+  // site is dragged, so they never enter the bundle.
+  gsap.registerPlugin(ScrollTrigger, SplitText);
   registered = true;
 }
 
@@ -130,6 +132,89 @@ export function countTo(
     },
     scrollTrigger: { trigger: el, start: "top 92%", once: true },
   });
+}
+
+/**
+ * Reveals a heading line by line as it enters.
+ *
+ * Restrained on purpose. The reference this was asked against — razorpay.com/
+ * careers — turns out to animate nothing at all on scroll: ten below-fold
+ * elements were measured entering the viewport and none changed opacity,
+ * transform or clip-path. Its smoothness is large light type, whitespace and an
+ * un-hijacked scroll. So this is a short, quiet rise, not a performance: 0.7s,
+ * a 0.07s stagger, and each line travelling only its own height.
+ *
+ * Two details that decide whether it looks broken:
+ *
+ *   · awaiting document.fonts.ready before splitting. Lines are measured from
+ *     the rendered text, so splitting while the fallback face is still in place
+ *     bakes in the wrong line breaks and they never recover.
+ *   · mask: "lines", which wraps each line in its own overflow-hidden box. That
+ *     is what lets a line rise out of nothing instead of appearing mid-air above
+ *     its own baseline.
+ *
+ * autoSplit re-splits on resize, and the returned revert restores the original
+ * markup — which matters for more than tidiness: SplitText leaves a span per
+ * line, and a screen reader walking those announces the heading in fragments.
+ */
+export async function revealLines(
+  elements: ArrayLike<HTMLElement>,
+  options: { stagger?: number; duration?: number } = {},
+) {
+  const { stagger = 0.07, duration = 0.7 } = options;
+  const list = Array.from(elements);
+  if (!list.length) return;
+
+  await document.fonts.ready;
+
+  for (const el of list) {
+    gsap.set(el, { opacity: 1 });
+
+    /*
+     * The animation is built inside `onSplit`, and returned from it, which is
+     * not optional with `autoSplit`.
+     *
+     * `autoSplit` re-splits the element whenever the text is remeasured — when a
+     * webfont finishes loading, and on resize. A re-split discards the line
+     * elements and builds new ones, so a tween created once against the first
+     * set is left pointing at detached nodes: the visible lines then have no
+     * animation at all and simply sit at their resting position. That is exactly
+     * how this first went wrong — the split was correct, the masks were correct,
+     * and nothing moved.
+     *
+     * Returning the tween hands it to SplitText, which reverts it before each
+     * re-split and calls this again for the new lines.
+     */
+    /*
+     * The previous tween and its trigger are killed explicitly on every split.
+     *
+     * Returning the animation from `onSplit` is the documented contract and it
+     * does revert the tween — but the ScrollTrigger it created survives. That
+     * was measured: after one re-split the heading had two triggers, one of them
+     * still holding two targets that were no longer in the document. Since
+     * `autoSplit` re-splits on every resize, that is one orphaned trigger per
+     * resize, each still measuring a dead element on every scroll.
+     */
+    let tween: gsap.core.Tween | undefined;
+
+    SplitText.create(el, {
+      type: "lines",
+      mask: "lines",
+      autoSplit: true,
+      onSplit: (self) => {
+        tween?.scrollTrigger?.kill();
+        tween?.kill();
+        tween = gsap.from(self.lines, {
+          yPercent: 110,
+          duration,
+          ease: "power3.out",
+          stagger,
+          scrollTrigger: { trigger: el, start: "top 88%", once: true },
+        });
+        return tween;
+      },
+    });
+  }
 }
 
 export { gsap, ScrollTrigger };

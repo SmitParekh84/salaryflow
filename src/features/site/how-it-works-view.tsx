@@ -107,7 +107,7 @@ export function HowItWorksView() {
           <p className={`${styles.eyebrow} ${styles.reveal}`} data-rise>
             It is never stale
           </p>
-          <h2 className={`${styles.h2} ${styles.reveal}`} data-rise>
+          <h2 className={`${styles.h2} ${styles.reveal}`} data-lines>
             The number is recalculated, not refreshed.
           </h2>
           <p className={`${styles.lead} ${styles.reveal}`} data-rise>
@@ -131,7 +131,7 @@ export function HowItWorksView() {
           <p className={`${styles.eyebrow} ${styles.reveal}`} data-rise>
             See it with real data
           </p>
-          <h2 className={`${styles.h2} ${styles.reveal}`} data-rise>
+          <h2 className={`${styles.h2} ${styles.reveal}`} data-lines>
             The demo account is already full.
           </h2>
           <p className={`${styles.lead} ${styles.reveal}`} data-rise>

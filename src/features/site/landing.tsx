@@ -26,7 +26,7 @@ import { DemoButton } from "./demo-button";
 import styles from "./site.module.css";
 import { LoopObject } from "./loop-object";
 import { SiteFooter, SiteNav } from "./site-shell";
-import { countTo, gsap, revealIn, showNow, useScene } from "./use-gsap";
+import { countTo, gsap, revealIn, revealLines, showNow, useScene } from "./use-gsap";
 
 /* ---------------------------------------------------------------------------
    Landing v5 — light, quiet, and finished.
@@ -131,6 +131,7 @@ export function Landing() {
 function Hero() {
   const ref = useScene<HTMLElement>((api, root) => {
     const items = root.querySelectorAll<HTMLElement>("[data-item]");
+    const headings = root.querySelectorAll<HTMLElement>("[data-lines]");
     const cells = root.querySelectorAll<HTMLElement>("[data-cell]");
     const safe = root.querySelector<HTMLElement>("[data-safe]");
 
@@ -141,12 +142,16 @@ function Hero() {
         { opacity: 1, y: 0, duration: 0.65, ease: "power2.out", stagger: 0.07 },
       );
       revealIn(cells, { trigger: cells[0], stagger: 0.07 });
+      // Not awaited: the copy and the figures must not wait on the font load
+      // that revealLines needs before it can measure line breaks.
+      void revealLines(headings);
       if (safe) countTo(safe, ACCOUNT.safeToday, formatMoney, 1.2);
     });
 
     api.still(() => {
       showNow(items);
       showNow(cells);
+      showNow(headings);
       if (safe) safe.textContent = formatMoney(ACCOUNT.safeToday);
     });
   });
@@ -157,7 +162,7 @@ function Hero() {
         <p className={`${styles.eyebrow} ${styles.reveal}`} data-item>
           Salary-cycle money app
         </p>
-        <h1 className={`${styles.display} ${styles.reveal}`} data-item>
+        <h1 className={`${styles.display} ${styles.reveal}`} data-lines>
           Know what is <span className={styles.accentWord}>safe to spend</span> today.
         </h1>
         <p className={`${styles.lead} ${styles.reveal}`} data-item>
@@ -217,10 +222,12 @@ function Split() {
 
   const ref = useScene<HTMLElement>((api, root) => {
     const items = root.querySelectorAll<HTMLElement>("[data-item]");
+    const headings = root.querySelectorAll<HTMLElement>("[data-lines]");
     const parts = root.querySelectorAll<HTMLElement>("[data-part]");
 
     api.motion(() => {
       revealIn(items, { trigger: root, stagger: 0.08 });
+      void revealLines(headings);
       // The bar draws itself out from the left as one gesture, which is the only
       // animation in this section — it is a chart, not a set piece.
       gsap.fromTo(
@@ -239,6 +246,7 @@ function Split() {
 
     api.still(() => {
       showNow(items);
+      showNow(headings);
       gsap.set(parts, { scaleX: 1 });
     });
   });
@@ -250,7 +258,7 @@ function Split() {
           <p className={`${styles.eyebrow} ${styles.reveal}`} data-item>
             Where it goes
           </p>
-          <h2 className={`${styles.h2} ${styles.reveal}`} data-item style={{ marginTop: 16 }}>
+          <h2 className={`${styles.h2} ${styles.reveal}`} data-lines style={{ marginTop: 16 }}>
             Your balance is not <span className={styles.accentWord}>your money.</span>
           </h2>
           <p className={`${styles.lead} ${styles.reveal}`} data-item style={{ marginTop: 18 }}>
@@ -307,14 +315,17 @@ function Split() {
 function Features() {
   const ref = useScene<HTMLElement>((api, root) => {
     const items = root.querySelectorAll<HTMLElement>("[data-item]");
+    const headings = root.querySelectorAll<HTMLElement>("[data-lines]");
     const rows = root.querySelectorAll<HTMLElement>("[data-row]");
     api.motion(() => {
       revealIn(items, { trigger: root, stagger: 0.08 });
       revealIn(rows, { trigger: rows[0], stagger: 0.025, y: 10 });
+      void revealLines(headings);
     });
     api.still(() => {
       showNow(items);
       showNow(rows);
+      showNow(headings);
     });
   });
 
@@ -324,7 +335,7 @@ function Features() {
         <p className={`${styles.eyebrow} ${styles.reveal}`} data-item>
           Everything in one place
         </p>
-        <h2 className={`${styles.h2} ${styles.reveal}`} data-item>
+        <h2 className={`${styles.h2} ${styles.reveal}`} data-lines>
           Thirteen parts, one number.
         </h2>
       </div>
@@ -347,8 +358,15 @@ function Features() {
 function Proof() {
   const ref = useScene<HTMLElement>((api, root) => {
     const items = root.querySelectorAll<HTMLElement>("[data-item]");
-    api.motion(() => revealIn(items, { trigger: root, stagger: 0.09 }));
-    api.still(() => showNow(items));
+    const headings = root.querySelectorAll<HTMLElement>("[data-lines]");
+    api.motion(() => {
+      revealIn(items, { trigger: root, stagger: 0.09 });
+      void revealLines(headings);
+    });
+    api.still(() => {
+      showNow(items);
+      showNow(headings);
+    });
   });
 
   return (
@@ -357,7 +375,7 @@ function Proof() {
         <p className={`${styles.eyebrow} ${styles.reveal}`} data-item>
           Your money, your device
         </p>
-        <h2 className={`${styles.h2} ${styles.reveal}`} data-item>
+        <h2 className={`${styles.h2} ${styles.reveal}`} data-lines>
           Built to be trusted with the real numbers.
         </h2>
       </div>
@@ -378,8 +396,15 @@ function Proof() {
 function Close() {
   const ref = useScene<HTMLDivElement>((api, root) => {
     const items = root.querySelectorAll<HTMLElement>("[data-item]");
-    api.motion(() => revealIn(items, { trigger: root, stagger: 0.08 }));
-    api.still(() => showNow(items));
+    const headings = root.querySelectorAll<HTMLElement>("[data-lines]");
+    api.motion(() => {
+      revealIn(items, { trigger: root, stagger: 0.08 });
+      void revealLines(headings);
+    });
+    api.still(() => {
+      showNow(items);
+      showNow(headings);
+    });
   });
 
   return (
@@ -389,7 +414,7 @@ function Close() {
           <p className={`${styles.eyebrow} ${styles.reveal}`} data-item>
             Free in early access
           </p>
-          <h2 className={`${styles.h2} ${styles.reveal}`} data-item>
+          <h2 className={`${styles.h2} ${styles.reveal}`} data-lines>
             See your own number tonight.
           </h2>
           <p className={`${styles.lead} ${styles.reveal}`} data-item>

@@ -87,7 +87,7 @@ export function PricingView() {
           <p className={`${styles.eyebrow} ${styles.reveal}`} data-rise>
             And not at your expense
           </p>
-          <h2 className={`${styles.h2} ${styles.reveal}`} data-rise>
+          <h2 className={`${styles.h2} ${styles.reveal}`} data-lines>
             Free usually has a funding model behind it.
           </h2>
           <p className={`${styles.lead} ${styles.reveal}`} data-rise>
@@ -111,7 +111,7 @@ export function PricingView() {
           <p className={`${styles.eyebrow} ${styles.reveal}`} data-rise>
             When it stops being free
           </p>
-          <h2 className={`${styles.h2} ${styles.reveal}`} data-rise>
+          <h2 className={`${styles.h2} ${styles.reveal}`} data-lines>
             You will hear it from us first.
           </h2>
           <p className={`${styles.lead} ${styles.reveal}`} data-rise>

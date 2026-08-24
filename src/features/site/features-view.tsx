@@ -145,7 +145,7 @@ export function FeaturesView() {
             <p className={`${styles.eyebrow} ${styles.reveal}`} data-rise>
               {group.heading}
             </p>
-            <h2 className={`${styles.h2} ${styles.reveal}`} data-rise>
+            <h2 className={`${styles.h2} ${styles.reveal}`} data-lines>
               {group.lede}
             </h2>
           </div>
@@ -167,7 +167,7 @@ export function FeaturesView() {
           <p className={`${styles.eyebrow} ${styles.reveal}`} data-rise>
             All of it, free
           </p>
-          <h2 className={`${styles.h2} ${styles.reveal}`} data-rise>
+          <h2 className={`${styles.h2} ${styles.reveal}`} data-lines>
             Nothing on this page is behind a plan.
           </h2>
           <p className={`${styles.lead} ${styles.reveal}`} data-rise>
