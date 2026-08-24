@@ -1,5 +1,5 @@
-import { MarketingStructuredData } from "@/features/marketing/page-structured-data";
-import { WaitlistView } from "@/features/marketing/waitlist-view";
+import { MarketingStructuredData } from "@/features/site/page-structured-data";
+import { WaitlistView } from "@/features/site/waitlist-view";
 import { BRAND } from "@/lib/brand";
 import type { Metadata } from "next";
 

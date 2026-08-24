@@ -1,5 +1,5 @@
-import { AboutView } from "@/features/marketing/about-view";
-import { MarketingStructuredData } from "@/features/marketing/page-structured-data";
+import { AboutView } from "@/features/site/about-view";
+import { MarketingStructuredData } from "@/features/site/page-structured-data";
 import { BRAND } from "@/lib/brand";
 import type { Metadata } from "next";
 

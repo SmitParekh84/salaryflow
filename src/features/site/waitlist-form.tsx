@@ -1,10 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { BRAND } from "@/lib/brand";
 import { ArrowRight } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import styles from "./landing.module.css";
+import styles from "./site.module.css";
 
 /**
  * Email capture for the early-access list.
@@ -60,10 +59,13 @@ export function WaitlistForm({ id, compact = false }: { id: string; compact?: bo
           placeholder="you@example.com"
           disabled={status === "loading"}
         />
-        <Button type="submit" size="lg" variant="marketing" loading={status === "loading"}>
-          Join waitlist
-          <ArrowRight />
-        </Button>
+        {/* The site's own button rather than the app's: the public pages have
+            one button style, and the app's `marketing` variant belonged to the
+            gradient it no longer uses. */}
+        <button type="submit" className={styles.btn} disabled={status === "loading"}>
+          {status === "loading" ? "Joining…" : "Join waitlist"}
+          <ArrowRight aria-hidden />
+        </button>
       </form>
       <p
         className={`${styles.formMessage} ${status === "error" ? styles.formError : ""}`}

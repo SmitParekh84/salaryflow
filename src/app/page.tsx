@@ -1,11 +1,11 @@
-import { LandingHero } from "@/features/landing/landing-hero";
-import { LandingStructuredData } from "@/features/landing/structured-data";
+import { Landing } from "@/features/site/landing";
+import { LandingStructuredData } from "@/features/site/structured-data";
 
 export default function Home() {
   return (
     <>
       <LandingStructuredData />
-      <LandingHero />
+      <Landing />
     </>
   );
 }

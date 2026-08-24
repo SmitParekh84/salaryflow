@@ -1,6 +1,5 @@
 import { BRAND } from "@/lib/brand";
 import { SITE_ORIGIN, absoluteUrl } from "@/lib/site-url";
-import { FAQS } from "./faqs";
 
 /**
  * Schema.org description of the landing page.
@@ -10,7 +9,9 @@ import { FAQS } from "./faqs";
  * instead of restating it, which is what lets a crawler treat them as facts
  * about one entity rather than three unrelated blobs.
  *
- * Every claim here is also visible on the page. The FAQ entries come from the
+ * Every claim here is also visible on the page.
+ *
+ * The FAQPage block was removed with the old landing page: that design had a
  * same array the accordion renders, and the free-tier `offer` matches what the
  * FAQ says about pricing.
  */
@@ -71,15 +72,6 @@ export function LandingStructuredData() {
           price: "0",
           priceCurrency: "INR",
         },
-      },
-      {
-        "@type": "FAQPage",
-        "@id": absoluteUrl("/#faq"),
-        mainEntity: FAQS.map(([question, answer]) => ({
-          "@type": "Question",
-          name: question,
-          acceptedAnswer: { "@type": "Answer", text: answer },
-        })),
       },
     ],
   };

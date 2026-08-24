@@ -1,4 +1,4 @@
-import { MarketingNote, MarketingShell } from "@/features/marketing/marketing-shell";
+import { ProseNote, ProsePage } from "@/features/site/site-shell";
 import { BRAND } from "@/lib/brand";
 import type { Metadata } from "next";
 
@@ -17,7 +17,7 @@ const UPDATED = "2026-08-13";
 
 export default function PrivacyPage() {
   return (
-    <MarketingShell
+    <ProsePage
       eyebrow="Legal"
       title="Privacy Policy"
       lede={`${BRAND.name} exists to help you understand your own money. That only works if you trust it with real numbers, so this page states plainly what is collected, where it lives, and what is never done with it.`}
@@ -165,14 +165,14 @@ export default function PrivacyPage() {
         <a href={`mailto:${BRAND.legalEmail}`}>{BRAND.legalEmail}</a>.
       </p>
 
-      <MarketingNote>
+      <ProseNote>
         <p>
           This policy describes how the software actually behaves, but it has not been reviewed by a
           lawyer. Before launching publicly - and particularly before handling users in the EU, the
           UK, or under India&rsquo;s DPDP Act - have a qualified practitioner check it against the
           obligations that apply to you.
         </p>
-      </MarketingNote>
-    </MarketingShell>
+      </ProseNote>
+    </ProsePage>
   );
 }

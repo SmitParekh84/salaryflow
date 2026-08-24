@@ -1,5 +1,5 @@
-import { ContactView } from "@/features/marketing/contact-view";
-import { MarketingStructuredData } from "@/features/marketing/page-structured-data";
+import { ContactView } from "@/features/site/contact-view";
+import { MarketingStructuredData } from "@/features/site/page-structured-data";
 import { BRAND } from "@/lib/brand";
 import type { Metadata } from "next";
 

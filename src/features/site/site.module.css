@@ -712,7 +712,80 @@
     font-size: 13px
 }
 
+/* ── Footer ─────────────────────────────────────────────────────────────────
+   Shared by every public page. The single flex row the landing page used could
+   not hold three link columns, so the row became the bottom line of a block. */
+
 .footer {
+    border-top: 1px solid var(--line);
+    padding: clamp(48px, 6vh, 72px) var(--gutter) 26px
+}
+
+.footerTop {
+    display: grid;
+    gap: 48px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+    padding-bottom: 42px
+}
+
+.footerBrand {
+    align-items: center;
+    color: var(--ink);
+    display: flex;
+    font-size: 15px;
+    font-weight: 600;
+    gap: 9px;
+    letter-spacing: -0.01em
+}
+
+.footerBlurb {
+    color: var(--ink-quiet);
+    font-size: 13.5px;
+    line-height: 1.6;
+    margin-top: 10px;
+    max-width: 34ch
+}
+
+.footerNav {
+    display: grid;
+    gap: 32px;
+    /* auto-fit rather than a fixed count: the number of columns is a content
+       decision and this survives adding or removing one. */
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))
+}
+
+.footerHeading {
+    color: var(--ink);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase
+}
+
+.footerNav ul {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    list-style: none;
+    margin: 14px 0 0;
+    padding: 0
+}
+
+.footerNav a {
+    color: var(--ink-body);
+    font-size: 14px;
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease-out)
+}
+
+@media (hover: hover) {
+    .footerNav a:hover {
+        color: var(--accent-deep)
+    }
+}
+
+.footerBottom {
+    align-items: center;
     border-top: 1px solid var(--line);
     color: var(--ink-quiet);
     display: flex;
@@ -720,18 +793,365 @@
     font-size: 13px;
     gap: 10px 24px;
     justify-content: space-between;
-    padding: 26px var(--gutter)
+    padding-top: 22px
 }
 
-.footer a {
+/* ── Section-page hero ──────────────────────────────────────────────────────
+   The top of every page that is not the landing page. Shorter than the landing
+   hero, and left-aligned: a centred hero on a page whose body is left-aligned
+   reads as two different pages stapled together. */
+
+.pageHero {
+    display: grid;
+    gap: 20px;
+    padding: clamp(124px, 17vh, 172px) var(--gutter) clamp(40px, 5vh, 64px)
+}
+
+.pageHero .display {
+    max-width: 20ch
+}
+
+/* ── Prose pages ────────────────────────────────────────────────────────────
+   The legal pages. One column at a readable measure, and type sized for
+   sustained reading rather than for scanning. */
+
+.proseMain {
+    margin: 0 auto;
+    max-width: 760px;
+    padding: clamp(124px, 17vh, 172px) var(--gutter) clamp(64px, 8vh, 104px)
+}
+
+.proseTitle {
+    font-size: clamp(2.1rem, 4vw, 3.1rem);
+    font-weight: 400;
+    letter-spacing: -0.035em;
+    line-height: 1.06;
+    margin-top: 14px
+}
+
+.proseMain .lead {
+    margin-top: 20px
+}
+
+.proseUpdated {
+    color: var(--ink-quiet);
+    display: block;
+    font-size: 13px;
+    margin-top: 20px
+}
+
+.prose {
+    border-top: 1px solid var(--line);
+    margin-top: 34px;
+    padding-top: 34px
+}
+
+/* 16.5px at 1.72 leading: a legal page is read, not skimmed, and the app's
+   14px UI size is too tight for a thousand words. */
+.prose p,
+.prose li {
     color: var(--ink-body);
-    text-decoration: none
+    font-size: 16.5px;
+    line-height: 1.72
 }
 
-.footerLinks {
+.prose p+p {
+    margin-top: 18px
+}
+
+.prose h2 {
+    color: var(--ink);
+    font-size: 1.4rem;
+    font-weight: 500;
+    letter-spacing: -0.022em;
+    margin-top: 44px
+}
+
+.prose h3 {
+    color: var(--ink);
+    font-size: 1.08rem;
+    font-weight: 600;
+    margin-top: 28px
+}
+
+.prose h2+p,
+.prose h3+p,
+.prose h2+ul,
+.prose h3+ul {
+    margin-top: 12px
+}
+
+.prose ul,
+.prose ol {
+    display: grid;
+    gap: 10px;
+    margin: 16px 0 0;
+    padding-left: 22px
+}
+
+.prose a {
+    color: var(--accent-deep);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px
+}
+
+.prose strong {
+    color: var(--ink);
+    font-weight: 600
+}
+
+/* The advisory callout. A tinted panel with an accent edge, not a bordered box:
+   on a white page a fully bordered note reads as a form field. */
+.proseNote {
+    background: var(--tint);
+    border-left: 2px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    margin-top: 24px;
+    padding: 18px 20px
+}
+
+.proseNote p {
+    font-size: 15px
+}
+
+/* ── Shared section furniture for the marketing pages ──────────────────── */
+
+.cardGrid {
+    border-top: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr))
+}
+
+.cardCell {
+    border-bottom: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    display: grid;
+    gap: 8px;
+    padding: 28px 28px 28px 0
+}
+
+.cardCell:last-child {
+    border-right: 0
+}
+
+.cardCell svg {
+    color: var(--accent);
+    height: 18px;
+    width: 18px
+}
+
+.cardCell strong {
+    font-size: 1.02rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    margin-top: 6px
+}
+
+.cardCell p {
+    color: var(--ink-body);
+    font-size: 14.5px;
+    line-height: 1.6
+}
+
+/* A single stated figure, for the pricing page. */
+.priceBlock {
+    align-items: baseline;
     display: flex;
     flex-wrap: wrap;
-    gap: 20px
+    gap: 12px
+}
+
+.priceValue {
+    font-size: clamp(3rem, 6vw, 4.6rem);
+    font-weight: 400;
+    letter-spacing: -0.04em;
+    line-height: 1
+}
+
+.priceUnit {
+    color: var(--ink-quiet);
+    font-size: 1rem
+}
+
+/* ── Waitlist form ──────────────────────────────────────────────────────────
+   One row on a desktop, stacked on a phone. The input and the button share a
+   height so the row reads as one control rather than two things side by side. */
+
+.waitlistBlock {
+    max-width: 460px
+}
+
+.waitlistCompact {
+    max-width: 420px
+}
+
+.waitlistForm {
+    display: flex;
+    gap: 8px
+}
+
+.waitlistForm input {
+    background: var(--paper);
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    color: var(--ink);
+    flex: 1;
+    font-family: inherit;
+    font-size: 15px;
+    min-height: 46px;
+    min-width: 0;
+    padding: 0 14px;
+    transition: border-color var(--dur-fast) var(--ease-out)
+}
+
+.waitlistForm input::placeholder {
+    color: var(--ink-quiet)
+}
+
+.waitlistForm input:focus-visible {
+    border-color: var(--accent-deep);
+    outline: 2px solid var(--accent-deep);
+    outline-offset: 1px
+}
+
+.waitlistForm .btn:disabled {
+    cursor: progress;
+    opacity: .7
+}
+
+/* Always rendered, even when empty, so a message arriving does not shift the
+   layout under the reader's cursor. */
+.formMessage {
+    color: var(--ink-quiet);
+    font-size: 13px;
+    line-height: 1.5;
+    margin-top: 10px;
+    min-height: 20px
+}
+
+.formError {
+    color: #b3261e
+}
+
+:global(.dark) .formError {
+    color: #ff9d97
+}
+
+/* ── Simple lists used across the marketing pages ───────────────────────── */
+
+.tickList {
+    display: grid;
+    gap: 12px;
+    list-style: none;
+    margin: 18px 0 0;
+    padding: 0
+}
+
+.tickList li {
+    align-items: center;
+    color: var(--ink-body);
+    display: flex;
+    font-size: 15px;
+    gap: 12px
+}
+
+.tickList svg {
+    color: var(--accent);
+    flex: none;
+    height: 16px;
+    width: 16px
+}
+
+/* A labelled row of contact routes. */
+.routeList {
+    border-top: 1px solid var(--line);
+    display: grid
+}
+
+.routeRow {
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    gap: 6px;
+    padding: 24px 0
+}
+
+.routeRow strong {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.015em
+}
+
+.routeRow p {
+    color: var(--ink-body);
+    font-size: 14.5px;
+    line-height: 1.6
+}
+
+.routeRow a {
+    align-items: center;
+    color: var(--accent-deep);
+    display: inline-flex;
+    font-size: 15px;
+    font-weight: 500;
+    gap: 8px;
+    margin-top: 4px;
+    text-decoration: none;
+    width: fit-content
+}
+
+.routeRow a svg {
+    height: 14px;
+    transition: transform var(--dur-fast) var(--ease-out);
+    width: 14px
+}
+
+@media (hover: hover) {
+    .routeRow a:hover {
+        text-decoration: underline;
+        text-underline-offset: 3px
+    }
+
+    .routeRow a:hover svg {
+        transform: translateX(3px)
+    }
+}
+
+/* Numbered steps, for the install page. */
+.steps {
+    counter-reset: step;
+    display: grid;
+    gap: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0
+}
+
+.steps li {
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-body);
+    counter-increment: step;
+    display: grid;
+    font-size: 15px;
+    gap: 4px;
+    grid-template-columns: 34px 1fr;
+    line-height: 1.6;
+    padding: 20px 0
+}
+
+.steps li::before {
+    color: var(--accent-deep);
+    content: counter(step, decimal-leading-zero);
+    font-feature-settings: "tnum" 1;
+    font-size: 13px;
+    font-weight: 600;
+    grid-row: span 2
+}
+
+.steps strong {
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 600
 }
 
 /* ── Reveal ─────────────────────────────────────────────────────────────────
@@ -832,6 +1252,15 @@
 /* ── Responsive ───────────────────────────────────────────────────────── */
 
 @media (max-width: 1000px) {
+    .footerTop {
+        gap: 36px;
+        grid-template-columns: 1fr
+    }
+
+    .cardCell:nth-child(2n) {
+        border-right: 0
+    }
+
     .hero {
         gap: 40px;
         grid-template-columns: 1fr
@@ -881,6 +1310,34 @@
 @media (max-width: 620px) {
     .page {
         --gutter: 20px
+    }
+
+    /* A 46px input and a 46px button will not both fit a 350px row with a
+       placeholder anyone can read. */
+    .waitlistForm {
+        flex-direction: column
+    }
+
+    .waitlistForm .btn {
+        width: 100%
+    }
+
+    .cardGrid {
+        grid-template-columns: 1fr
+    }
+
+    .cardCell {
+        border-right: 0;
+        padding: 22px 0
+    }
+
+    .prose p,
+    .prose li {
+        font-size: 16px
+    }
+
+    .pageHero .display {
+        max-width: none
     }
 
     .navLinks {

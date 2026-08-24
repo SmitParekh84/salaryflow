@@ -1,5 +1,5 @@
-import { DownloadView } from "@/features/download/download-view";
-import { MarketingStructuredData } from "@/features/marketing/page-structured-data";
+import { DownloadView } from "@/features/site/download-view";
+import { MarketingStructuredData } from "@/features/site/page-structured-data";
 import { BRAND } from "@/lib/brand";
 import type { Metadata } from "next";
 

@@ -3,7 +3,7 @@
 import { useHydrated } from "@/hooks/use-hydrated";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import styles from "./landing-v5.module.css";
+import styles from "./site.module.css";
 
 /**
  * Light/dark switch for the public pages.

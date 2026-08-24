@@ -1,4 +1,4 @@
-import { MarketingNote, MarketingShell } from "@/features/marketing/marketing-shell";
+import { ProseNote, ProsePage } from "@/features/site/site-shell";
 import { BRAND } from "@/lib/brand";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -18,7 +18,7 @@ const UPDATED = "2026-08-13";
 
 export default function TermsPage() {
   return (
-    <MarketingShell
+    <ProsePage
       eyebrow="Legal"
       title="Terms of Service"
       lede={`These terms cover what ${BRAND.name} provides, what it expects of you, and - importantly - what it deliberately does not claim to be.`}
@@ -125,13 +125,13 @@ export default function TermsPage() {
         <a href={`mailto:${BRAND.legalEmail}`}>{BRAND.legalEmail}</a>.
       </p>
 
-      <MarketingNote>
+      <ProseNote>
         <p>
           These terms have not been reviewed by a lawyer, and they do not name a governing
           jurisdiction - that clause depends on where the operating entity is established. Have a
           qualified practitioner review and complete them before launch.
         </p>
-      </MarketingNote>
-    </MarketingShell>
+      </ProseNote>
+    </ProsePage>
   );
 }

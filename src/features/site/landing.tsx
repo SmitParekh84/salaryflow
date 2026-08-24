@@ -1,6 +1,5 @@
 "use client";
 
-import { BrandMark } from "@/components/brand";
 import { BRAND } from "@/lib/brand";
 import { formatMoney } from "@/lib/utils";
 import {
@@ -24,10 +23,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState, type CSSProperties } from "react";
-import styles from "./landing-v5.module.css";
+import styles from "./site.module.css";
 import { LoopObject } from "./loop-object";
-import { ThemeSwitch } from "./theme-switch";
-import { ScrollTrigger, countTo, gsap, revealIn, showNow, useScene } from "./use-gsap";
+import { SiteFooter, SiteNav } from "./site-shell";
+import { countTo, gsap, revealIn, showNow, useScene } from "./use-gsap";
 
 /* ---------------------------------------------------------------------------
    Landing v5 — light, quiet, and finished.
@@ -107,7 +106,7 @@ const PROOF = [
   },
 ] as const;
 
-export function LandingV5() {
+export function Landing() {
   return (
     <div className={styles.page}>
       {/* Reveals start hidden so nothing flashes before its scene builds, which
@@ -116,7 +115,7 @@ export function LandingV5() {
         <style>{`[class*="reveal"]{opacity:1!important}`}</style>
       </noscript>
 
-      <Nav />
+      <SiteNav />
 
       <main>
         <Hero />
@@ -126,39 +125,6 @@ export function LandingV5() {
         <Close />
       </main>
     </div>
-  );
-}
-
-function Nav() {
-  const ref = useScene<HTMLElement>((api, root) => {
-    const drive = () =>
-      ScrollTrigger.create({
-        start: 12,
-        end: "max",
-        onToggle: (self) => root.classList.toggle(styles.navSolid, self.isActive),
-      });
-    api.motion(drive);
-    api.still(drive);
-  });
-
-  return (
-    <header className={styles.nav} ref={ref}>
-      <Link href="/v5" className={styles.navBrand}>
-        <BrandMark size="sm" />
-        {BRAND.name}
-      </Link>
-      <nav className={styles.navLinks} aria-label="Sections">
-        <Link href="#split">How it works</Link>
-        <Link href="#features">Features</Link>
-        <Link href="/pricing">Pricing</Link>
-      </nav>
-      <div className={styles.navActions}>
-        <ThemeSwitch />
-        <Link href="/waitlist" className={`${styles.btn} ${styles.btnSmall}`}>
-          Join waitlist
-        </Link>
-      </div>
-    </header>
   );
 }
 
@@ -448,18 +414,7 @@ function Close() {
         </div>
       </section>
 
-      <footer className={styles.footer}>
-        <span>
-          &copy; {new Date().getFullYear()} {BRAND.name} &middot; {BRAND.domain}
-        </span>
-        <span className={styles.footerLinks}>
-          <Link href="/about">About</Link>
-          <Link href="/pricing">Pricing</Link>
-          <Link href="/contact">Contact</Link>
-          <Link href="/privacy">Privacy</Link>
-          <Link href="/terms">Terms</Link>
-        </span>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

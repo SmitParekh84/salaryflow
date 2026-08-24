@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import styles from "./landing-v5.module.css";
+import styles from "./site.module.css";
 
 /* ---------------------------------------------------------------------------
    The hero object: the salary cycle, as a real object.
