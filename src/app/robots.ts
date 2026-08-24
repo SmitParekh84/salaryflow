@@ -33,6 +33,16 @@ const PRIVATE_PATHS = [
   "/onboarding",
   "/forgot-password",
   "/offline",
+  /*
+   * A draft landing page, not a private one. It is disallowed because it says
+   * almost exactly what `/` says: two pages competing for the same brand terms
+   * split their ranking and Google picks the winner, which may well be the
+   * draft. Remove this line when v2 either replaces `/` or is deleted.
+   */
+  "/v2",
+  "/v3",
+  "/v4",
+  "/v5",
 ];
 
 export default function robots(): MetadataRoute.Robots {

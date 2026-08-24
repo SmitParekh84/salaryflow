@@ -1,0 +1,989 @@
+/* ===========================================================================
+   Landing v5 — light, and quiet.
+
+   The brief was: professional, clean, trustworthy, not heavy, and light rather
+   than dark. The reference was razorpay.com/careers, so its system was measured
+   rather than guessed at, and these are the four things that actually make it
+   read as expensive:
+
+     1. The display type is WEIGHT 400 at 150px with -6px of tracking. Large and
+        light, never large and bold. Every earlier draft here used 600, and that
+        heaviness is most of what made them look generic — a bold headline is the
+        house style of every template on the internet.
+     2. The ink is #032A3E, a deep desaturated navy. Never pure black. Black on
+        white is a browser default; a navy ink is a decision.
+     3. Two grounds only — white and one near-white band — plus the occasional
+        pale tint. No gradients competing with the content.
+     4. One saturated accent, on one pill, plus small letterspaced eyebrow
+        labels. That is the entire colour budget.
+
+   Aartha's own palette is carried through it: the brand teal is the accent, and
+   the navy ink is the brand navy. Nothing here is Razorpay's colour.
+   =========================================================================== */
+
+.page {
+    /* Grounds. Two, and a tint. */
+    --paper: #ffffff;
+    --band: #f6f8f9;
+    --tint: #eef8f5;
+
+    /* Ink. Deep navy, not black — see the header note. */
+    --ink: #062033;
+    --ink-body: #35485a;
+    /* 4.6:1 on white. Used at 12-14px, so it has to clear 4.5:1. */
+    --ink-quiet: #667a8c;
+
+    /* One accent, in two strengths: `deep` is the only one allowed to carry
+       text on white (5.1:1); `bright` is for fills, where the text on top is
+       white and the contrast is the fill's problem, not the accent's. */
+    --accent-deep: #00755f;
+    --accent: #00937c;
+    --accent-bright: #00b894;
+    --accent-wash: #e3f5ef;
+
+    --line: #e3e9ec;
+    --line-strong: #d2dbe0;
+
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --dur-press: 140ms;
+    --dur-fast: 200ms;
+    --dur-base: 320ms;
+
+    --shell: 1180px;
+    --gutter: max(24px, calc((100% - var(--shell)) / 2));
+
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
+
+    /* `clip`, not `hidden`: `hidden` would make this a scroll container and
+       silently break `position: sticky` on every descendant. */
+    overflow-x: clip;
+    -webkit-font-smoothing: antialiased;
+}
+
+@media (min-width: 1500px) {
+    .page {
+        --shell: 1300px
+    }
+}
+
+.page * {
+    box-sizing: border-box
+}
+
+.page h1,
+.page h2,
+.page h3,
+.page p {
+    margin: 0
+}
+
+.tnum {
+    font-feature-settings: "tnum" 1;
+    font-variant-numeric: tabular-nums
+}
+
+/* ── Type ───────────────────────────────────────────────────────────────────
+   Light weights at large sizes. Geist at 400 holds up at display size; the
+   tracking has to come in hard as it grows or the words fall apart. */
+
+.display {
+    font-size: clamp(2.9rem, 6.4vw, 5.6rem);
+    font-weight: 400;
+    letter-spacing: -0.042em;
+    line-height: 1.02
+}
+
+.h2 {
+    font-size: clamp(2rem, 3.6vw, 3.4rem);
+    font-weight: 400;
+    letter-spacing: -0.035em;
+    line-height: 1.08
+}
+
+.h3 {
+    font-size: 1.2rem;
+    font-weight: 500;
+    letter-spacing: -0.018em;
+    line-height: 1.3
+}
+
+/* The accent word. A colour, not a gradient: `background-clip: text` over a
+   transparent colour disappears entirely in forced-colours mode. */
+.accentWord {
+    color: var(--accent-deep)
+}
+
+.lead {
+    color: var(--ink-body);
+    font-size: 1.06rem;
+    font-weight: 400;
+    line-height: 1.62;
+    max-width: 52ch
+}
+
+/* Eyebrow, Razorpay's pattern: a leading slash, uppercase, letterspaced, in the
+   accent. The slash is what stops it reading as a stray line of small caps. */
+.eyebrow {
+    color: var(--accent-deep);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase
+}
+
+.eyebrow::before {
+    content: "/";
+    opacity: .55;
+    padding-right: 2px
+}
+
+/* ── Sections ───────────────────────────────────────────────────────────── */
+
+.section {
+    padding: clamp(84px, 11vh, 148px) var(--gutter)
+}
+
+.band {
+    background: var(--band)
+}
+
+.sectionHead {
+    display: grid;
+    gap: 18px;
+    margin-bottom: clamp(44px, 6vh, 76px);
+    max-width: 660px
+}
+
+.center {
+    margin-inline: auto;
+    text-align: center
+}
+
+.center .lead {
+    margin-inline: auto
+}
+
+/* ── Chrome ─────────────────────────────────────────────────────────────── */
+
+.nav {
+    align-items: center;
+    background: rgba(255, 255, 255, .82);
+    backdrop-filter: blur(16px) saturate(160%);
+    border-bottom: 1px solid transparent;
+    display: flex;
+    gap: 28px;
+    height: 70px;
+    justify-content: space-between;
+    left: 0;
+    padding: 0 var(--gutter);
+    position: fixed;
+    right: 0;
+    top: 0;
+    transition: border-color var(--dur-base) var(--ease-out),
+        background var(--dur-base) var(--ease-out);
+    z-index: 50
+}
+
+.navSolid {
+    background: rgba(255, 255, 255, .94);
+    border-bottom-color: var(--line)
+}
+
+.navBrand {
+    align-items: center;
+    color: var(--ink);
+    display: flex;
+    font-size: 15px;
+    font-weight: 600;
+    gap: 9px;
+    letter-spacing: -0.01em;
+    margin-right: auto;
+    text-decoration: none
+}
+
+.navLinks {
+    align-items: center;
+    display: flex;
+    gap: 30px
+}
+
+/* Uppercase, small, letterspaced — the measured pattern. At 12px this needs the
+   full-strength ink, not the quiet one. */
+.navLinks a {
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color var(--dur-fast) var(--ease-out)
+}
+
+@media (hover: hover) {
+    .navLinks a:hover {
+        color: var(--accent-deep)
+    }
+}
+
+/* The light/dark control. Sized as a real target: 40px is under the 44px WCAG
+   2.5.5 floor, so the padding takes it there without making the icon larger. */
+.themeSwitch {
+    align-items: center;
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    color: var(--ink);
+    cursor: pointer;
+    display: flex;
+    height: 38px;
+    justify-content: center;
+    padding: 0;
+    transition: border-color var(--dur-fast) var(--ease-out),
+        background var(--dur-fast) var(--ease-out),
+        color var(--dur-fast) var(--ease-out);
+    width: 38px
+}
+
+.themeSwitch svg {
+    height: 16px;
+    width: 16px
+}
+
+@media (hover: hover) {
+    .themeSwitch:hover {
+        border-color: var(--ink);
+        color: var(--accent-deep)
+    }
+}
+
+.themeSwitch:focus-visible {
+    outline: 2px solid var(--accent-deep);
+    outline-offset: 3px
+}
+
+/* The nav's right-hand cluster: switch, then the one action. */
+.navActions {
+    align-items: center;
+    display: flex;
+    gap: 10px
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+
+.btn,
+.btnQuiet {
+    align-items: center;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 14px;
+    font-weight: 600;
+    gap: 8px;
+    justify-content: center;
+    letter-spacing: .02em;
+    min-height: 46px;
+    padding: 0 22px;
+    text-decoration: none;
+    transition: transform var(--dur-press) var(--ease-out),
+        background var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out),
+        box-shadow var(--dur-fast) var(--ease-out);
+    white-space: nowrap
+}
+
+/* A flat solid pill. No gradient and no glow: on a white page a glowing button
+   is the single loudest thing on screen, and this page's whole argument is
+   restraint. */
+.btn {
+    background: var(--accent-deep);
+    border: 1px solid var(--accent-deep);
+    color: #fff
+}
+
+.btnQuiet {
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    color: var(--ink)
+}
+
+.btn svg,
+.btnQuiet svg {
+    height: 15px;
+    transition: transform var(--dur-fast) var(--ease-out);
+    width: 15px
+}
+
+@media (hover: hover) {
+    .btn:hover {
+        background: #005f4d;
+        border-color: #005f4d
+    }
+
+    .btnQuiet:hover {
+        border-color: var(--ink);
+        background: #fff
+    }
+
+    .btn:hover svg,
+    .btnQuiet:hover svg {
+        transform: translateX(3px)
+    }
+}
+
+.btn:active,
+.btnQuiet:active {
+    transform: scale(.98)
+}
+
+.btn:focus-visible,
+.btnQuiet:focus-visible {
+    outline: 2px solid var(--accent-deep);
+    outline-offset: 3px
+}
+
+.btnSmall {
+    font-size: 12px;
+    letter-spacing: .1em;
+    min-height: 38px;
+    padding: 0 16px;
+    text-transform: uppercase
+}
+
+/* ── Hero ───────────────────────────────────────────────────────────────── */
+
+.hero {
+    align-items: center;
+    display: grid;
+    gap: clamp(32px, 5%, 72px);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    padding: clamp(120px, 16vh, 168px) var(--gutter) clamp(72px, 9vh, 116px)
+}
+
+.heroCopy {
+    display: grid;
+    gap: 24px
+}
+
+/* The measure belongs to the heading, in its OWN em, not to the column in the
+   body font's ch. `34ch` on this container resolved against 16px text and capped
+   the whole hero at about 272px, which broke the headline into five lines. `em`
+   here scales with the clamp, so the line length holds at every viewport. */
+.heroCopy .display {
+    max-width: 13em
+}
+
+.heroCopy .lead {
+    max-width: 44ch
+}
+
+.heroActions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 4px
+}
+
+.heroMeta {
+    align-items: center;
+    color: var(--ink-quiet);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 13px;
+    gap: 8px 20px
+}
+
+.heroMeta span {
+    align-items: center;
+    display: flex;
+    gap: 7px
+}
+
+.heroMeta svg {
+    color: var(--accent);
+    height: 14px;
+    width: 14px
+}
+
+/* ── The 3D object ──────────────────────────────────────────────────────────
+   The canvas and its stand-in occupy the same cell, so the fold never reflows
+   when three.js finishes loading. */
+
+.objectWrap {
+    aspect-ratio: 1 / 1;
+    display: grid;
+    max-height: 560px;
+    position: relative;
+    width: 100%
+}
+
+.objectCanvas,
+.objectGhost {
+    grid-area: 1 / 1;
+    height: 100%;
+    width: 100%
+}
+
+.objectCanvas {
+    opacity: 0;
+    transition: opacity 700ms var(--ease-out)
+}
+
+.objectCanvas[data-ready="true"] {
+    opacity: 1
+}
+
+/* The stand-in: a soft CSS ring, sitting exactly where the object will. It is
+   what the reader sees while three.js loads, and what they keep if it never
+   arrives. */
+.objectGhost {
+    align-self: center;
+    background:
+        radial-gradient(circle at 50% 46%, transparent 27%, var(--accent-wash) 28%, var(--accent-wash) 40%, transparent 41%),
+        radial-gradient(circle at 50% 46%, rgba(0, 147, 124, .08), transparent 62%);
+    filter: blur(1px);
+    justify-self: center;
+    opacity: 1;
+    transition: opacity 500ms var(--ease-out)
+}
+
+.objectGhost[data-ready="true"] {
+    opacity: 0
+}
+
+/* ── Numbers strip ──────────────────────────────────────────────────────────
+   The one place figures are stated at size. A hairline grid rather than cards:
+   on a white page, four bordered boxes read as four separate widgets. */
+
+.figures {
+    border-top: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr))
+}
+
+.figureCell {
+    border-right: 1px solid var(--line);
+    padding: 30px 28px 0
+}
+
+.figureCell:last-child {
+    border-right: 0
+}
+
+.figureValue {
+    color: var(--ink);
+    display: block;
+    font-size: clamp(1.9rem, 2.8vw, 2.6rem);
+    font-weight: 400;
+    letter-spacing: -0.035em;
+    line-height: 1
+}
+
+.figureLabel {
+    color: var(--ink-quiet);
+    display: block;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-top: 12px
+}
+
+/* ── Split: where the salary goes ───────────────────────────────────────────
+   A single stacked bar, not a 3D object. The 3D lives in the hero and nowhere
+   else — this is the section that has to be instantly readable, and a flat bar
+   with four labelled segments is the most readable thing there is. */
+
+.splitGrid {
+    align-items: center;
+    display: grid;
+    gap: clamp(32px, 5%, 72px);
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr)
+}
+
+.bar {
+    border-radius: 10px;
+    display: flex;
+    gap: 3px;
+    height: 60px;
+    overflow: hidden;
+    width: 100%
+}
+
+.barPart {
+    /* `--share` is the fraction of salary; flex-grow makes the widths exact
+       without a single computed pixel value. */
+    flex: var(--share) 1 0;
+    position: relative;
+    transition: filter var(--dur-fast) var(--ease-out),
+        opacity var(--dur-fast) var(--ease-out)
+}
+
+.partBills {
+    background: #0d3a4d
+}
+
+.partSavings {
+    background: #17667f
+}
+
+.partInvest {
+    background: #4d9aa8
+}
+
+.partYours {
+    background: var(--accent-bright)
+}
+
+.barDim {
+    filter: saturate(.4);
+    opacity: .55
+}
+
+.splitLegend {
+    display: grid;
+    gap: 0;
+    margin-top: 26px
+}
+
+.legendRow {
+    align-items: baseline;
+    border-bottom: 1px solid var(--line);
+    cursor: default;
+    display: grid;
+    gap: 14px;
+    grid-template-columns: 12px 1fr auto auto;
+    padding: 14px 2px;
+    transition: background var(--dur-fast) var(--ease-out)
+}
+
+.legendRow:last-child {
+    border-bottom: 0
+}
+
+@media (hover: hover) {
+    .legendRow:hover {
+        background: var(--band)
+    }
+}
+
+.legendSwatch {
+    border-radius: 3px;
+    height: 12px;
+    width: 12px
+}
+
+.legendName {
+    color: var(--ink);
+    font-size: 15px
+}
+
+.legendAmount {
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 600
+}
+
+.legendShare {
+    color: var(--ink-quiet);
+    font-size: 13px;
+    min-width: 40px;
+    text-align: right
+}
+
+.legendYours .legendName,
+.legendYours .legendAmount {
+    color: var(--accent-deep);
+    font-weight: 600
+}
+
+/* ── Feature list ───────────────────────────────────────────────────────────
+   Thirteen features as a plain three-column list on a hairline grid. No
+   carousel, no cards, no depth: the brief was "not too much", and a reader
+   scanning for whether their own need is covered wants a list they can read in
+   one pass, not something they have to operate. */
+
+.featureGrid {
+    border-top: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr))
+}
+
+.featureItem {
+    border-bottom: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    display: grid;
+    gap: 6px;
+    padding: 26px 28px 26px 0;
+    transition: background var(--dur-fast) var(--ease-out)
+}
+
+.featureItem:nth-child(3n) {
+    border-right: 0
+}
+
+@media (hover: hover) {
+    .featureItem:hover {
+        background: var(--band)
+    }
+}
+
+.featureName {
+    align-items: center;
+    color: var(--ink);
+    display: flex;
+    font-size: 15px;
+    font-weight: 500;
+    gap: 10px;
+    letter-spacing: -0.01em
+}
+
+.featureName svg {
+    color: var(--accent);
+    flex: none;
+    height: 16px;
+    width: 16px
+}
+
+.featureNote {
+    color: var(--ink-quiet);
+    font-size: 13.5px;
+    line-height: 1.5;
+    padding-left: 26px
+}
+
+/* ── Quiet proof row ───────────────────────────────────────────────────── */
+
+.proofRow {
+    display: grid;
+    gap: 34px;
+    grid-template-columns: repeat(3, minmax(0, 1fr))
+}
+
+.proofItem {
+    display: grid;
+    gap: 10px
+}
+
+.proofItem svg {
+    color: var(--accent);
+    height: 20px;
+    width: 20px
+}
+
+.proofItem strong {
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: -0.015em
+}
+
+.proofItem p {
+    color: var(--ink-body);
+    font-size: 14.5px;
+    line-height: 1.6
+}
+
+/* ── Close ──────────────────────────────────────────────────────────────── */
+
+.close {
+    background: var(--tint);
+    padding: clamp(84px, 11vh, 140px) var(--gutter);
+    text-align: center
+}
+
+.closeInner {
+    display: grid;
+    gap: 20px;
+    justify-items: center;
+    margin: auto;
+    max-width: 620px
+}
+
+.closeActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 10px
+}
+
+.closeNote {
+    color: var(--ink-quiet);
+    font-size: 13px
+}
+
+.footer {
+    border-top: 1px solid var(--line);
+    color: var(--ink-quiet);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 13px;
+    gap: 10px 24px;
+    justify-content: space-between;
+    padding: 26px var(--gutter)
+}
+
+.footer a {
+    color: var(--ink-body);
+    text-decoration: none
+}
+
+.footerLinks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px
+}
+
+/* ── Reveal ─────────────────────────────────────────────────────────────────
+   Deliberately smaller travel than the dark drafts: 14px, not 26px. On a white
+   page a large rise reads as the layout settling badly rather than as content
+   arriving. */
+
+.reveal {
+    opacity: 0;
+    will-change: opacity, transform
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal {
+        opacity: 1
+    }
+}
+
+
+/* ── Dark mode ──────────────────────────────────────────────────────────────
+   `next-themes` is already mounted in the root layout with attribute="class",
+   so it puts `.dark` on <html>. Only the tokens are redeclared here; not one
+   rule below this block knows which theme it is in.
+
+   Not an inversion. The light page is the designed one — the user's point was
+   that white reads as trustworthy — so this is a deep navy in the brand's own
+   family rather than black, with the same two-ground-plus-tint structure and
+   elevation carried by lightness the way the app's dark steps already do.
+
+   The accent has to change strength, not just value: #00755f is 5.1:1 on white
+   and 1.6:1 on navy, so a dark theme reusing it would fail on every eyebrow
+   and every link. The bright teal is the text accent here, and the solid
+   button flips to dark text on a bright fill for the same reason. */
+:global(.dark) .page {
+    --paper: #0b1524;
+    --band: #101d30;
+    --tint: #0d2a26;
+
+    --ink: #eef4fa;
+    --ink-body: #a9b9ca;
+    /* 5.3:1 on --paper. */
+    --ink-quiet: #7f92a6;
+
+    /* 10:1 on --paper, and the only accent allowed to carry text here. */
+    --accent-deep: #3ddcb8;
+    --accent: #17c9a1;
+    --accent-bright: #2ee0b0;
+    --accent-wash: #10322c;
+
+    --line: rgba(255, 255, 255, .10);
+    --line-strong: rgba(255, 255, 255, .2)
+}
+
+/* The nav is a translucent sheet over the page, so its own colour has to move
+   with the ground rather than staying white. */
+:global(.dark) .nav {
+    background: rgba(11, 21, 36, .82)
+}
+
+:global(.dark) .navSolid {
+    background: rgba(11, 21, 36, .95)
+}
+
+/* A bright fill cannot carry white text. Dark ink on the accent is the only
+   combination that clears AA in this theme. */
+:global(.dark) .btn {
+    background: var(--accent-bright);
+    border-color: var(--accent-bright);
+    color: #04241d
+}
+
+@media (hover: hover) {
+    :global(.dark) .btn:hover {
+        background: #4ae9bd;
+        border-color: #4ae9bd
+    }
+
+    :global(.dark) .btnQuiet:hover {
+        background: rgba(255, 255, 255, .04);
+        border-color: var(--ink-body)
+    }
+}
+
+/* The stacked bar's darkest segment is nearly the dark ground, which would
+   make 'bills' disappear into the page. Each step lifts. */
+:global(.dark) .partBills {
+    background: #2b5f75
+}
+
+:global(.dark) .partSavings {
+    background: #3d8299
+}
+
+:global(.dark) .partInvest {
+    background: #6fb3bd
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+
+@media (max-width: 1000px) {
+    .hero {
+        gap: 40px;
+        grid-template-columns: 1fr
+    }
+
+    .heroCopy {
+        max-width: none
+    }
+
+    .objectWrap {
+        max-height: 420px;
+        margin-inline: auto;
+        max-width: 420px
+    }
+
+    .splitGrid {
+        grid-template-columns: 1fr
+    }
+
+    .figures,
+    .featureGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr))
+    }
+
+    .figureCell:nth-child(2n) {
+        border-right: 0
+    }
+
+    .figureCell:nth-child(n + 3) {
+        border-top: 1px solid var(--line)
+    }
+
+    .featureItem:nth-child(3n) {
+        border-right: 1px solid var(--line)
+    }
+
+    .featureItem:nth-child(2n) {
+        border-right: 0
+    }
+
+    .proofRow {
+        grid-template-columns: 1fr;
+        gap: 26px
+    }
+}
+
+@media (max-width: 620px) {
+    .page {
+        --gutter: 20px
+    }
+
+    .navLinks {
+        display: none
+    }
+
+    /* The display size has to come down further than the clamp's own floor:
+       46px on a 390px screen puts two words on a line and breaks the headline
+       into five. */
+    .display {
+        font-size: 2.45rem;
+        letter-spacing: -0.032em
+    }
+
+    .heroCopy .display {
+        max-width: none
+    }
+
+    .h2 {
+        font-size: 1.75rem
+    }
+
+    /* Full-width stacked actions, primary first. On a phone the thumb starts
+       at the bottom of the screen, so the two buttons are the last thing
+       before the object rather than being pushed below it. */
+    .heroActions .btn,
+    .heroActions .btnQuiet {
+        flex: 1 1 100%
+    }
+
+    /* The object is decoration on a phone, not the hero. At 420px it ate a
+       whole screenful before the reader reached a single figure. */
+    .objectWrap {
+        max-height: 260px;
+        max-width: 260px
+    }
+
+    /* Two by two, not four stacked. Four full-width rows made the fold's own
+       summary four screens long. */
+    .figures {
+        grid-template-columns: repeat(2, minmax(0, 1fr))
+    }
+
+    .figureCell {
+        border-right: 1px solid var(--line);
+        padding: 20px 16px 20px 0
+    }
+
+    .figureCell:nth-child(2n) {
+        border-right: 0;
+        padding-right: 0
+    }
+
+    .figureCell:nth-child(n + 3) {
+        border-top: 1px solid var(--line)
+    }
+
+    .figureValue {
+        font-size: 1.6rem
+    }
+
+    .featureGrid {
+        grid-template-columns: 1fr
+    }
+
+    .featureItem {
+        border-right: 0;
+        padding: 18px 0
+    }
+
+    /* The note is what makes thirteen rows scannable rather than a wall, so
+       it keeps its indent but loses the icon's worth of it. */
+    .featureNote {
+        padding-left: 26px
+    }
+
+    .section {
+        padding-block: 64px
+    }
+
+    .sectionHead {
+        margin-bottom: 32px
+    }
+
+    .bar {
+        height: 46px
+    }
+
+    /* Four labels will not fit across a phone, and a 12% segment is 40px wide.
+       The bar stays as the picture; the legend below carries the reading. */
+    .legendRow {
+        grid-template-columns: 12px 1fr auto
+    }
+
+    .legendShare {
+        display: none
+    }
+}
+
+@media (forced-colors: active) {
+
+    .objectGhost,
+    .bar {
+        forced-color-adjust: none
+    }
+}
