@@ -1,8 +1,9 @@
 "use client";
 
 import { BRAND } from "@/lib/brand";
-import { ArrowRight, Check, CloudOff, Eye, Sparkles, Wallet } from "lucide-react";
+import { ArrowRight, Check, CloudOff, Eye, Wallet } from "lucide-react";
 import Link from "next/link";
+import { DemoButton } from "./demo-button";
 import styles from "./site.module.css";
 import { Rise, SectionPage } from "./site-shell";
 
@@ -77,10 +78,7 @@ export function PricingView() {
         </div>
 
         <div className={styles.reveal} data-rise style={{ marginTop: 36 }}>
-          <Link href="/login?demo=1" className={styles.btn}>
-            Open the demo
-            <ArrowRight aria-hidden />
-          </Link>
+          <DemoButton />
         </div>
       </Rise>
 
@@ -111,7 +109,6 @@ export function PricingView() {
       <Rise className={`${styles.section} ${styles.band}`} as="section">
         <div className={styles.sectionHead}>
           <p className={`${styles.eyebrow} ${styles.reveal}`} data-rise>
-            <Sparkles aria-hidden style={{ display: "none" }} />
             When it stops being free
           </p>
           <h2 className={`${styles.h2} ${styles.reveal}`} data-rise>

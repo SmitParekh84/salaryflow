@@ -3,7 +3,6 @@
 import { BRAND } from "@/lib/brand";
 import { formatMoney } from "@/lib/utils";
 import {
-  ArrowRight,
   BadgeIndianRupee,
   BarChart3,
   CalendarClock,
@@ -23,6 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState, type CSSProperties } from "react";
+import { DemoButton } from "./demo-button";
 import styles from "./site.module.css";
 import { LoopObject } from "./loop-object";
 import { SiteFooter, SiteNav } from "./site-shell";
@@ -165,10 +165,7 @@ function Hero() {
           one number for today &mdash; recalculated every time something changes.
         </p>
         <div className={`${styles.heroActions} ${styles.reveal}`} data-item>
-          <Link href="/login?demo=1" className={styles.btn}>
-            Open the demo
-            <ArrowRight aria-hidden />
-          </Link>
+          <DemoButton />
           <Link href="/waitlist" className={styles.btnQuiet}>
             Join the waitlist
           </Link>
@@ -400,10 +397,7 @@ function Close() {
             up, and no card.
           </p>
           <div className={`${styles.closeActions} ${styles.reveal}`} data-item>
-            <Link href="/login?demo=1" className={styles.btn}>
-              Open the demo
-              <ArrowRight aria-hidden />
-            </Link>
+            <DemoButton />
             <Link href="/waitlist" className={styles.btnQuiet}>
               Join the waitlist
             </Link>

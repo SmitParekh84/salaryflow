@@ -59,6 +59,29 @@
       hold a white label (3:1); this one clears 4.9:1. */
   --action-teal: #0a7f63;
 
+  /*
+   * Action teal — the ramp the whole product now acts in.
+   *
+   * The public site settled on this teal and the app was still acting in the
+   * cyan-blue --brand-600, which made the two surfaces read as two companies:
+   * you pressed a teal button on the landing page and arrived on a blue one.
+   * The brand ribbon is unchanged and still owns the mark, the gradients and
+   * the charts. This ramp owns *actions*.
+   *
+   * It is also strictly more legible than what it replaces, which is the only
+   * reason it was safe to change without seeing every screen first:
+   *
+   *   white on 600      5.66:1  (was 4.88:1 on --brand-600)
+   *   600 text on white 5.66:1
+   *   dark ink on 400   9.73:1
+   *   400 on dark page 10.01:1  (was 7.39:1 on --brand-400)
+   */
+  --teal-300: #4ae9bd;
+  --teal-400: #2ee0b0;
+  --teal-500: #00937c;
+  --teal-600: #00755f;
+  --teal-700: #005f4d;
+
   /* Brand ink — navy from the app icon backplate */
   --ink-700: #0a376c;
   --ink-800: #062957;
@@ -66,7 +89,9 @@
 
   /* Neutrals — iOS system greys */
   --grey-0: #ffffff;
-  --grey-50: #f3f7fa;
+  /* Matched to the public site band. Was #f3f7fa, a step bluer, which read as
+     a different white either side of the sign-in boundary. */
+  --grey-50: #f6f8f9;
   --grey-500: #607080;
   --grey-900: #152333;
   /*
@@ -148,14 +173,16 @@
   --surface-2: var(--grey-50);
   --foreground: var(--grey-900);
   --muted: var(--grey-500);
-  --border: rgba(60, 60, 67, 0.14);
+  /* Derived from the ink rather than a neutral grey, so the hairline is cool
+     like the surface around it instead of drifting warm against it. */
+  --border: rgba(6, 32, 51, 0.12);
 
   /* Deep flow cyan carries actions with white text; brighter ribbon colors are
       reserved for dark mode and non-text highlights. */
-  --primary: var(--brand-600);
+  --primary: var(--teal-600);
   --primary-foreground: var(--grey-0);
-  --primary-hover: var(--brand-700);
-  --accent: var(--brand-500);
+  --primary-hover: var(--teal-700);
+  --accent: var(--teal-500);
 
   /* 4.3:1 before — under AA for the 11px "₹13,066 remaining" lines it labels. */
   --success: #047857;
@@ -167,7 +194,7 @@
    */
   --danger-foreground: #ffffff;
   --danger: var(--red-500);
-  --ring: color-mix(in srgb, var(--brand-600) 35%, transparent);
+  --ring: color-mix(in srgb, var(--teal-600) 35%, transparent);
 
   --glass: color-mix(in srgb, var(--grey-0) 85%, transparent);
   --glass-border: rgba(255, 255, 255, 0.6);
@@ -178,14 +205,16 @@
   --success-gradient: linear-gradient(90deg, var(--success), var(--flow-lime));
 
   /* Auth surfaces */
-  --auth-glow: color-mix(in srgb, var(--brand-400) 16%, transparent);
+  /* Teal, not cyan: every control on this screen is teal now, and a cyan glow
+     behind them was the one thing still making the page read blue. */
+  --auth-glow: color-mix(in srgb, var(--teal-400) 16%, transparent);
   --auth-wash-warm: color-mix(in srgb, var(--surface) 94%, var(--brand-50));
   --auth-wash-deep: color-mix(in srgb, var(--brand-700) 7%, var(--background));
-  --auth-showcase-glow: color-mix(in srgb, var(--brand-400) 20%, transparent);
+  --auth-showcase-glow: color-mix(in srgb, var(--teal-400) 20%, transparent);
   --auth-showcase-from: var(--ink-700);
   --auth-showcase-via: var(--ink-800);
   --auth-showcase-to: var(--ink-900);
-  --auth-showcase-orb: color-mix(in srgb, var(--brand-500) 22%, transparent);
+  --auth-showcase-orb: color-mix(in srgb, var(--teal-500) 22%, transparent);
   --auth-surface-bg: color-mix(in srgb, var(--surface) 78%, transparent);
   --auth-surface-border: color-mix(in srgb, var(--grey-0) 50%, var(--border));
   --auth-surface-sheen: rgba(255, 255, 255, 0.5);
@@ -237,16 +266,16 @@
   --border: rgba(255, 255, 255, 0.09);
 
   /* The cyan ribbon brightens in dark mode while retaining dark label ink. */
-  --primary: var(--brand-400);
-  --primary-foreground: #031b2a;
-  --primary-hover: var(--brand-300);
-  --accent: var(--brand-400);
+  --primary: var(--teal-400);
+  --primary-foreground: #04241d;
+  --primary-hover: var(--teal-300);
+  --accent: var(--teal-400);
 
   --success: #34d6a2;
   --warning: var(--amber-400);
   --danger: var(--red-400);
   --danger-foreground: #2b0a0a;
-  --ring: color-mix(in srgb, var(--brand-400) 40%, transparent);
+  --ring: color-mix(in srgb, var(--teal-400) 40%, transparent);
 
   /*
    * An elevated material, derived from the ramp rather than pinned to a colour.
@@ -265,14 +294,14 @@
   --brand-gradient: linear-gradient(100deg, #1d77bb, var(--brand-300) 62%, #43d7b0);
   --success-gradient: linear-gradient(90deg, var(--success), #9bea68);
 
-  --auth-glow: color-mix(in srgb, var(--brand-500) 22%, transparent);
+  --auth-glow: color-mix(in srgb, var(--teal-500) 22%, transparent);
   --auth-wash-warm: color-mix(in srgb, var(--surface) 88%, var(--brand-900));
   --auth-wash-deep: color-mix(in srgb, var(--ink-900) 70%, var(--background));
-  --auth-showcase-glow: color-mix(in srgb, var(--brand-500) 24%, transparent);
+  --auth-showcase-glow: color-mix(in srgb, var(--teal-500) 24%, transparent);
   --auth-showcase-from: var(--ink-800);
   --auth-showcase-via: var(--ink-900);
   --auth-showcase-to: var(--grey-dark-0);
-  --auth-showcase-orb: color-mix(in srgb, var(--brand-500) 18%, transparent);
+  --auth-showcase-orb: color-mix(in srgb, var(--teal-500) 18%, transparent);
   --auth-surface-bg: color-mix(in srgb, var(--surface) 72%, transparent);
   --auth-surface-border: color-mix(in srgb, var(--grey-dark-900) 12%, var(--border));
   --auth-surface-sheen: rgba(255, 255, 255, 0.06);

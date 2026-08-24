@@ -2,8 +2,9 @@
 
 import { BRAND } from "@/lib/brand";
 import { formatMoney } from "@/lib/utils";
-import { ArrowRight, CloudOff, Eye, Sparkles, Trash2 } from "lucide-react";
+import { CloudOff, Eye, Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { DemoButton } from "./demo-button";
 import styles from "./site.module.css";
 import { Rise, SectionPage } from "./site-shell";
 
@@ -118,10 +119,7 @@ export function AboutView() {
           </p>
         </div>
         <div className={`${styles.heroActions} ${styles.reveal}`} data-rise>
-          <Link href="/login?demo=1" className={styles.btn}>
-            Open the demo
-            <ArrowRight aria-hidden />
-          </Link>
+          <DemoButton />
           <Link href="/contact" className={styles.btnQuiet}>
             Get in touch
           </Link>

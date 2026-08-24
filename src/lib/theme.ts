@@ -66,11 +66,14 @@ export const FALLBACK_CATEGORY_COLOR = CATEGORY_COLORS.other;
  * Keep in sync with LAYER 1 of src/app/globals.css.
  */
 export const EMAIL_COLORS = {
-  brand: "#087b99",
+  /* In step with --primary, --grey-50 and --border in LAYER 1. An email whose
+     button is a different colour from the app is the most visible place this
+     kind of drift shows up. */
+  brand: "#00755f",
   brandOn: "#ffffff",
-  background: "#f3f7fa",
+  background: "#f6f8f9",
   surface: "#ffffff",
-  border: "#dce6ec",
+  border: "#e1e4e7",
   foreground: "#152333",
   muted: "#607080",
   subtle: "#7f8f9d",
@@ -86,8 +89,8 @@ export const EMAIL_COLORS = {
  * deep teal reads as muddy against black.
  */
 export const EMAIL_COLORS_DARK = {
-  brand: "#70d2df",
-  brandOn: "#031b2a",
+  brand: "#2ee0b0",
+  brandOn: "#04241d",
   /*
    * Re-synced with the LAYER 1 dark ramp. These still carried the near-black
    * #020912 / #071321 the app moved away from when dark mode was rebuilt as an

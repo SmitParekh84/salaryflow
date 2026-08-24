@@ -3,9 +3,10 @@
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { BRAND } from "@/lib/brand";
 import { usePwaInstall, type PwaPlatform } from "@/lib/usePwaInstall";
-import { ArrowRight, Check, Download, MonitorSmartphone, WifiOff, Zap } from "lucide-react";
+import { Check, Download, MonitorSmartphone, WifiOff, Zap } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { DemoButton } from "./demo-button";
 import styles from "./site.module.css";
 import { Rise, SectionPage } from "./site-shell";
 
@@ -179,10 +180,7 @@ export function DownloadView() {
         </div>
 
         <div className={`${styles.heroActions} ${styles.reveal}`} data-rise style={{ marginTop: 34 }}>
-          <Link href="/login?demo=1" className={styles.btn}>
-            Open the demo
-            <ArrowRight aria-hidden />
-          </Link>
+          <DemoButton />
           <Link href="/waitlist" className={styles.btnQuiet}>
             Join the waitlist
           </Link>

@@ -21,8 +21,8 @@ import { ScrollTrigger, revealIn, showNow, useScene } from "./use-gsap";
    --------------------------------------------------------------------------- */
 
 const NAV_LINKS = [
-  { href: "/#split", label: "How it works" },
-  { href: "/#features", label: "Features" },
+  { href: "/how-it-works", label: "How it works" },
+  { href: "/features", label: "Features" },
   { href: "/pricing", label: "Pricing" },
   { href: "/about", label: "About" },
 ];
@@ -69,8 +69,8 @@ const FOOTER_COLUMNS = [
   {
     heading: "Product",
     links: [
-      { href: "/#split", label: "How it works" },
-      { href: "/#features", label: "Features" },
+      { href: "/how-it-works", label: "How it works" },
+      { href: "/features", label: "Features" },
       { href: "/pricing", label: "Pricing" },
       { href: "/download", label: "Install the app" },
     ],

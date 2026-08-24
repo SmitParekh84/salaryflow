@@ -1,8 +1,8 @@
 "use client";
 
 import { BRAND } from "@/lib/brand";
-import { ArrowRight, Check } from "lucide-react";
-import Link from "next/link";
+import { Check } from "lucide-react";
+import { DemoButton } from "./demo-button";
 import styles from "./site.module.css";
 import { Rise, SectionPage } from "./site-shell";
 import { WaitlistForm } from "./waitlist-form";
@@ -46,10 +46,7 @@ export function WaitlistView() {
         </p>
 
         <div className={styles.reveal} data-rise style={{ marginTop: 20 }}>
-          <Link href="/login?demo=1" className={styles.btnQuiet}>
-            Open the demo
-            <ArrowRight aria-hidden />
-          </Link>
+          <DemoButton quiet />
         </div>
       </Rise>
 

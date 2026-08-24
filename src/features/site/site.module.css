@@ -457,6 +457,28 @@
    The one place figures are stated at size. A hairline grid rather than cards:
    on a white page, four bordered boxes read as four separate widgets. */
 
+/* ── Hairline grids ─────────────────────────────────────────────────────────
+   Three grids on this page divide their cells with hairlines: the hero figures,
+   the feature list and the marketing card grid. All three share one problem and
+   one fix.
+
+   The problem is that a cell needs padding on both sides — text touching the
+   divider beside it looks broken — but the first column must still line up with
+   the page gutter, or the section is visibly out of alignment with its own
+   heading. Padding alone can only satisfy one of those.
+
+   The fix is --cell: every cell gets symmetric horizontal padding, and the grid
+   is pulled outwards by exactly that amount. The first column's text lands on
+   the gutter, the last column's on the far gutter, and each divider sits in
+   twice --cell of clear space. --cell never exceeds --gutter, so the pull can
+   never push content off screen. */
+.figures,
+.featureGrid,
+.cardGrid {
+    --cell: 24px;
+    margin-inline: calc(var(--cell) * -1)
+}
+
 .figures {
     border-top: 1px solid var(--line);
     display: grid;
@@ -465,7 +487,7 @@
 
 .figureCell {
     border-right: 1px solid var(--line);
-    padding: 30px 28px 0
+    padding: 30px var(--cell) 0
 }
 
 .figureCell:last-child {
@@ -614,7 +636,7 @@
     border-right: 1px solid var(--line);
     display: grid;
     gap: 6px;
-    padding: 26px 28px 26px 0;
+    padding: 26px var(--cell);
     transition: background var(--dur-fast) var(--ease-out)
 }
 
@@ -928,7 +950,7 @@
     border-right: 1px solid var(--line);
     display: grid;
     gap: 8px;
-    padding: 28px 28px 28px 0
+    padding: 28px var(--cell)
 }
 
 .cardCell:last-child {
@@ -1154,6 +1176,113 @@
     font-weight: 600
 }
 
+/* ── Step flow ──────────────────────────────────────────────────────────────
+   The calculation, one row per step. Three columns — icon, prose, figure — so
+   the figures form their own readable column down the right and the page can be
+   understood from those alone. */
+
+.stepFlow {
+    border-top: 1px solid var(--line);
+    display: grid;
+    list-style: none;
+    margin: 0;
+    padding: 0
+}
+
+.stepItem {
+    align-items: start;
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    gap: 22px;
+    grid-template-columns: 40px minmax(0, 1fr) minmax(0, 220px);
+    padding: 30px 0
+}
+
+.stepIcon {
+    align-items: center;
+    background: var(--tint);
+    border-radius: 10px;
+    color: var(--accent-deep);
+    display: flex;
+    height: 40px;
+    justify-content: center;
+    width: 40px
+}
+
+.stepIcon svg {
+    height: 18px;
+    width: 18px
+}
+
+.stepBody {
+    display: grid;
+    gap: 8px
+}
+
+.stepIndex {
+    color: var(--ink-quiet);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase
+}
+
+.stepText {
+    color: var(--ink-body);
+    font-size: 15px;
+    line-height: 1.65;
+    max-width: 56ch
+}
+
+/* The figure column. Right-aligned so the four amounts stack into a column the
+   eye can run down without reading the prose beside them. */
+.stepFigure {
+    display: grid;
+    gap: 6px;
+    justify-items: end;
+    text-align: right
+}
+
+.stepFigure strong {
+    font-size: clamp(1.4rem, 2.2vw, 1.9rem);
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 1
+}
+
+.stepFigure span {
+    color: var(--ink-quiet);
+    font-size: 12.5px;
+    line-height: 1.45
+}
+
+/* The last step is the answer, so it is the one figure allowed to be accent. */
+.stepItem:last-child .stepFigure strong {
+    color: var(--accent-deep)
+}
+
+/* ── Demo button ───────────────────────────────────────────────────────── */
+
+.demoWrap {
+    display: inline-grid;
+    justify-items: start
+}
+
+/* Reserved height, so an error appearing does not shove the layout under the
+   pointer that just pressed the button. */
+.demoError {
+    color: #b3261e;
+    display: block;
+    font-size: 13px;
+    line-height: 1.4;
+    min-height: 18px;
+    margin-top: 6px
+}
+
+:global(.dark) .demoError {
+    color: #ff9d97
+}
+
 /* ── Reveal ─────────────────────────────────────────────────────────────────
    Deliberately smaller travel than the dark drafts: 14px, not 26px. On a white
    page a large rise reads as the layout settling badly rather than as content
@@ -1312,6 +1441,25 @@
         --gutter: 20px
     }
 
+    /* Icon and prose share the first row; the figure drops below rather than
+       being squeezed into a third of a 350px line. */
+    .stepItem {
+        gap: 14px 16px;
+        grid-template-columns: 40px minmax(0, 1fr)
+    }
+
+    .stepFigure {
+        grid-column: 2;
+        justify-items: start;
+        text-align: left
+    }
+
+    .figures,
+    .featureGrid,
+    .cardGrid {
+        --cell: 20px
+    }
+
     /* A 46px input and a 46px button will not both fit a 350px row with a
        placeholder anyone can read. */
     .waitlistForm {
@@ -1328,7 +1476,7 @@
 
     .cardCell {
         border-right: 0;
-        padding: 22px 0
+        padding: 22px var(--cell)
     }
 
     .prose p,
@@ -1383,12 +1531,11 @@
 
     .figureCell {
         border-right: 1px solid var(--line);
-        padding: 20px 16px 20px 0
+        padding: 20px var(--cell)
     }
 
     .figureCell:nth-child(2n) {
-        border-right: 0;
-        padding-right: 0
+        border-right: 0
     }
 
     .figureCell:nth-child(n + 3) {
@@ -1405,7 +1552,7 @@
 
     .featureItem {
         border-right: 0;
-        padding: 18px 0
+        padding: 18px var(--cell)
     }
 
     /* The note is what makes thirteen rows scannable rather than a wall, so
