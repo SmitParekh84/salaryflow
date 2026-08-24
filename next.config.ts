@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   images: {
     /*
-     * Serve images as they are, straight from `public/`.
+      * Serve images as they are, straight from `public/`.
      *
      * The host's image optimiser answers `402 Payment Required`
      * (`OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED`) once the account's

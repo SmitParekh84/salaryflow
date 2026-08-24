@@ -13,6 +13,23 @@
     --border-soft: #dce6ec;
     --navy: #031b3d;
 
+    /* -- Page shell ---------------------------------------------------------
+       One content column for the whole page, and one gutter formula derived
+       from it. Every band is full-bleed with its content inset by --gutter,
+       never a centred max-width box: a tinted section that stops at a
+       max-width leaves white margins beside it on a wide display while the
+       fixed nav and the footer (which already use this formula) run edge to
+       edge, and the page reads as a card floating in nothing. The 100% inside
+       the formula resolves against the section containing block, i.e. the full
+       page width, which is what makes the inset behave like a centred column.
+
+       --shell steps up on large displays so the layout uses the screen instead
+       of holding a 1216px strip in the middle of a 2560px monitor. A section
+       that wants a narrower measure (the FAQ) overrides --shell on itself
+       rather than setting its own max-width. */
+    --shell: 1216px;
+    --gutter: max(32px, calc((100% - var(--shell)) / 2));
+
     /* Motion tokens. One easing family for the whole surface: --ease-out for
        anything entering or leaving, --ease-in-out for anything already on
        screen that moves. `ease-in` appears nowhere by design — it starts slow,
@@ -34,6 +51,21 @@
        creating a scroll container. If a pinned section ever stops pinning,
        check here first. */
     overflow-x: clip
+}
+
+/* Large-display tiers. Deliberately conservative: the column grows enough to
+   stop looking stranded and stops well before body copy reaches an unreadable
+   measure - the prose blocks inside keep their own tighter max-widths. */
+@media (min-width: 1600px) {
+    .page {
+        --shell: 1360px
+    }
+}
+
+@media (min-width: 1920px) {
+    .page {
+        --shell: 1480px
+    }
 }
 
 .page * {
@@ -102,7 +134,7 @@
     height: 72px;
     justify-content: space-between;
     left: 0;
-    padding: 0 max(32px, calc((100% - 1216px)/2));
+    padding: 0 max(32px, calc((100% - var(--shell, 1216px))/2));
     position: fixed;
     right: 0;
     top: 0;
@@ -147,10 +179,8 @@
     display: grid;
     gap: 7%;
     grid-template-columns: 1.02fr .98fr;
-    margin: auto;
-    max-width: 1280px;
     min-height: 810px;
-    padding: 120px 32px 72px;
+    padding: 120px var(--gutter) 72px;
     position: relative
 }
 
@@ -396,10 +426,19 @@
     width: 14px
 }
 
+/* The cap belongs to the whole visual group, not just the card inside it.
+   .dailyNumber stops at 560px, so once the shell widens past ~1400px a column
+   sized off fr units overtakes it and the money-flow rail below ends up wider
+   than the card above - the two then read as misaligned. Capping here and
+   pushing the group right keeps the card flush with the shell edge at every
+   width. The tablet rule below re-centres it once the hero stacks. */
 .heroVisual {
     align-items: center;
     display: flex;
-    flex-direction: column
+    flex-direction: column;
+    margin-left: auto;
+    max-width: 560px;
+    width: 100%
 }
 
 .dailyNumber {
@@ -559,10 +598,8 @@
     align-items: center;
     background: var(--wash);
     gap: 6%;
-    margin: 0 auto;
-    max-width: 1440px;
     min-height: 650px;
-    padding: 100px max(32px, calc((100% - 1216px)/2))
+    padding: 100px var(--gutter)
 }
 
 .problemCopy h2,
@@ -678,9 +715,7 @@
 .setupSection,
 .privacySection,
 .faqSection {
-    margin: auto;
-    max-width: 1280px;
-    padding: 110px 32px
+    padding: 110px var(--gutter)
 }
 
 .sectionHeading {
@@ -747,9 +782,7 @@
     align-items: center;
     background: var(--wash-blue);
     gap: 7%;
-    margin: auto;
-    max-width: 1440px;
-    padding: 110px max(32px, calc((100% - 1216px)/2))
+    padding: 110px var(--gutter)
 }
 
 .productCopy .demoWrap {
@@ -911,8 +944,7 @@
 }
 
 .calmSection {
-    background: var(--wash);
-    max-width: 1440px
+    background: var(--wash)
 }
 
 .compareGrid {
@@ -964,10 +996,6 @@
 .afterPanel>.dailyNumber {
     margin: 28px auto 0;
     max-width: 390px
-}
-
-.cycleSection {
-    max-width: 1440px
 }
 
 .cycleTrack {
@@ -1177,7 +1205,6 @@
 
 .setupSection {
     background: var(--wash);
-    max-width: 1440px;
     text-align: center
 }
 
@@ -1228,10 +1255,6 @@
 
 .setupSection .formMessage {
     text-align: left
-}
-
-.privacySection {
-    max-width: 1280px
 }
 
 .privacyGrid {
@@ -1328,8 +1351,17 @@
     width: 18px
 }
 
+/* The one section that stays narrow as the shell grows: an answer paragraph
+   much past 90 characters a line is hard to track back from.
+
+   It has to restate --gutter rather than just override --shell: a custom
+   property substitutes its own var() references at computed-value time on the
+   element that declares it, so --gutter is already resolved against .page own
+   --shell by the time it is inherited here. Overriding --shell alone would
+   change nothing. */
 .faqSection {
-    max-width: 1000px
+    --shell: 936px;
+    --gutter: max(32px, calc((100% - 936px) / 2))
 }
 
 .faqList {
@@ -1391,14 +1423,12 @@
 
 .finalCta {
     background: var(--wash-blue);
-    padding: 100px 32px
+    padding: 100px var(--gutter)
 }
 
 .finalInner {
     align-items: center;
-    gap: 8%;
-    margin: auto;
-    max-width: 1180px
+    gap: 8%
 }
 
 .finalInner h2 {
@@ -1425,7 +1455,7 @@
 .footer {
     background: #071d38;
     color: #fff;
-    padding: 56px max(32px, calc((100% - 1216px)/2)) 28px
+    padding: 56px max(32px, calc((100% - var(--shell, 1216px))/2)) 28px
 }
 
 .footerTop {
