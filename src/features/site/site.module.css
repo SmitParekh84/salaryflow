@@ -415,6 +415,12 @@
     aspect-ratio: 1 / 1;
     display: grid;
     max-height: 560px;
+    /* Clipped, because the canvas inside is sized by JS from a measured box and
+       a measurement can be stale: renderer.setSize once captured a 560px height
+       for a 260px box and the canvas painted 300px down over the section below
+       it. The canvas being out of flow (below) means it cannot push layout, and
+       this means it cannot paint outside its frame either. */
+    overflow: hidden;
     position: relative;
     width: 100%
 }
@@ -429,6 +435,24 @@
 .objectCanvas {
     opacity: 0;
     transition: opacity 700ms var(--ease-out)
+}
+
+/* three.js writes width and height inline from the container it measured, so the
+   canvas is taken out of flow entirely rather than trusted to match. A stale
+   measurement then costs nothing: the element cannot contribute to layout, and
+   the wrapper clips whatever it paints. A max-width and max-height alone did
+   not do this — an in-flow canvas with an inline height still sizes its own
+   row, and that is what painted 300px of it over the section below. */
+.objectCanvas {
+    position: relative
+}
+
+.objectCanvas canvas {
+    display: block;
+    inset: 0;
+    max-height: 100%;
+    max-width: 100%;
+    position: absolute
 }
 
 .objectCanvas[data-ready="true"] {
@@ -1511,9 +1535,24 @@
     /* Full-width stacked actions, primary first. On a phone the thumb starts
        at the bottom of the screen, so the two buttons are the last thing
        before the object rather than being pushed below it. */
-    .heroActions .btn,
-    .heroActions .btnQuiet {
+    /* The flex children here are the buttons AND the demo button's wrapper
+       span, so both have to be told to fill the row — sizing only .btn left the
+       primary action at half width next to a full-width secondary. */
+    .heroActions>*,
+    .closeActions>* {
         flex: 1 1 100%
+    }
+
+    .heroActions .demoWrap,
+    .closeActions .demoWrap {
+        justify-items: stretch
+    }
+
+    .heroActions .btn,
+    .heroActions .btnQuiet,
+    .closeActions .btn,
+    .closeActions .btnQuiet {
+        width: 100%
     }
 
     /* The object is decoration on a phone, not the hero. At 420px it ate a
