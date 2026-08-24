@@ -118,8 +118,17 @@ export const PICKER_DEFAULT_COLOR = "#0ea5e9";
  * Mirrors --background. The dark value was #020912, from before the dark ramp
  * was raised, which drew a visibly darker band above the app in the installed
  * PWA — the status bar and the page it sits on should be the same colour.
+ *
+ * The light value went stale the same way when --grey-50 moved to the public
+ * site's band colour: this is a hand-kept mirror, so the palette changing does
+ * not update it and nothing fails loudly when it drifts.
+ *
+ * Known seam: these track the *app* background. The public pages set their own
+ * grounds (see site.module.css), and in dark mode theirs is #0b1524 against the
+ * #151d29 below — close, but a careful eye can see the join on a phone. Fixing
+ * it properly means a per-surface value rather than one pair.
  */
 export const THEME_COLORS = {
-  light: "#f3f7fa",
+  light: "#f6f8f9",
   dark: "#151d29",
 } as const;
