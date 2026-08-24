@@ -4,28 +4,45 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./site.module.css";
 
 /* ---------------------------------------------------------------------------
-   The hero object: the salary cycle, as a real object.
+   The hero object.
 
-   A torus, because that is what the product is about. The whole argument is
-   that a month is a loop that starts on payday rather than a row of calendar
-   squares, and a ring is that idea with nothing added. It is also the one thing
-   on this page that genuinely wants a renderer: a smooth, softly lit, slightly
-   translucent surface is exactly what CSS 3D cannot do, and there is no text on
-   it to be turned into a blurry texture.
+   A money bag — "Gold Bag" by Quaternius, from poly.pizza, released under CC0.
+   CC0 carries no attribution obligation, so the credit here is a courtesy and a
+   record of where the files came from rather than a licence term.
 
-   Three commitments this file has to keep, because a landing page that costs a
-   second of loading has already lost:
+     source  https://poly.pizza/m/vFFblhnHtb
+     files   public/models/gold-bag.glb        161 KB  (geometry)
+             public/models/gold-bag-atlas.png    9 KB  (colour)
 
-     1. three.js is imported dynamically, inside the effect. It is never part of
-        the first-load bundle — Turbopack splits it out, the page paints without
-        it, and the CSS ring below stands in until it arrives. Nothing about the
-        page waits for it.
-     2. No assets. No HDR environment, no textures, no loaders — lighting is
-        three lights and a material. There is nothing to download but the code.
-     3. It stops. Off-screen it stops rendering, on `prefers-reduced-motion` it
-        renders one frame and never starts a loop, and a hidden tab stops it via
-        `requestAnimationFrame` on its own.
+   Two files, and the second one needs explaining, because the obvious version of
+   this component renders a plain white bag.
+
+   The .glb declares its texture correctly — a standard `baseColorTexture`, no
+   extensions, and a valid PNG embedded in the binary chunk. three's GLTFLoader
+   nevertheless builds no texture from it: `parser.getDependency("texture", 0)`
+   resolves to `null`, with no error and no warning, so the material arrives with
+   `map === null`. Lighting and the material's metalness were both checked first
+   and neither was the cause.
+
+   Rather than fight the loader, the atlas was extracted from the .glb's own
+   binary chunk and is loaded separately here. It costs 9 KB, it is entirely
+   deterministic, and it puts the filtering under our control — which this asset
+   turns out to need badly (see NearestFilter below).
+
+   How it loads, because a landing page that costs a second before it paints has
+   already lost:
+
+     1. three.js and the loaders are imported dynamically, inside the effect.
+        None of it is in the first-load bundle; the page paints without it.
+     2. The CSS ring underneath stands in until the model arrives. The fold is
+        never empty and never reflows — canvas and stand-in share a grid cell.
+     3. Any failure anywhere in the chain leaves `ready` false and the reader
+        keeps the ring. A hero object is never worth an error state.
+     4. It stops: off screen, under `prefers-reduced-motion`, and in a hidden tab.
    --------------------------------------------------------------------------- */
+
+/** Fits the model to this many world units tall, whatever scale the file uses. */
+const TARGET_HEIGHT = 2.6;
 
 export function LoopObject() {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -35,15 +52,16 @@ export function LoopObject() {
     const mount = mountRef.current;
     if (!mount) return;
 
-    // Everything below is disposed through this list, in reverse. GPU resources
-    // are not garbage collected — a geometry and a material left behind on every
-    // navigation is a leak the browser cannot clean up for us.
     let disposed = false;
     let frame = 0;
     let cleanup: (() => void) | undefined;
 
     (async () => {
-      const THREE = await import("three");
+      const [THREE, { GLTFLoader }, { RoomEnvironment }] = await Promise.all([
+        import("three"),
+        import("three/examples/jsm/loaders/GLTFLoader.js"),
+        import("three/examples/jsm/environments/RoomEnvironment.js"),
+      ]);
       if (disposed || !mount) return;
 
       const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -53,72 +71,56 @@ export function LoopObject() {
         antialias: true,
         powerPreference: "low-power",
       });
-      // Capped at 2: past that the fill cost doubles again for a smooth surface
-      // nobody can resolve the extra samples on.
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.setSize(mount.clientWidth, mount.clientHeight);
       renderer.setClearAlpha(0);
-      // The page is white, so the object has to be tone-mapped for a light
-      // studio rather than the renderer's default linear output, which crushes
-      // the highlights on a pale material into flat grey.
+      // Tone-mapped for a light studio: the renderer's default linear output
+      // crushes the highlights on a pale ground.
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.04;
+      renderer.toneMappingExposure = 1;
       mount.appendChild(renderer.domElement);
 
       const scene = new THREE.Scene();
-
       const camera = new THREE.PerspectiveCamera(
         34,
         mount.clientWidth / mount.clientHeight,
         0.1,
         50,
       );
-      // Far enough back that the knot never clips its own frame as it turns:
-      // at fov 34 and z 7 the visible height at the origin is 4.3 units against
-      // the knot's 3.3, which leaves a margin at every rotation.
-      camera.position.set(0, 0.5, 7);
+      camera.position.set(0, 0.25, 6.6);
       camera.lookAt(0, 0, 0);
 
       /*
-       * A torus knot rather than a plain torus.
-       *
-       * A plain ring read as a doughnut — flat, and slightly comic. The knot is
-       * still one continuous closed loop, which is the whole metaphor, but it
-       * folds through itself so the light has something to do: you get real
-       * self-shadowing and a highlight that travels, which is what makes it look
-       * like an object rather than a shape.
+       * A procedural environment. The material is authored at metallicFactor
+       * 0.4, and a metallic surface with nothing to reflect renders dull and
+       * grey — the metallic component takes from the diffuse colour and gives
+       * nothing back. RoomEnvironment builds the reflection from geometry in
+       * code, so there is no HDR file and nothing extra is downloaded. PMREM
+       * pre-filters it once; the generator and the source scene are thrown away
+       * immediately and only the cube texture is kept.
        */
-      const geometry = new THREE.TorusKnotGeometry(1.28, 0.38, 220, 32, 2, 3);
-
-      const material = new THREE.MeshPhysicalMaterial({
-        // Deeper and less saturated than the brand fill. On a page this quiet a
-        // neon green object is the loudest thing on screen and undoes the
-        // restraint everything else is built on; this sits with the ink instead
-        // of shouting over it.
-        color: new THREE.Color("#13796a"),
-        roughness: 0.28,
-        metalness: 0,
-        // A ceramic, not a chrome. Clearcoat gives the tight specular highlight
-        // that reads as a glazed surface; metalness would demand an environment
-        // map to reflect, and there is no environment to load.
-        clearcoat: 0.9,
-        clearcoatRoughness: 0.22,
-        sheen: 0.4,
-        sheenColor: new THREE.Color("#a9e6d5"),
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      const roomScene = new RoomEnvironment();
+      const environment = pmrem.fromScene(roomScene, 0.04).texture;
+      scene.environment = environment;
+      pmrem.dispose();
+      roomScene.traverse((node) => {
+        const mesh = node as import("three").Mesh;
+        if (mesh.isMesh) mesh.geometry?.dispose();
       });
 
-      const knot = new THREE.Mesh(geometry, material);
-      scene.add(knot);
-
-      // Three lights, no environment. Hemisphere for the ambient bounce a white
-      // page would really throw back, a warm key from the upper right, and a
-      // cool fill from the left so the shadow side never goes to mud.
-      const hemi = new THREE.HemisphereLight(0xffffff, 0xdfe8ec, 1.15);
-      const key = new THREE.DirectionalLight(0xffffff, 2.1);
+      // Soft, because the environment supplies most of the light now.
+      const hemi = new THREE.HemisphereLight(0xffffff, 0xdfe8ec, 0.35);
+      const key = new THREE.DirectionalLight(0xffffff, 1.15);
       key.position.set(3.2, 4.2, 3.6);
-      const fill = new THREE.DirectionalLight(0x9fe8d8, 0.85);
-      fill.position.set(-4, -1.4, 2.2);
+      const fill = new THREE.DirectionalLight(0xcfe8e0, 0.3);
+      fill.position.set(-4, -1.2, 2.4);
       scene.add(hemi, key, fill);
+
+      // A pivot, so the model can be re-centred inside it and the rotation below
+      // needs to know nothing about where the exporter left the file's origin.
+      const pivot = new THREE.Group();
+      scene.add(pivot);
 
       const pointer = { x: 0, y: 0 };
       const target = { x: 0, y: 0 };
@@ -137,18 +139,15 @@ export function LoopObject() {
       };
 
       const draw = (elapsed: number) => {
-        // Eased towards the pointer, never snapped to it: tracking the cursor
-        // exactly is the tell of a cheap mouse-follow effect.
+        // Eased towards the pointer, never snapped to it: exact tracking is the
+        // tell of a cheap mouse-follow effect.
         pointer.x += (target.x - pointer.x) * 0.045;
         pointer.y += (target.y - pointer.y) * 0.045;
-        knot.rotation.x = -0.24 + pointer.y * 0.5 + Math.sin(elapsed * 0.00013) * 0.06;
-        knot.rotation.y = elapsed * 0.00016 + pointer.x * 0.75;
+        pivot.rotation.x = pointer.y * 0.3;
+        pivot.rotation.y = elapsed * 0.00014 + pointer.x * 0.7;
         renderer.render(scene, camera);
       };
 
-      // Only render while it is actually on screen. A hero object that keeps
-      // drawing while the reader is at the footer is spending their battery on
-      // something nobody is looking at.
       let visible = true;
       const io = new IntersectionObserver(
         ([entry]) => {
@@ -169,30 +168,124 @@ export function LoopObject() {
       });
       ro.observe(mount);
 
-      // One frame immediately, so the object is there the moment the canvas is,
-      // rather than a blank rectangle until the first animation frame lands.
-      draw(0);
-      setReady(true);
+      const disposables: { dispose: () => void }[] = [];
 
-      if (!still) {
+      const start = () => {
+        // One frame synchronously, so the object is there the moment the canvas
+        // is. The first animation frame is not guaranteed to be soon, and never
+        // arrives at all in a background tab.
+        draw(0);
+        setReady(true);
+        if (still) return;
         frame = requestAnimationFrame(loop);
         window.addEventListener("pointermove", onPointer, { passive: true });
+      };
+
+      /*
+       * The atlas, loaded and configured by hand.
+       *
+       * NearestFilter with no mipmaps, and that is not a stylistic choice. The
+       * texture is a 1024x1024 palette: a grid of small solid swatches, mostly
+       * empty white, with every face UV-mapped onto a single swatch — this
+       * model's UVs all land inside a 30-pixel square near the top-left corner.
+       * Linear filtering with mipmaps averages neighbouring swatches together,
+       * and because most of the sheet is white, each mip level marches closer to
+       * white until the model is colourless.
+       */
+      const texture = await new THREE.TextureLoader()
+        .loadAsync("/models/gold-bag-atlas.png")
+        .catch(() => null);
+      if (disposed) return;
+
+      if (texture) {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.magFilter = THREE.NearestFilter;
+        texture.minFilter = THREE.NearestFilter;
+        texture.generateMipmaps = false;
+        // glTF's UV origin is the top-left corner; three's default assumes the
+        // bottom-left, which would sample the empty half of the sheet.
+        texture.flipY = false;
+        disposables.push(texture);
       }
+
+      new GLTFLoader().load(
+        "/models/gold-bag.glb",
+        (gltf) => {
+          if (disposed) return;
+          const model = gltf.scene;
+
+          /*
+           * Normalise the file rather than trusting it. An exported model arrives
+           * at whatever scale and origin the artist worked in — this one is
+           * scaled 100x — so hard-coding a scale means the hero breaks silently
+           * the day the file is swapped. Measuring the bounding box and fitting
+           * it to a target height makes any replacement land correctly.
+           */
+          const box = new THREE.Box3().setFromObject(model);
+          const size = new THREE.Vector3();
+          const centre = new THREE.Vector3();
+          box.getSize(size);
+          box.getCenter(centre);
+
+          const scale = size.y > 0 ? TARGET_HEIGHT / size.y : 1;
+          model.scale.setScalar(scale);
+          // Re-centre on the pivot's origin so it turns about itself rather than
+          // orbiting a point somewhere off in the file's own space.
+          model.position.copy(centre).multiplyScalar(-scale);
+
+          model.traverse((child) => {
+            const mesh = child as import("three").Mesh;
+            if (!mesh.isMesh) return;
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
+            const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+            for (const material of materials) {
+              const standard = material as import("three").MeshStandardMaterial;
+              // The loader left `map` null — see the header note. This is where
+              // the colour actually gets attached.
+              if (texture && !standard.map) {
+                standard.map = texture;
+                standard.needsUpdate = true;
+              }
+              disposables.push(standard);
+            }
+            if (mesh.geometry) disposables.push(mesh.geometry);
+          });
+
+          pivot.add(model);
+          start();
+        },
+        undefined,
+        () => {
+          // The model failed. `ready` stays false and the CSS ring remains, which
+          // is a designed state rather than a hole in the layout.
+        },
+      );
 
       cleanup = () => {
         cancelAnimationFrame(frame);
         io.disconnect();
         ro.disconnect();
         window.removeEventListener("pointermove", onPointer);
-        geometry.dispose();
-        material.dispose();
+        // GPU resources are not garbage collected: a geometry, material or
+        // texture left behind on every navigation is a leak the browser cannot
+        // clear for us.
+        for (const item of disposables) item.dispose();
+        environment.dispose();
         renderer.dispose();
         renderer.domElement.remove();
+        /*
+         * Deliberately NOT `WEBGL_lose_context.loseContext()`.
+         *
+         * Losing the context kills it for the canvas *element*, and React re-runs
+         * effects on the same element — StrictMode on every mount in development,
+         * Fast Refresh on every edit. The second run then gets `null` from
+         * `getContext` and the page silently falls back to the CSS ring, which is
+         * the exact bug this comment exists to prevent someone re-introducing.
+         */
       };
     })().catch(() => {
-      // A hero object is never worth an error boundary. If three.js fails to
-      // load or the GPU refuses a context, `ready` stays false and the CSS ring
-      // underneath simply remains what the reader sees.
+      // three.js or a loader failed. The CSS ring is what remains.
     });
 
     return () => {
@@ -204,12 +297,8 @@ export function LoopObject() {
 
   return (
     <div className={styles.objectWrap}>
-      {/*
-        The stand-in, and the fallback. It is painted first, so the fold is never
-        empty while three.js is still arriving, and it is what remains if the
-        import or the GPU context fails. `data-ready` fades it out once the real
-        object has drawn a frame.
-      */}
+      {/* Painted first, so the fold is never empty while the model is on its way,
+          and it is what remains if anything in the chain fails. */}
       <div className={styles.objectGhost} data-ready={ready} aria-hidden />
       <div className={styles.objectCanvas} ref={mountRef} data-ready={ready} aria-hidden />
     </div>
