@@ -5,6 +5,7 @@ import { BRAND } from "@/lib/brand";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import styles from "./site.module.css";
+import { SiteNavMenu } from "./site-nav-menu";
 import { ThemeSwitch } from "./theme-switch";
 import { ScrollTrigger, revealIn, showNow, useScene } from "./use-gsap";
 
@@ -57,9 +58,13 @@ export function SiteNav() {
       </nav>
       <div className={styles.navActions}>
         <ThemeSwitch />
-        <Link href="/waitlist" className={`${styles.btn} ${styles.btnSmall}`}>
+        {/* The pill is hidden on a phone and its job moves into the menu panel,
+            so the bar is a logo, a switch and one control rather than three
+            competing ones in 350px. */}
+        <Link href="/waitlist" className={`${styles.btn} ${styles.btnSmall} ${styles.navCta}`}>
           Join waitlist
         </Link>
+        <SiteNavMenu links={NAV_LINKS} />
       </div>
     </header>
   );

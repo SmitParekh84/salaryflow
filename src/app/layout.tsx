@@ -74,10 +74,15 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: THEME_COLORS.light },
-    { media: "(prefers-color-scheme: dark)", color: THEME_COLORS.dark },
-  ],
+  /*
+   * One value, not a prefers-color-scheme pair.
+   *
+   * The theme no longer follows the OS — light is the default and dark is opt-in
+   * (see ThemeProvider) — so keying the browser chrome to prefers-color-scheme
+   * gave a dark-OS visitor a light page under a dark band. This is the default,
+   * and ThemeColorSync rewrites it when the reader chooses otherwise.
+   */
+  themeColor: THEME_COLORS.light,
   width: "device-width",
   initialScale: 1,
   // No maximumScale: capping zoom fails WCAG 2.1 AA 1.4.4 (Resize Text). Fields

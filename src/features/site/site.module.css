@@ -169,6 +169,8 @@
 
 .nav {
     align-items: center;
+    /* Containing block for the mobile menu panel. */
+    position: fixed;
     background: rgba(255, 255, 255, .82);
     backdrop-filter: blur(16px) saturate(160%);
     border-bottom: 1px solid transparent;
@@ -178,7 +180,6 @@
     justify-content: space-between;
     left: 0;
     padding: 0 var(--gutter);
-    position: fixed;
     right: 0;
     top: 0;
     transition: border-color var(--dur-base) var(--ease-out),
@@ -268,6 +269,19 @@
     align-items: center;
     display: flex;
     gap: 10px
+}
+
+/* ── Mobile menu ────────────────────────────────────────────────────────────
+   Hidden above the breakpoint, where the links live in the bar itself. The
+   panel is positioned against the nav rather than the viewport so it stays
+   under the bar when the bar changes height. */
+
+.menuButton {
+    display: none
+}
+
+.menuPanel {
+    display: none
 }
 
 /* ── Buttons ────────────────────────────────────────────────────────────── */
@@ -1463,6 +1477,84 @@
 @media (max-width: 620px) {
     .page {
         --gutter: 20px
+    }
+
+    /* 24px icon in a 44px box: WCAG 2.5.5 asks for 44, and the 38px the theme
+       switch uses is under it. Both are bumped here rather than only the new
+       one, because they sit side by side and must match. */
+    .menuButton {
+        align-items: center;
+        background: transparent;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        color: var(--ink);
+        cursor: pointer;
+        display: flex;
+        height: 44px;
+        justify-content: center;
+        padding: 0;
+        width: 44px
+    }
+
+    .menuButton svg {
+        height: 18px;
+        width: 18px
+    }
+
+    .menuButton:focus-visible {
+        outline: 2px solid var(--accent-deep);
+        outline-offset: 3px
+    }
+
+    .themeSwitch {
+        height: 44px;
+        width: 44px
+    }
+
+    /* The bar cannot hold a logo, a switch, a menu and a pill in 350px. The
+       pill's job moves into the panel, where it is the last thing in it. */
+    .navCta {
+        display: none
+    }
+
+    .menuPanel {
+        background: var(--paper);
+        border: 1px solid var(--line-strong);
+        border-radius: 14px;
+        box-shadow: 0 18px 44px rgba(6, 32, 51, .14);
+        display: grid;
+        gap: 6px;
+        padding: 10px;
+        position: absolute;
+        right: var(--gutter);
+        /* Anchored to the bar's own height, so the 8px gap survives the bar
+           changing height when it gains its border on scroll. */
+        top: calc(100% + 8px);
+        width: min(260px, calc(100vw - var(--gutter) * 2));
+        z-index: 60
+    }
+
+    .menuLink {
+        align-items: center;
+        border-radius: 9px;
+        color: var(--ink);
+        display: flex;
+        font-size: 15px;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        min-height: 46px;
+        padding: 0 14px;
+        text-decoration: none
+    }
+
+    .menuLink:focus-visible {
+        outline: 2px solid var(--accent-deep);
+        outline-offset: -2px
+    }
+
+    .menuCta {
+        margin-top: 4px;
+        width: 100%
     }
 
     /* Icon and prose share the first row; the figure drops below rather than
