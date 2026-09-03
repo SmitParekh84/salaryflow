@@ -21,11 +21,16 @@ export function SharedSpendingView() {
 
   const sharedExpenses = useMemo(() => {
     const [year, monthNumber] = month.split("-").map(Number);
-    return newestFirst(expenses).filter((expense) => {
-      if (!expense.shared) return false;
-      const date = parseFinancialDate(expense.date);
-      return date.getFullYear() === year && date.getMonth() + 1 === monthNumber;
-    });
+    // Narrowed before sorting, not after. One month of shared expenses is a
+    // handful of rows; sorting the whole history first to reach them meant
+    // re-sorting everything each time the month picker moved.
+    return newestFirst(
+      expenses.filter((expense) => {
+        if (!expense.shared) return false;
+        const date = parseFinancialDate(expense.date);
+        return date.getFullYear() === year && date.getMonth() + 1 === monthNumber;
+      }),
+    );
   }, [expenses, month]);
 
   const totals = sharedExpenses.reduce(

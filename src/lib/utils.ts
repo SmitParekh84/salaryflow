@@ -110,11 +110,20 @@ export function dateInputToIso(value: string): string {
   return parseFinancialDate(value).toISOString();
 }
 
+/**
+ * Newest first, parsing each date exactly once.
+ *
+ * The comparator used to call parseFinancialDate on both sides of every
+ * comparison, which is O(n log n) parses — each one a regex plus a Date
+ * construction — for a list the expenses page re-sorts on every keystroke in
+ * its filter box. Decorating first makes it O(n), and `sort` on the decorated
+ * array is still stable, so same-day entries keep their original order.
+ */
 export function newestFirst<T extends { date: string }>(items: T[]): T[] {
-  return [...items].sort(
-    (first, second) =>
-      parseFinancialDate(second.date).getTime() - parseFinancialDate(first.date).getTime(),
-  );
+  return items
+    .map((item) => ({ item, time: parseFinancialDate(item.date).getTime() }))
+    .sort((first, second) => second.time - first.time)
+    .map((entry) => entry.item);
 }
 
 export function clamp(n: number, min: number, max: number): number {

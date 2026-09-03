@@ -28,10 +28,25 @@ export function ExpensesView() {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("all");
 
+  /*
+   * Split in two on purpose. The sort and the financial-year test are the only
+   * parts that read dates, and neither depends on what has been typed — folded
+   * into one memo they re-ran on every keystroke, sorting the whole history and
+   * parsing every date again to narrow a list the user was still typing into.
+   * Keyed on `expenses` and the year, they now run when the data changes.
+   */
+  const inFinancialYear = useMemo(
+    () =>
+      newestFirst(expenses).filter((expense) =>
+        isInFinancialYear(expense.date, financialYearStart),
+      ),
+    [expenses, financialYearStart],
+  );
+
+  // Per keystroke this is string comparison over an already-sorted list.
   const filtered = useMemo(() => {
     const term = q.toLowerCase().trim();
-    return newestFirst(expenses)
-      .filter((expense) => isInFinancialYear(expense.date, financialYearStart))
+    return inFinancialYear
       .filter((e) => (cat === "all" ? true : e.category === cat))
       .filter((e) =>
         !term
@@ -42,7 +57,7 @@ export function ExpensesView() {
             e.shared?.friendName.toLowerCase().includes(term) ||
             String(e.amount).includes(term),
       );
-  }, [expenses, financialYearStart, q, cat]);
+  }, [inFinancialYear, q, cat]);
 
   const total = filtered.reduce((s, e) => s + e.amount, 0);
 

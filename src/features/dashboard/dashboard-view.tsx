@@ -95,7 +95,10 @@ export function DashboardView() {
     savedThisCycle: summary.savedThisCycle,
   });
   const insights = buildInsights(summary, pendingBills.length, currency);
-  const recent = newestFirst(expenses).slice(0, 6);
+  // Memoised: this sorts the entire expense history to display six rows, and
+  // without it that ran again on every render of the page — every dropdown
+  // open, every card expanded.
+  const recent = useMemo(() => newestFirst(expenses).slice(0, 6), [expenses]);
   const topGoalPct =
     topGoal && topGoal.target > 0 ? (goalSaved(topGoal, accounts) / topGoal.target) * 100 : 0;
   /*

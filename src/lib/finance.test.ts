@@ -46,7 +46,7 @@ import type {
   Investment,
   SalaryProfile,
 } from "./types";
-import { formatMoney } from "./utils";
+import { formatMoney, newestFirst } from "./utils";
 
 const profile: SalaryProfile = {
   amount: 30_000,
@@ -2539,5 +2539,42 @@ describe("goalsByDeadline", () => {
     const goals = [goal("late", "2027-01-01"), goal("soon", "2026-04-01")];
     goalsByDeadline(goals);
     expect(goals.map((entry) => entry.id)).toEqual(["late", "soon"]);
+  });
+});
+
+describe("newestFirst", () => {
+  it("orders newest to oldest", () => {
+    const ordered = newestFirst([
+      { id: "mid", date: "2026-05-10" },
+      { id: "old", date: "2026-01-02" },
+      { id: "new", date: "2026-09-30" },
+    ]);
+    expect(ordered.map((entry) => entry.id)).toEqual(["new", "mid", "old"]);
+  });
+
+  it("keeps same-day entries in their original order", () => {
+    const ordered = newestFirst([
+      { id: "first", date: "2026-05-10" },
+      { id: "second", date: "2026-05-10" },
+      { id: "third", date: "2026-05-10" },
+    ]);
+    expect(ordered.map((entry) => entry.id)).toEqual(["first", "second", "third"]);
+  });
+
+  it("compares date-only and full-timestamp entries on the same scale", () => {
+    // parseFinancialDate anchors a date-only value at local noon, so a morning
+    // timestamp on the same day sorts below it and an evening one above.
+    const ordered = newestFirst([
+      { id: "noon-only", date: "2026-05-10" },
+      { id: "evening", date: new Date(2026, 4, 10, 20).toISOString() },
+      { id: "morning", date: new Date(2026, 4, 10, 8).toISOString() },
+    ]);
+    expect(ordered.map((entry) => entry.id)).toEqual(["evening", "noon-only", "morning"]);
+  });
+
+  it("does not mutate the list it was given", () => {
+    const items = [{ id: "old", date: "2026-01-02" }, { id: "new", date: "2026-09-30" }];
+    newestFirst(items);
+    expect(items.map((entry) => entry.id)).toEqual(["old", "new"]);
   });
 });
