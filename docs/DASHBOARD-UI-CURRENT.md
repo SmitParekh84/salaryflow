@@ -89,8 +89,9 @@ over a 10px label, active tab marked by a 2px cyan bar along the *top* edge.
    muted subtitle. Grouped monthly bars: income (cyan) vs spending (orange).
 
 8. **Two-column row (2:1)** — "Spending trend · 14 days" area/line chart with
-   "₹X today" in the header, beside a "By category" donut using the 20-hue
-   category palette.
+   "₹X today" in the header, beside a "By category · this cycle" donut using the
+   20-hue category palette. The donut is scoped to the current salary cycle and
+   excludes investments, so its slices add up to the "Total spent" tile.
 
 9. **Two-column row (2:1)** — "Recent transactions": six compact rows, each a
    colored category icon + merchant/note on the left, amount and date right.
@@ -101,6 +102,7 @@ over a 10px label, active tab marked by a 2px cyan bar along the *top* edge.
      rounded-xl chips, each with an Activity glyph, sliding in from the left.
    - **Upcoming bills** — amber clock header, up to 3 rows: category icon + name,
      amount bold with the due date beneath. Empty = green check "No pending bills".
+     The collapsed badge counts *all* pending bills, not just the three listed.
 
 10. **Goals row (2-up)** — "Top goal · <name>" with the projected completion date
     in the header, the saved amount at `text-2xl` bold, "of ₹target" right-aligned,

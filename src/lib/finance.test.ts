@@ -15,7 +15,7 @@ import {
 } from "./allocations";
 import { billCycle, billOccurrenceDate, monthlyBillReserve } from "./bill-cycle";
 import { budgetAllocationTarget, evaluateBudgetRule } from "./budget-rules";
-import { computeSummary, cycleInfo, isInCurrentCycle } from "./calculations";
+import { computeSummary, cycleInfo, isInCurrentCycle, projectedGoalDate } from "./calculations";
 import { creditCardUsage } from "./credit-cards";
 import {
   currentFinancialYearStart,
@@ -2448,5 +2448,40 @@ describe("everyday spending in the funding plan", () => {
     });
 
     expect(plan.everyday.amount).toBe(0);
+  });
+});
+
+describe("projectedGoalDate", () => {
+  const goal: Goal = {
+    id: "bike",
+    name: "Bike",
+    type: "Bike",
+    target: 10_000,
+    saved: 0,
+    monthlyContribution: 10_000,
+  };
+
+  it("does not skip a month when projecting from a day the next month is too short to hold", () => {
+    // One month's contribution away, asked on 31 January: `setMonth(+1)` on the
+    // 31st overflows February and lands in March.
+    expect(projectedGoalDate(goal, [], new Date(2026, 0, 31, 12))).toBe("Feb 2026");
+  });
+
+  it("rolls into the next year", () => {
+    expect(
+      projectedGoalDate({ ...goal, target: 30_000 }, [], new Date(2026, 10, 15, 12)),
+    ).toBe("Feb 2027");
+  });
+
+  it("reports an already-funded goal as achieved", () => {
+    expect(projectedGoalDate({ ...goal, target: 0 }, [], new Date(2026, 0, 31, 12))).toBe(
+      "Achieved",
+    );
+  });
+
+  it("has no projection without a monthly contribution", () => {
+    expect(
+      projectedGoalDate({ ...goal, monthlyContribution: 0 }, [], new Date(2026, 0, 31, 12)),
+    ).toBeNull();
   });
 });

@@ -21,7 +21,7 @@ import { AllocationSheet } from "@/features/goals/allocation-sheet";
 import { useSummary } from "@/hooks/use-summary";
 import { defaultSavingsAccount, goalSaved } from "@/lib/allocations";
 import { billCycle } from "@/lib/bill-cycle";
-import { projectedGoalDate, upcomingBills } from "@/lib/calculations";
+import { isInCurrentCycle, projectedGoalDate, upcomingBills } from "@/lib/calculations";
 import { currentFinancialYearStart, financialYearLabel } from "@/lib/financial-year";
 import { buildFundingPlan } from "@/lib/funding-plan";
 import { useFinanceStore } from "@/lib/store";
@@ -47,7 +47,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export function DashboardView() {
   const profile = useFinanceStore((s) => s.profile);
@@ -68,7 +68,10 @@ export function DashboardView() {
   const currency = profile.currency;
   const financialYearStart = profile.financialYearStart ?? currentFinancialYearStart();
   const topGoal = goals[0];
-  const nextBills = upcomingBills(bills, expenses).slice(0, 3);
+  // The card lists three; the badge and the insight count them all, so a
+  // fourth pending bill is not silently dropped from "you have N bills coming".
+  const pendingBills = upcomingBills(bills, expenses);
+  const nextBills = pendingBills.slice(0, 3);
   const emergencyGoal = goals.find((goal) => goal.type === "Emergency Fund");
   const savingsAccount = defaultSavingsAccount(accounts);
   // When the emergency fund *is* the top goal, the two cards were the same
@@ -85,10 +88,27 @@ export function DashboardView() {
     monthlyIncome: summary.salaryIncome,
     savedThisCycle: summary.savedThisCycle,
   });
-  const insights = buildInsights(summary, nextBills.length);
+  const insights = buildInsights(summary, pendingBills.length, currency);
   const recent = newestFirst(expenses).slice(0, 6);
   const topGoalPct =
     topGoal && topGoal.target > 0 ? (goalSaved(topGoal, accounts) / topGoal.target) * 100 : 0;
+  /*
+   * The donut's slices have to add up to the "Total spent" tile, which is this
+   * cycle and excludes investments — the tile beside it counts those. Handed
+   * the raw list it summed every expense ever recorded, so it was the one
+   * figure on a page of cycle numbers that quietly meant something else.
+   * Memoised because the chart keys its own aggregation off this array.
+   */
+  const cycleSpending = useMemo(
+    () =>
+      expenses.filter(
+        (expense) => expense.category !== "Investment" && isInCurrentCycle(expense.date, profile),
+      ),
+    [expenses, profile],
+  );
+  const emergencySaved = emergency ? goalSaved(emergency, accounts) : 0;
+  const emergencyPct =
+    emergency && emergency.target > 0 ? (emergencySaved / emergency.target) * 100 : 0;
 
   return (
     <div className="space-y-4">
@@ -423,10 +443,10 @@ export function DashboardView() {
           <div className="grid items-start gap-4 sm:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>By category</CardTitle>
+                <CardTitle>By category · this cycle</CardTitle>
               </CardHeader>
               <CardContent>
-                <CategoryDonutStacked expenses={expenses} currency={currency} stacked />
+                <CategoryDonutStacked expenses={cycleSpending} currency={currency} stacked />
               </CardContent>
             </Card>
 
@@ -460,7 +480,7 @@ export function DashboardView() {
                 icon={CalendarClock}
                 iconClassName="text-warning"
                 title="Upcoming bills"
-                count={nextBills.length}
+                count={pendingBills.length}
               >
                 <CardContent className="space-y-2 pt-2">
                   {nextBills.length === 0 && (
@@ -510,31 +530,33 @@ export function DashboardView() {
             <Card>
               <CardHeader className="flex items-center justify-between">
                 <CardTitle>Emergency fund</CardTitle>
-                <span className="text-xs font-medium text-success">
-                  {emergency.target > 0
-                    ? Math.round((goalSaved(emergency, accounts) / emergency.target) * 100)
-                    : 0}
-                  % funded
+                {/* Clamped, like the top-goal card below it — the two sat side
+                    by side reporting the same kind of progress on different
+                    scales. Green only once it is actually funded: a 30% buffer
+                    printed in the success colour reads as an all-clear. */}
+                <span
+                  className={cn(
+                    "text-xs font-medium",
+                    emergencyPct >= 100 ? "text-success" : "text-muted",
+                  )}
+                >
+                  {Math.round(Math.min(100, emergencyPct))}% funded
                 </span>
               </CardHeader>
               <CardContent className="pt-3">
                 <div className="mb-2 flex items-end justify-between">
                   <span className="text-2xl font-bold">
-                    {formatMoney(goalSaved(emergency, accounts), currency, true)}
+                    {formatMoney(emergencySaved, currency, true)}
                   </span>
                   <span className="text-xs text-muted">
                     target {formatMoney(emergency.target, currency, true)}
                   </span>
                 </div>
                 <Progress
-                  value={
-                    emergency.target > 0
-                      ? (goalSaved(emergency, accounts) / emergency.target) * 100
-                      : 0
-                  }
+                  value={emergencyPct}
                   color="var(--success)"
                   label="Emergency fund progress"
-                  valueText={`${formatMoney(goalSaved(emergency, accounts), currency)} of ${formatMoney(emergency.target, currency)}`}
+                  valueText={`${formatMoney(emergencySaved, currency)} of ${formatMoney(emergency.target, currency)}`}
                 />
               </CardContent>
             </Card>
@@ -635,13 +657,19 @@ function healthLabel(score: number): string {
   return "Needs work";
 }
 
-function buildInsights(s: ReturnType<typeof useSummary>, billCount: number): string[] {
+function buildInsights(
+  s: ReturnType<typeof useSummary>,
+  billCount: number,
+  currency: string,
+): string[] {
   const out: string[] = [];
   if (s.status === "red")
     out.push("You've spent more than today's budget. Try to slow down tomorrow.");
   else if (s.status === "green")
     out.push("Great pacing — you're spending within your daily safe limit.");
-  out.push(`You can safely spend about ${formatMoney(s.safeToSpendPerDay)} per day until salary.`);
+  out.push(
+    `You can safely spend about ${formatMoney(s.safeToSpendPerDay, currency)} per day until salary.`,
+  );
   if (s.savingsRate >= 20)
     out.push(`Strong ${Math.round(s.savingsRate)}% savings rate this cycle. Keep it up!`);
   else out.push(`Savings rate is ${Math.round(s.savingsRate)}%. Aim for 20%+ if you can.`);

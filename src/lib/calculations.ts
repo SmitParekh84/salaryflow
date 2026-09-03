@@ -369,14 +369,21 @@ function financialHealthScore(p: {
   return Math.round(Math.max(0, Math.min(100, score)));
 }
 
-export function projectedGoalDate(goal: Goal, accounts: BankAccount[] = []): string | null {
+export function projectedGoalDate(
+  goal: Goal,
+  accounts: BankAccount[] = [],
+  now = new Date(),
+): string | null {
   if (goal.monthlyContribution <= 0) return null;
   const remaining = goal.target - goalSaved(goal, accounts);
   if (remaining <= 0) return "Achieved";
   const months = Math.ceil(remaining / goal.monthlyContribution);
-  const d = new Date();
-  d.setMonth(d.getMonth() + months);
-  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  // Built from year and month rather than `setMonth` on today's date: on the
+  // 31st, `setMonth(+1)` overflows a 30-day month and lands in the one after,
+  // so a one-month projection made on 31 Jan read "Mar". Day 1 because only
+  // the month and year are printed.
+  const projected = new Date(now.getFullYear(), now.getMonth() + months, 1);
+  return projected.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
 export function upcomingBills(bills: Bill[], expenses: Expense[] = [], now = new Date()): Bill[] {

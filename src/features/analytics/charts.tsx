@@ -62,7 +62,11 @@ export function SpendTrendChart({
       map.set(d.toDateString(), 0);
     }
     for (const e of expenses) {
-      const key = new Date(e.date).toDateString();
+      // parseFinancialDate, not `new Date`: a date-only "2026-09-03" parses as
+      // UTC midnight and buckets into the previous day west of UTC, so the same
+      // expense landed on a different bar than the "spent today" figure the
+      // dashboard prints in this card's header (that one parses it correctly).
+      const key = parseFinancialDate(e.date).toDateString();
       if (map.has(key)) map.set(key, (map.get(key) ?? 0) + e.amount);
     }
     return Array.from(map.entries()).map(([k, v]) => ({
