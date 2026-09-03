@@ -19,6 +19,7 @@ import type { Bill, BillFrequency } from "@/lib/types";
 import {
   currencySymbol,
   dateInputToIso,
+  formatDate,
   formatMoney,
   localDateInputValue,
   parseFinancialDate,
@@ -258,7 +259,20 @@ export function BillsView() {
                   chipClassName="h-11 w-11 rounded-xl"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{b.name}</p>
+                  <p className="flex min-w-0 items-center gap-1.5 text-sm font-semibold">
+                    <span className="truncate">{b.name}</span>
+                    {/* A stored maturity date had no way of being seen: the
+                        model keeps it and the seed writes it, but nothing read
+                        it, so a term policy's end date was invisible on the one
+                        page about that policy. It still does not stop the bill
+                        recurring — that needs a product decision, recorded in
+                        SUGGESTIONS.md §6. */}
+                    {b.maturityDate && (
+                      <span className="shrink-0 text-[11px] font-normal text-muted">
+                        matures {formatDate(b.maturityDate)}
+                      </span>
+                    )}
+                  </p>
                   <div className="mt-0.5 flex items-center gap-2">
                     <span className="text-xs text-muted">
                       {b.category === "Utilities"

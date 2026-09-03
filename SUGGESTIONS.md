@@ -151,3 +151,29 @@ From the Deferred section of `docs/superpowers/specs/2026-08-16-finance-assistan
 One operational note: the free Gemini tier allows roughly 20 requests a day. The client already
 falls through a list of models on quota errors, but a paid key is the real fix if the assistant
 gets daily use.
+
+---
+
+## 6. A matured bill keeps billing forever
+
+`Bill.maturityDate` is stored — it is in the type, the Mongo model and the demo
+seed's term-insurance row — but no calculation reads it. `billOccurrenceDate`
+never consults it, so a policy or contract that has reached the end of its term
+keeps producing a new occurrence every period: it stays in "Upcoming bills",
+and `monthlyBillReserve` keeps holding money back for it in the funding plan.
+The bills page now at least *shows* the date, so the field is no longer
+invisible, but nothing acts on it.
+
+Not fixed yet because it needs a product decision rather than a patch:
+
+- **Suppress after maturity** — past the date the bill produces no occurrence
+  and drops out of upcoming bills and reserves. Correct for a term insurance
+  premium, which genuinely stops. Changes money math, so it wants tests around
+  the boundary and a decision about what the bills page shows instead of a due
+  date (a "Matured" badge beside the existing Paid/Overdue/Pending set).
+- **Informational only** — maturity is metadata about the contract and the user
+  deletes the bill when it ends. Then the field is already done, and the only
+  question is whether the bills page should warn as the date approaches.
+
+Nothing in the current data has matured (the seed's policy runs to 2053), so
+this is not biting today.

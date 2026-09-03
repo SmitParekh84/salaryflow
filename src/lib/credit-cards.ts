@@ -8,8 +8,17 @@ function dayInMonth(year: number, month: number, day: number) {
 
 export function creditCardStatementPeriod(card: CreditCard, now = new Date()) {
   const currentStatement = dayInMonth(now.getFullYear(), now.getMonth(), card.statementDay);
+  /*
+   * Compared as calendar days, not as moments. `dayInMonth` builds the
+   * statement day at noon, so testing `now` against it flipped the period to
+   * next month's halfway through the very day the statement closed: a charge
+   * made on the 20th read as still accruing at 09:00 and as already billed at
+   * 14:00. Midnight-today against noon-of-that-day answers the question that
+   * was meant — is the closing day still ahead of us, or here?
+   */
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const statementEnd =
-    now <= currentStatement
+    today <= currentStatement
       ? currentStatement
       : dayInMonth(now.getFullYear(), now.getMonth() + 1, card.statementDay);
   const previousStatement = dayInMonth(
@@ -38,7 +47,15 @@ export function creditCardUsage(
   now = new Date(),
 ) {
   const { start, end, previousStatementEnd } = creditCardStatementPeriod(card, now);
-  const isRecorded = (date: string) => parseFinancialDate(date) <= now;
+  /*
+   * Recorded means "dated today or earlier", not "timestamped before this
+   * instant". Stored dates are day values anchored at local noon, so comparing
+   * them against `now` hid every charge and payment entered this morning until
+   * midday — understating the outstanding balance, and with it the transfer the
+   * funding plan asks you to make to clear the card.
+   */
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const isRecorded = (date: string) => parseFinancialDate(date) <= endOfToday;
 
   const cardCharges = expenses.filter(
     (expense) => expense.accountId === card.id && isRecorded(expense.date),

@@ -22,7 +22,7 @@ import {
   isInCurrentCycle,
   projectedGoalDate,
 } from "./calculations";
-import { creditCardUsage } from "./credit-cards";
+import { creditCardStatementPeriod, creditCardUsage } from "./credit-cards";
 import {
   currentFinancialYearStart,
   financialYearMonths,
@@ -2637,5 +2637,100 @@ describe("an expense recorded earlier today", () => {
   it("still excludes an expense from before the cycle started", () => {
     const lastCycle = dateInputToIso(localDateInputValue(new Date(2026, 7, 20)));
     expect(isInCurrentCycle(lastCycle, profile, morning)).toBe(false);
+  });
+});
+
+describe("a card charge made earlier today", () => {
+  /*
+   * Same root cause as the salary-cycle filter: stored dates are day values
+   * anchored at local noon, so testing them against `now` asked whether midday
+   * had passed. A charge or payment entered in the morning was treated as not
+   * yet recorded, which understated the card's outstanding balance — and that
+   * figure is what the funding plan tells you to transfer.
+   */
+  const card: CreditCard = {
+    id: "hdfc",
+    name: "HDFC",
+    bankName: "HDFC",
+    creditLimit: 100_000,
+    statementDay: 20,
+    status: "active",
+  };
+
+  const morning = new Date(2026, 7, 12, 9, 0);
+  const evening = new Date(2026, 7, 12, 21, 0);
+  const today = dateInputToIso(localDateInputValue(morning));
+  const charge = expense({ id: "c1", amount: 2_500, accountId: "hdfc", date: today });
+
+  it("counts toward charges before noon", () => {
+    expect(creditCardUsage(card, [charge], [], morning).charges).toBe(2_500);
+  });
+
+  it("counts toward the outstanding balance before noon", () => {
+    expect(creditCardUsage(card, [charge], [], morning).outstanding).toBe(2_500);
+  });
+
+  it("reports the same balance in the morning as in the evening", () => {
+    expect(creditCardUsage(card, [charge], [], morning).outstanding).toBe(
+      creditCardUsage(card, [charge], [], evening).outstanding,
+    );
+  });
+
+  it("still ignores a charge dated tomorrow", () => {
+    const tomorrow = dateInputToIso(localDateInputValue(new Date(2026, 7, 13)));
+    const future = expense({ id: "c2", amount: 900, accountId: "hdfc", date: tomorrow });
+    expect(creditCardUsage(card, [future], [], morning).charges).toBe(0);
+  });
+
+  it("credits a payment made this morning", () => {
+    const usage = creditCardUsage(
+      card,
+      [charge],
+      [{ id: "p1", amount: 1_000, accountId: "hdfc", date: today, type: "Other" } as Income],
+      morning,
+    );
+    expect(usage.credits).toBe(1_000);
+    expect(usage.outstanding).toBe(1_500);
+  });
+});
+
+describe("the statement period on the statement day itself", () => {
+  /*
+   * The boundary was `now <= currentStatement`, and the statement day is built
+   * at noon — so the period flipped to next month's halfway through the day it
+   * closed. A statement closing on the 20th includes the 20th, all of it.
+   */
+  const card: CreditCard = {
+    id: "axis",
+    name: "Axis",
+    bankName: "Axis",
+    creditLimit: 50_000,
+    statementDay: 20,
+    status: "active",
+  };
+
+  it("still closes today when asked in the morning", () => {
+    const period = creditCardStatementPeriod(card, new Date(2026, 7, 20, 9, 0));
+    expect(period.end.getDate()).toBe(20);
+    expect(period.end.getMonth()).toBe(7);
+  });
+
+  it("still closes today when asked in the evening", () => {
+    const period = creditCardStatementPeriod(card, new Date(2026, 7, 20, 21, 0));
+    expect(period.end.getDate()).toBe(20);
+    expect(period.end.getMonth()).toBe(7);
+  });
+
+  it("keeps a charge made on the closing day on the statement that is closing", () => {
+    const onClosingDay = dateInputToIso(localDateInputValue(new Date(2026, 7, 20)));
+    const charge = expense({ id: "c1", amount: 700, accountId: "axis", date: onClosingDay });
+    const usage = creditCardUsage(card, [charge], [], new Date(2026, 7, 20, 21, 0));
+    expect(usage.currentOutstanding).toBe(700);
+    expect(usage.billedOutstanding).toBe(0);
+  });
+
+  it("moves to next month's close the day after", () => {
+    const period = creditCardStatementPeriod(card, new Date(2026, 7, 21, 9, 0));
+    expect(period.end.getMonth()).toBe(8);
   });
 });
