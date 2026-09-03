@@ -5,7 +5,7 @@ import { MerchantIcon } from "@/components/merchant-icon";
 import { Button } from "@/components/ui/button";
 import { useFinanceStore } from "@/lib/store";
 import type { Expense } from "@/lib/types";
-import { cn, formatMoney } from "@/lib/utils";
+import { cn, formatDate, formatMoney } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { Heart, Pencil, Trash2, Users } from "lucide-react";
 import { useMemo } from "react";
@@ -189,12 +189,11 @@ export function TransactionList({
                */}
               <div className="text-right">
                 <p className="text-sm font-semibold">−{formatMoney(e.amount, currency)}</p>
-                <p className="text-[11px] text-muted">
-                  {new Date(e.date).toLocaleDateString("en-US", {
-                    day: "numeric",
-                    month: "short",
-                  })}
-                </p>
+                {/* formatDate, not `new Date`: it is the same two fields with
+                    the date parsed the way the rest of the app parses it. A
+                    date-only value read raw is UTC midnight, which prints as
+                    the previous day for anyone west of UTC. */}
+                <p className="text-[11px] text-muted">{formatDate(e.date)}</p>
               </div>
             </motion.div>
           );

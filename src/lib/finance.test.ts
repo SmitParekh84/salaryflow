@@ -46,7 +46,7 @@ import type {
   Investment,
   SalaryProfile,
 } from "./types";
-import { formatMoney, newestFirst } from "./utils";
+import { dateInputToIso, formatMoney, localDateInputValue, newestFirst } from "./utils";
 
 const profile: SalaryProfile = {
   amount: 30_000,
@@ -2576,5 +2576,66 @@ describe("newestFirst", () => {
     const items = [{ id: "old", date: "2026-01-02" }, { id: "new", date: "2026-09-30" }];
     newestFirst(items);
     expect(items.map((entry) => entry.id)).toEqual(["old", "new"]);
+  });
+});
+
+describe("an expense recorded earlier today", () => {
+  /*
+   * Dates in this app are day values, not instants: the expense form stores
+   * `dateInputToIso(...)`, which anchors the chosen day at local noon. Comparing
+   * that stamp against the current instant meant everything recorded before
+   * noon fell outside its own cycle — so until midday, money you had already
+   * spent was still being offered as safe to spend.
+   */
+  const profile: SalaryProfile = {
+    amount: 100_000,
+    salaryDay: 1,
+    cycle: "monthly",
+    currency: "INR",
+  } as SalaryProfile;
+
+  const morning = new Date(2026, 8, 15, 9, 0);
+  const evening = new Date(2026, 8, 15, 21, 0);
+  const today = dateInputToIso(localDateInputValue(morning));
+
+  const spend = (now: Date) =>
+    computeSummary(
+      profile,
+      [{ id: "e1", date: today, amount: 500, category: "Food", paymentMethod: "UPI" } as Expense],
+      [],
+      [],
+      [],
+      [],
+      undefined,
+      [],
+      [],
+      now,
+    );
+
+  it("falls inside the current cycle before noon", () => {
+    expect(isInCurrentCycle(today, profile, morning)).toBe(true);
+  });
+
+  it("counts toward this cycle's spending before noon", () => {
+    expect(spend(morning).totalExpenses).toBe(500);
+  });
+
+  it("counts as spent today before noon", () => {
+    expect(spend(morning).spentToday).toBe(500);
+  });
+
+  it("reports the same figures in the morning as in the evening", () => {
+    expect(spend(morning).totalExpenses).toBe(spend(evening).totalExpenses);
+    expect(spend(morning).spentToday).toBe(spend(evening).spentToday);
+  });
+
+  it("still excludes an expense dated tomorrow", () => {
+    const tomorrow = dateInputToIso(localDateInputValue(new Date(2026, 8, 16)));
+    expect(isInCurrentCycle(tomorrow, profile, morning)).toBe(false);
+  });
+
+  it("still excludes an expense from before the cycle started", () => {
+    const lastCycle = dateInputToIso(localDateInputValue(new Date(2026, 7, 20)));
+    expect(isInCurrentCycle(lastCycle, profile, morning)).toBe(false);
   });
 });

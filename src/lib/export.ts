@@ -1,4 +1,5 @@
 import type { Expense } from "./types";
+import { localDateInputValue, parseFinancialDate } from "./utils";
 
 export function exportExpensesCsv(expenses: Expense[]): string {
   const header = [
@@ -11,7 +12,19 @@ export function exportExpensesCsv(expenses: Expense[]): string {
     "Recurring",
   ];
   const rows = expenses.map((e) => [
-    new Date(e.date).toISOString().slice(0, 10),
+    /*
+     * The local calendar day, not the UTC one.
+     *
+     * `toISOString().slice(0, 10)` reports the day in UTC, which is a different
+     * day from the one on screen whenever the stored time falls on the far side
+     * of midnight UTC — before 05:30 for IST, and in the evening for anywhere
+     * west of UTC. Rows the forms wrote are safe either way, because those are
+     * anchored at local noon; it is imported rows and anything stamped with a
+     * real `new Date()` that could export a day off from what the app displays,
+     * moving a row into the wrong month at a boundary. Reading the date the way
+     * the rest of the app reads it makes the column timezone-independent.
+     */
+    localDateInputValue(parseFinancialDate(e.date)),
     String(e.amount),
     e.category,
     e.merchant ?? "",

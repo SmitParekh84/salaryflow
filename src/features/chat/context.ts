@@ -1,6 +1,7 @@
 import { monthlyBillCost } from "@/lib/bill-cycle";
 import { ageOn } from "@/lib/date-of-birth";
 import type { BankAccount, Bill, Expense, Goal, Investment, SalaryProfile } from "@/lib/types";
+import { parseFinancialDate } from "@/lib/utils";
 
 /* ---------------------------------------------------------------------------
    The assistant's view of a user's finances.
@@ -74,10 +75,26 @@ export function buildFinancialContext(input: FinancialContextInput): FinancialCo
   const { salary, expenses, bills, investments, goals, accounts, profile } = input;
   const now = input.now ?? new Date();
   const windowStart = now.getTime() - WINDOW_DAYS * 86_400_000;
+  /*
+   * The window closes at the end of today, and dates are read the way the rest
+   * of the app reads them. Stored dates are day values anchored at local noon,
+   * so comparing them against `now` asked whether midday had passed: anything
+   * recorded this morning was dropped, and the assistant answered questions
+   * about today's spending having been told none of it happened.
+   */
+  const windowEnd = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    23,
+    59,
+    59,
+    999,
+  ).getTime();
 
   const recentSpend = expenses.filter((item) => {
-    const at = new Date(item.date).getTime();
-    if (Number.isNaN(at) || at < windowStart || at > now.getTime()) return false;
+    const at = parseFinancialDate(item.date).getTime();
+    if (Number.isNaN(at) || at < windowStart || at > windowEnd) return false;
     // Moving money into an investment is not consumption.
     if (item.category === "Investment") return false;
     // A bill's own expense row is counted via the bill, not here.

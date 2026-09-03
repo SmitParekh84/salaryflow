@@ -71,7 +71,24 @@ export function isInCurrentCycle(
 ): boolean {
   const { cycleStart } = cycleInfo(profile, now);
   const date = parseFinancialDate(isoDate);
-  return date >= cycleStart && date <= now;
+  /*
+   * Bounded by the end of today, not by this instant.
+   *
+   * Dates here are day values, not moments: the forms store
+   * `dateInputToIso(...)`, which anchors the chosen day at local noon, and
+   * parseFinancialDate reads a date-only string back the same way. Comparing
+   * that stamp against `now` therefore asked whether noon had happened yet —
+   * so an expense recorded at 09:00 fell outside its own cycle and only
+   * appeared at midday, taking `totalExpenses`, `spentToday`, the health
+   * score, the budget rule and safe-to-spend with it. Every figure on the
+   * dashboard was a morning understatement, and safe-to-spend in particular
+   * offered money that had already been spent.
+   *
+   * The upper bound still exists to keep future-dated rows out, and an expense
+   * dated tomorrow is excluded exactly as before.
+   */
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  return date >= cycleStart && date <= endOfToday;
 }
 
 export interface FinanceSummary {

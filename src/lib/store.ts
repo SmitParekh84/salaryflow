@@ -33,7 +33,7 @@ import type {
   UserProfile,
 } from "./types";
 import { completeTransferWrite } from "./transfer-writes";
-import { localDateInputValue, uid } from "./utils";
+import { formatDate, localDateInputValue, uid } from "./utils";
 import { withCorrectedBalance } from "./account-verification";
 import { pruneReviewedDates } from "./catch-up";
 import type { ImportPlan } from "./statement-import";
@@ -934,7 +934,7 @@ export const useFinanceStore = create<FinanceState>()(
             recycleItem(
               "salary-history",
               id,
-              item.source || `Salary from ${new Date(item.date).toLocaleDateString()}`,
+              item.source || `Salary from ${formatDate(item.date)}`,
               item,
             ),
             ...state.recycleBin,
