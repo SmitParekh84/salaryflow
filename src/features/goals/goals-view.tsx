@@ -13,7 +13,7 @@ import { goalContributionStep, projectGoal, whatIfDelta } from "@/lib/goal-proje
 import { GOAL_TYPES } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import type { BankAccount, Goal, GoalType } from "@/lib/types";
-import { formatMoney } from "@/lib/utils";
+import { formatDate, formatMoney, localDateInputValue, parseFinancialDate } from "@/lib/utils";
 import {
   Bike,
   CircleCheck,
@@ -32,6 +32,7 @@ const EMPTY_FORM = {
   target: 0,
   monthlyContribution: 0,
   preferredAccountId: "",
+  deadline: "",
 };
 
 export function GoalsView() {
@@ -64,6 +65,10 @@ export function GoalsView() {
       target: goal.target,
       monthlyContribution: goal.monthlyContribution,
       preferredAccountId: goal.preferredAccountId ?? "",
+      // Through localDateInputValue rather than slicing the ISO string: a
+      // stored "…T18:30:00.000Z" is the next day's evening in IST, and slicing
+      // would show the input a day earlier than the date that was saved.
+      deadline: goal.deadline ? localDateInputValue(parseFinancialDate(goal.deadline)) : "",
     });
     setOpen(true);
   };
@@ -73,6 +78,7 @@ export function GoalsView() {
     const goal = {
       ...form,
       preferredAccountId: form.preferredAccountId || undefined,
+      deadline: form.deadline || undefined,
     };
     if (editingId) updateGoal(editingId, goal);
     else addGoal({ ...goal, saved: 0 });
@@ -209,6 +215,17 @@ export function GoalsView() {
               />
             </div>
           </div>
+          <div>
+            <Label>Deadline (optional)</Label>
+            <Input
+              type="date"
+              value={form.deadline}
+              onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+            />
+            <p className="mt-1.5 text-xs text-muted">
+              The dashboard shows whichever goal is due soonest as your top goal.
+            </p>
+          </div>
           <ModalFooter>
             <Button variant="secondary" onClick={() => setOpen(false)}>
               Cancel
@@ -275,7 +292,10 @@ function GoalCard({
             </div>
             <div>
               <p className="text-sm font-semibold">{goal.name}</p>
-              <p className="text-xs text-muted">{goal.type}</p>
+              <p className="text-xs text-muted">
+                {goal.type}
+                {goal.deadline && ` · by ${formatDate(goal.deadline)}`}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-1">

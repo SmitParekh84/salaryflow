@@ -15,7 +15,13 @@ import {
 } from "./allocations";
 import { billCycle, billOccurrenceDate, monthlyBillReserve } from "./bill-cycle";
 import { budgetAllocationTarget, evaluateBudgetRule } from "./budget-rules";
-import { computeSummary, cycleInfo, isInCurrentCycle, projectedGoalDate } from "./calculations";
+import {
+  computeSummary,
+  cycleInfo,
+  goalsByDeadline,
+  isInCurrentCycle,
+  projectedGoalDate,
+} from "./calculations";
 import { creditCardUsage } from "./credit-cards";
 import {
   currentFinancialYearStart,
@@ -2483,5 +2489,55 @@ describe("projectedGoalDate", () => {
     expect(
       projectedGoalDate({ ...goal, monthlyContribution: 0 }, [], new Date(2026, 0, 31, 12)),
     ).toBeNull();
+  });
+});
+
+describe("goalsByDeadline", () => {
+  const goal = (id: string, deadline?: string): Goal => ({
+    id,
+    name: id,
+    type: "Vacation",
+    target: 10_000,
+    saved: 0,
+    monthlyContribution: 1_000,
+    deadline,
+  });
+
+  const ids = (goals: Goal[]) => goalsByDeadline(goals).map((entry) => entry.id);
+
+  it("puts the soonest deadline first", () => {
+    expect(ids([goal("late", "2027-01-01"), goal("soon", "2026-04-01")])).toEqual(["soon", "late"]);
+  });
+
+  it("treats a missed deadline as the most urgent, not the least", () => {
+    expect(ids([goal("future", "2027-01-01"), goal("overdue", "2020-01-01")])).toEqual([
+      "overdue",
+      "future",
+    ]);
+  });
+
+  it("sorts undated goals after dated ones, keeping their existing order", () => {
+    expect(ids([goal("first"), goal("second"), goal("dated", "2026-06-01")])).toEqual([
+      "dated",
+      "first",
+      "second",
+    ]);
+  });
+
+  it("treats an unparseable deadline as undated rather than sorting on NaN", () => {
+    expect(ids([goal("junk", "next summer"), goal("dated", "2026-06-01")])).toEqual([
+      "dated",
+      "junk",
+    ]);
+  });
+
+  it("leaves an all-undated list in its original order", () => {
+    expect(ids([goal("a"), goal("b"), goal("c")])).toEqual(["a", "b", "c"]);
+  });
+
+  it("does not mutate the list it was given", () => {
+    const goals = [goal("late", "2027-01-01"), goal("soon", "2026-04-01")];
+    goalsByDeadline(goals);
+    expect(goals.map((entry) => entry.id)).toEqual(["late", "soon"]);
   });
 });

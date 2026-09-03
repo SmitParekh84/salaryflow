@@ -21,7 +21,12 @@ import { AllocationSheet } from "@/features/goals/allocation-sheet";
 import { useSummary } from "@/hooks/use-summary";
 import { defaultSavingsAccount, goalSaved } from "@/lib/allocations";
 import { billCycle } from "@/lib/bill-cycle";
-import { isInCurrentCycle, projectedGoalDate, upcomingBills } from "@/lib/calculations";
+import {
+  goalsByDeadline,
+  isInCurrentCycle,
+  projectedGoalDate,
+  upcomingBills,
+} from "@/lib/calculations";
 import { currentFinancialYearStart, financialYearLabel } from "@/lib/financial-year";
 import { buildFundingPlan } from "@/lib/funding-plan";
 import { useFinanceStore } from "@/lib/store";
@@ -67,7 +72,8 @@ export function DashboardView() {
 
   const currency = profile.currency;
   const financialYearStart = profile.financialYearStart ?? currentFinancialYearStart();
-  const topGoal = goals[0];
+  // Whichever goal runs out of time first, not whichever was created first.
+  const topGoal = goalsByDeadline(goals)[0];
   // The card lists three; the badge and the insight count them all, so a
   // fourth pending bill is not silently dropped from "you have N bills coming".
   const pendingBills = upcomingBills(bills, expenses);

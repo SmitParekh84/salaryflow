@@ -386,6 +386,34 @@ export function projectedGoalDate(
   return projected.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
+/**
+ * Goals in the order they need attention: soonest deadline first, then the
+ * undated ones in the order they were created.
+ *
+ * A deadline already missed is the most urgent thing on the list rather than
+ * the least, so past dates sort to the front instead of being dropped. The
+ * field is stored as free text, so anything that will not parse as a date is
+ * treated as undated rather than sorted on a NaN — an inconsistent comparator
+ * gives an implementation-defined order for the whole list, not just the bad
+ * row. `sort` is stable, so equal entries keep their existing order.
+ */
+export function goalsByDeadline(goals: Goal[]): Goal[] {
+  const dueTime = (goal: Goal): number | undefined => {
+    if (!goal.deadline) return undefined;
+    const time = parseFinancialDate(goal.deadline).getTime();
+    return Number.isNaN(time) ? undefined : time;
+  };
+
+  return [...goals].sort((first, second) => {
+    const firstDue = dueTime(first);
+    const secondDue = dueTime(second);
+    if (firstDue === undefined && secondDue === undefined) return 0;
+    if (firstDue === undefined) return 1;
+    if (secondDue === undefined) return -1;
+    return firstDue - secondDue;
+  });
+}
+
 export function upcomingBills(bills: Bill[], expenses: Expense[] = [], now = new Date()): Bill[] {
   return [...bills]
     .filter((bill) => !billCycle(bill, expenses, now).isPaid)
