@@ -7,6 +7,7 @@ import { useHydrated } from "@/hooks/use-hydrated";
 import { useNotificationSync } from "@/hooks/use-notification-sync";
 import { NAV_ITEMS } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
+import { MotionConfig } from "framer-motion";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -132,36 +133,53 @@ export default function AppLayoutClient({ children }: { children: React.ReactNod
   );
   const showBack = !isNavDestination || Boolean(settingsSectionTitle);
 
+  /*
+   * The `prefers-reduced-motion` block in globals.css cannot reach
+   * framer-motion: those transforms are written to inline styles frame by frame
+   * from JS, and no CSS rule overrides an inline one. Sidebar and the auth page
+   * each call useReducedMotion() by hand; the other seven motion components —
+   * the stat tiles, the safe-to-spend figure, the insight rows, the modal, the
+   * transaction rows, onboarding, the install prompt — did not, so someone who
+   * had asked their OS for less motion still got every slide and scale.
+   *
+   * `reducedMotion="user"` reads the same media query and drops transform and
+   * layout animation while keeping opacity, which is the Apple HIG reading of
+   * the setting and what the CSS block already does for everything else. One
+   * context provider, no per-frame cost, and it covers components that never
+   * asked for it.
+   */
   return (
-    <div className="min-h-screen">
-      <Sidebar />
-      <div className="lg:pl-64">
-        <TopBar
-          title={title}
-          showBack={showBack}
-          onBack={goBack}
-          /*
-           * Shown in both nav modes, because with "More" gone from the bottom bar
-           * the drawer is the only route to the sections that are not tabs — but
-           * only where there is no back arrow, so the two never share the corner.
-           */
-          showHamburger={!showBack}
-          onHamburger={() => setHamburgerOpen(true)}
-        />
-        <main
-          className="mx-auto max-w-6xl px-4 pt-5 sm:pt-6 lg:px-8 lg:pb-12"
-          style={{
-            paddingBottom: isHamburger
-              ? "max(1.5rem, env(safe-area-inset-bottom))"
-              : "calc(5rem + env(safe-area-inset-bottom))",
-          }}
-        >
-          {children}
-        </main>
-      </div>
+    <MotionConfig reducedMotion="user">
+      <div className="min-h-screen">
+        <Sidebar />
+        <div className="lg:pl-64">
+          <TopBar
+            title={title}
+            showBack={showBack}
+            onBack={goBack}
+            /*
+             * Shown in both nav modes, because with "More" gone from the bottom bar
+             * the drawer is the only route to the sections that are not tabs — but
+             * only where there is no back arrow, so the two never share the corner.
+             */
+            showHamburger={!showBack}
+            onHamburger={() => setHamburgerOpen(true)}
+          />
+          <main
+            className="mx-auto max-w-6xl px-4 pt-5 sm:pt-6 lg:px-8 lg:pb-12"
+            style={{
+              paddingBottom: isHamburger
+                ? "max(1.5rem, env(safe-area-inset-bottom))"
+                : "calc(5rem + env(safe-area-inset-bottom))",
+            }}
+          >
+            {children}
+          </main>
+        </div>
 
-      <HamburgerDrawer open={hamburgerOpen} onClose={() => setHamburgerOpen(false)} />
-      {!isHamburger && <MobileNav />}
-    </div>
+        <HamburgerDrawer open={hamburgerOpen} onClose={() => setHamburgerOpen(false)} />
+        {!isHamburger && <MobileNav />}
+      </div>
+    </MotionConfig>
   );
 }

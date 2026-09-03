@@ -598,6 +598,66 @@ label,
   animation: floaty 6s ease-in-out infinite;
 }
 
+/*
+ * Menus and popovers grow out of the control that opened them.
+ *
+ * These surfaces were appearing and vanishing within a single frame, which
+ * leaves a dropdown no relationship to its own button — it reads as a panel
+ * that happened to land nearby rather than as this button's menu. Radix already
+ * publishes the anchor point as a custom property, so `transform-origin` does
+ * the spatial work and one rule is correct at every placement, with no per-side
+ * variants to keep in sync.
+ *
+ * Keyframes rather than transitions because Radix unmounts these on close: its
+ * Presence wrapper detects a running CSS *animation* and defers the unmount
+ * until it ends, and does not wait for a transition. Out is quicker than in —
+ * dismissal should feel immediate, and nobody wants to watch a menu leave.
+ *
+ * `transform` and `opacity` only, so this costs no layout and no repaint. The
+ * reduced-motion block below collapses these durations with everything else.
+ */
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes overlay-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+[data-slot="dropdown-menu-content"],
+[data-slot="popover-content"] {
+  transform-origin: var(
+    --radix-dropdown-menu-content-transform-origin,
+    var(--radix-popover-content-transform-origin, center)
+  );
+}
+
+[data-slot="dropdown-menu-content"][data-state="open"],
+[data-slot="popover-content"][data-state="open"] {
+  animation: overlay-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-slot="dropdown-menu-content"][data-state="closed"],
+[data-slot="popover-content"][data-state="closed"] {
+  animation: overlay-out 110ms ease-in;
+}
+
 /* Apple HIG: reduced motion means a gentler equivalent, not a dead interface.
    Opacity and color feedback survive; travel and looping oscillation do not. */
 @media (prefers-reduced-motion: reduce) {

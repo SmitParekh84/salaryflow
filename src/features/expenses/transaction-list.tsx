@@ -8,6 +8,7 @@ import type { Expense } from "@/lib/types";
 import { cn, formatMoney } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { Heart, Pencil, Trash2, Users } from "lucide-react";
+import { useMemo } from "react";
 
 export function TransactionList({
   expenses,
@@ -34,21 +35,42 @@ export function TransactionList({
   const creditCards = useFinanceStore((s) => s.creditCards);
   const storedCustomCategories = useFinanceStore((s) => s.profile.customCategories);
   const customCategories = storedCustomCategories ?? [];
+  /*
+   * Indexed once rather than two `find` scans per row. This list is not
+   * paginated, so on the expenses page every row was walking both arrays — a
+   * year of spending against a dozen accounts and cards is tens of thousands
+   * of comparisons on every keystroke in the filter box.
+   */
+  const sourceNames = useMemo(() => {
+    const names = new Map<string, string>();
+    for (const account of accounts) names.set(account.id, account.bankName);
+    for (const card of creditCards) names.set(card.id, card.name);
+    return names;
+  }, [accounts, creditCards]);
 
   return (
     <div className="divide-y divide-border">
       <AnimatePresence initial={false}>
         {expenses.map((e) => {
           const categoryColor = getCategoryColor(e.category, customCategories);
-          const account = accounts.find((item) => item.id === e.accountId);
-          const creditCard = creditCards.find((item) => item.id === e.accountId);
-          const sourceName = account?.bankName ?? creditCard?.name;
+          const sourceName = e.accountId ? sourceNames.get(e.accountId) : undefined;
           const note = e.note?.trim();
           const showNote = note && note.toLowerCase() !== sourceName?.toLowerCase();
           return (
             <motion.div
               key={e.id}
-              layout
+              /*
+               * No `layout` prop, deliberately. This list is unpaginated — the
+               * expenses page renders every filtered row — and `layout` opts
+               * each row into framer's layout projection, which measures its
+               * bounding box on every commit. With a year of expenses that is
+               * hundreds of forced reflows per render, buying a neighbour-slide
+               * that the exiting row's own height collapse already produces.
+               *
+               * The exit is what earns its cost: without it a deleted row
+               * vanishes and everything below jumps up under the finger that
+               * just tapped delete.
+               */
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
