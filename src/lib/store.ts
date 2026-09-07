@@ -309,11 +309,16 @@ export const useFinanceStore = create<FinanceState>()(
       lastSyncedAt: null,
 
       // onboarding + profile
+      // No notifications are invented here. The two that used to be seeded —
+      // a salary countdown and an electricity bill "due on the 12th" — named
+      // figures the user had never entered, and vanished on the next poll
+      // anyway, because loadNotifications replaces the list with the server's.
+      // Real ones now come from the server: see ensureSalaryNotification in
+      // src/app/api/notifications/route.ts.
       completeOnboarding: (user, profile) =>
         set((s) => ({
           user: { ...s.user, ...user, onboarded: true },
           profile,
-          notifications: s.notifications.length === 0 ? seedNotifications() : s.notifications,
         })),
 
       updateProfile: (patch) => set((s) => ({ profile: { ...s.profile, ...patch } })),
