@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { GlobalSearch } from "./global-search";
+import { SyncStatus } from "./sync-status";
 import { UserAvatar } from "./user-avatar";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "./ui/button";
@@ -102,6 +103,8 @@ export function TopBar({
         <span className="hidden md:inline">Search…</span>
         <kbd className="hidden md:inline rounded bg-surface px-1.5 py-0.5 text-[10px]">⌘K</kbd>
       </Button>
+
+      <SyncStatus />
 
       <PopoverPrimitive.Root
         open={openNotif}

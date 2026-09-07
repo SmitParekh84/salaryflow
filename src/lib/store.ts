@@ -171,6 +171,31 @@ interface FinanceState {
    * whatever the other device just added.
    */
   lastSyncedAt: string | null;
+  /**
+   * Whether this device's changes are actually on the server.
+   *
+   * A failed push used to be indistinguishable from a successful one: the
+   * boolean was returned and every caller discarded it. Because the store is
+   * persisted locally, the app went on showing the right numbers while nothing
+   * reached the server — so the failure surfaced on a second device, or after
+   * clearing site data, as missing money. This is what makes it visible.
+   *
+   * `offline` is kept apart from `error` deliberately. Losing signal is
+   * ordinary, expected, and fixes itself; a push the server actively refused
+   * does not, and is worth a different sentence.
+   */
+  syncStatus: "idle" | "syncing" | "error" | "offline";
+  /** Why the last push failed, in words a person can act on. */
+  syncError: string | null;
+  /** Consecutive failures. Reset by the first success. */
+  syncFailures: number;
+  /**
+   * When this device first had changes the server has not accepted — not when
+   * it last tried. Held across repeated failures so the age shown is the age of
+   * the oldest unsaved change, which is the number that tells someone whether
+   * they are about to lose an afternoon's entries.
+   */
+  unsavedSince: string | null;
   /** Resolves true only when the server has accepted this device's state. */
   syncWithServer: () => Promise<boolean>;
   /** Debounced `syncWithServer`, for mutations that fire in bursts. */
@@ -192,6 +217,33 @@ const emptyProfile: SalaryProfile = {
   emergencyFundGoal: 0,
   investmentAmount: 0,
 };
+
+/** Nothing outstanding and nothing wrong — the state every fresh start begins in. */
+const SYNC_IDLE = {
+  syncStatus: "idle",
+  syncError: null,
+  syncFailures: 0,
+  unsavedSince: null,
+} satisfies Pick<
+  FinanceState,
+  "syncStatus" | "syncError" | "syncFailures" | "unsavedSince"
+>;
+
+/**
+ * What to tell someone whose changes did not save.
+ *
+ * Written for the person, not the log: each one says whether their data is at
+ * risk and whether waiting will fix it. 413 gets its own sentence because it is
+ * the one failure that never resolves on its own — the account has outgrown
+ * what a single push can carry, and every retry sends the same oversized body.
+ */
+function syncErrorMessage(status: number): string {
+  if (status === 413) return "This account's data is now too large to save in one go.";
+  if (status === 401 || status === 403) return "Your session expired. Sign in again to save.";
+  if (status === 409) return "Saved on another device first. Reload to get the latest.";
+  if (status >= 500) return "The server could not save this. Retrying.";
+  return `The server refused this save (${status}).`;
+}
 
 function seedNotifications(): AppNotification[] {
   return [
@@ -307,6 +359,7 @@ export const useFinanceStore = create<FinanceState>()(
       salaryHistory: [],
       notifications: [],
       lastSyncedAt: null,
+      ...SYNC_IDLE,
 
       // onboarding + profile
       // No notifications are invented here. The two that used to be seeded —
@@ -1014,6 +1067,14 @@ export const useFinanceStore = create<FinanceState>()(
           syncTimer = null;
         }
 
+        // Stamped before the attempt, and only if nothing was outstanding
+        // already: the age this reports has to be the age of the oldest unsaved
+        // change, not of the most recent retry.
+        set((s) => ({
+          syncStatus: "syncing",
+          unsavedSince: s.unsavedSince ?? new Date().toISOString(),
+        }));
+
         try {
           const res = await fetch("/api/sync", {
             method: "POST",
@@ -1030,6 +1091,11 @@ export const useFinanceStore = create<FinanceState>()(
             // nothing. Surfacing it beats the old silent return, which is how a
             // failed sync came to look identical to a successful one.
             console.error("[SYNC] push rejected", res.status);
+            set((s) => ({
+              syncStatus: "error",
+              syncError: syncErrorMessage(res.status),
+              syncFailures: s.syncFailures + 1,
+            }));
             return false;
           }
           const json = await res.json();
@@ -1058,11 +1124,17 @@ export const useFinanceStore = create<FinanceState>()(
           // through, so recording what was sent would leave the two looking
           // different forever and push again on every call.
           syncedFingerprint = fingerprint(get());
+          set({ ...SYNC_IDLE });
           return true;
         } catch {
-          // Local state is kept; the caller decides whether the failure is
-          // worth surfacing. Importing a year of statements is; a routine
-          // debounced save is not.
+          // A thrown fetch is the network, not a refusal: the server never saw
+          // this and will accept it unchanged once there is a connection. Local
+          // state is kept either way.
+          set((s) => ({
+            syncStatus: "offline",
+            syncError: "Not connected. Your changes are saved on this device and will sync.",
+            syncFailures: s.syncFailures + 1,
+          }));
           return false;
         }
       },
@@ -1149,6 +1221,7 @@ export const useFinanceStore = create<FinanceState>()(
           // Signing out must clear the watermark: the next account starts from
           // "has seen nothing", so its first push can never tombstone rows.
           lastSyncedAt: null,
+          ...SYNC_IDLE,
         });
       },
     }),
