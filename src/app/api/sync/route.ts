@@ -16,6 +16,7 @@ import {
   UserModel,
 } from "@/server/models";
 import { mergeCollection, type SyncModel } from "@/server/sync-merge";
+import { parseCollectionPush, SYNC_PROTOCOL } from "@/server/sync-payload";
 
 import { NextResponse } from "next/server";
 
@@ -113,13 +114,18 @@ export async function POST(req: Request) {
   }
 
   for (const { key, model } of COLLECTIONS) {
-    // A key the client omitted is "no opinion", not "delete everything".
-    if (!Array.isArray(body[key])) continue;
+    // A key the client omitted is "no opinion", not "delete everything" — and
+    // so is one it sent in a shape that cannot be trusted. parseCollectionPush
+    // accepts both the whole-account array and the delta form, and returns null
+    // for anything else rather than guessing at a shorter list.
+    const push = parseCollectionPush(body[key]);
+    if (!push) continue;
 
     const result = await mergeCollection({
       model,
       userId,
-      items: body[key],
+      items: push.rows,
+      manifestIds: push.manifestIds,
       since: seenCutoff,
       now,
     });
@@ -139,5 +145,15 @@ export async function POST(req: Request) {
   return NextResponse.json({
     data: await getServerState(userId),
     syncedAt: now.toISOString(),
+    /*
+     * Tells the client this server understood `{ rows, ids }`.
+     *
+     * A server predating that shape skips every collection it cannot read as an
+     * array — and still answers 200. Without something to check, a client would
+     * read that as a save, snapshot the rows as accepted, and send only deltas
+     * from then on, none of which would be stored either. The status code
+     * cannot distinguish the two; this can.
+     */
+    protocol: SYNC_PROTOCOL,
   });
 }

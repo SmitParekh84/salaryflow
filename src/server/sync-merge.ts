@@ -45,12 +45,23 @@ export async function mergeCollection({
   model,
   userId,
   items,
+  manifestIds = null,
   since,
   now,
 }: {
   model: SyncModel;
   userId: string;
   items: unknown[];
+  /**
+   * Every row id the client still holds, when it sent only the ones that
+   * changed. Null means `items` is the whole account and the ids to keep are
+   * the ones it carries — the original behaviour, unchanged.
+   *
+   * This is the delete authority, which is the whole reason it is passed in
+   * separately rather than derived: `items` shrinking is what makes a delta
+   * cheap, and inferring deletion from a shrunken list would empty the account.
+   */
+  manifestIds?: string[] | null;
   since: Date | null;
   now: Date;
 }): Promise<MergeResult> {
@@ -138,11 +149,17 @@ export async function mergeCollection({
 
   let tombstoned = 0;
   if (since) {
+    // The rows this client vouches for. With a manifest that is everything it
+    // still holds; without one it is everything it just sent, which for a
+    // whole-account push is the same list. The query below is unchanged either
+    // way — only where the list comes from is new.
+    const keepIds = manifestIds ?? pushedIds;
+
     const result = await model.updateMany(
       {
         userId,
         removedAt: null,
-        clientId: { $type: "string", $nin: pushedIds },
+        clientId: { $type: "string", $nin: keepIds },
         updatedAt: { $lte: since },
       },
       { $set: { removedAt: now } },

@@ -5,6 +5,12 @@ import { persist } from "zustand/middleware";
 import { accountDeletionBlocker, goalRestoreBlocker } from "./account-references";
 import { applyAllocation, reassignGoalAccounts } from "./allocation-writes";
 import { normalizeBudgetRule } from "./budget-rules";
+import {
+  collectionDelta,
+  snapshotOf,
+  SYNC_PROTOCOL,
+  type SyncSnapshot,
+} from "./sync-delta";
 import { migrateGoalOpeningBalances } from "./goal-migration";
 import {
   seedBills,
@@ -312,6 +318,66 @@ function syncPayload(state: FinanceState) {
 /** Cheap identity for a payload. Equal strings mean there is nothing to send. */
 function fingerprint(state: FinanceState) {
   return JSON.stringify(syncPayload(state));
+}
+
+/** The collections that travel as `{ rows, ids }`. Keys match `syncPayload`. */
+const SYNCED_COLLECTIONS = [
+  "expenses",
+  "incomes",
+  "bills",
+  "goals",
+  "investments",
+  "accounts",
+  "accountTransfers",
+  "creditCards",
+  "budgetRules",
+  "recycleBin",
+] as const;
+
+type SyncedCollection = (typeof SYNCED_COLLECTIONS)[number];
+
+/**
+ * What the server accepted last, per collection, or null if this device does
+ * not know.
+ *
+ * Module-level rather than persisted, and deliberately so: after a reload it is
+ * null, the next push carries the whole account exactly as it always did, and
+ * the deltas resume from there. That makes the worst case this can produce
+ * identical to the old behaviour rather than a subtly wrong smaller payload.
+ */
+let syncedSnapshots: Record<SyncedCollection, SyncSnapshot> | null = null;
+
+/**
+ * The rows of one synced collection, as the plain identified records the sync
+ * helpers need. They read `id` and serialise the rest, so the individual row
+ * types carry no meaning here -- and stating that is what keeps the union of
+ * ten different array types from having to be reconciled.
+ */
+function rowsOf(state: FinanceState, key: SyncedCollection): { id: string }[] {
+  return state[key] as { id: string }[];
+}
+
+function snapshotState(state: FinanceState) {
+  return Object.fromEntries(
+    SYNCED_COLLECTIONS.map((key) => [key, snapshotOf(rowsOf(state, key))]),
+  ) as Record<SyncedCollection, SyncSnapshot>;
+}
+
+/**
+ * The push body: unchanged scalars, and each collection reduced to the rows
+ * that changed plus a manifest of every id still held.
+ */
+function syncDeltaPayload(state: FinanceState) {
+  const body: Record<string, unknown> = {
+    onboardingCompleted: state.user.onboarded,
+    profile: state.profile,
+  };
+
+  for (const key of SYNCED_COLLECTIONS) {
+    body[key] = collectionDelta(rowsOf(state, key), syncedSnapshots?.[key] ?? null);
+  }
+
+  return body;
 }
 
 /**
@@ -1082,7 +1148,7 @@ export const useFinanceStore = create<FinanceState>()(
             body: JSON.stringify({
               userId: state.user.email || undefined,
               since: state.lastSyncedAt,
-              ...syncPayload(state),
+              ...syncDeltaPayload(state),
             }),
             credentials: "include",
           });
@@ -1124,6 +1190,19 @@ export const useFinanceStore = create<FinanceState>()(
           // through, so recording what was sent would leave the two looking
           // different forever and push again on every call.
           syncedFingerprint = fingerprint(get());
+          // Same reasoning as the fingerprint above: snapshot what the state
+          // became, not what was sent, so the next delta is measured against
+          // the server's own copy.
+          //
+          // Gated on the acknowledgement, because only a server that said it
+          // understood `{ rows, ids }` has actually stored these rows. One that
+          // did not may simply predate the shape, in which case it skipped
+          // every collection and still answered 200 — believing it would mark
+          // rows as saved that were discarded, and every later delta would be
+          // discarded too. Clearing the snapshot sends the whole account next
+          // time, which every version of the server can read.
+          syncedSnapshots =
+            json?.protocol === SYNC_PROTOCOL ? snapshotState(get()) : null;
           set({ ...SYNC_IDLE });
           return true;
         } catch {
@@ -1172,6 +1251,7 @@ export const useFinanceStore = create<FinanceState>()(
           // Freshly pulled: the two copies match, so the next save has nothing
           // to push until the user actually changes something.
           syncedFingerprint = fingerprint(get());
+          syncedSnapshots = snapshotState(get());
         } catch {
           // Keep the last locally persisted state while offline.
         }
@@ -1199,6 +1279,7 @@ export const useFinanceStore = create<FinanceState>()(
         // The next account's state is nothing like this one's, so the "already
         // pushed" record must go with it or the first sync would be skipped.
         syncedFingerprint = null;
+        syncedSnapshots = null;
         if (syncTimer) {
           clearTimeout(syncTimer);
           syncTimer = null;

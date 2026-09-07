@@ -240,4 +240,114 @@ suite("sync merge — two devices on one account", () => {
     const rows = await ExpenseModel.find({ userId: USER, removedAt: null }).lean();
     expect((rows[0] as { amount: number }).amount).toBe(175);
   });
+
+  /*
+   * Delta pushes: rows carries only what changed, manifestIds names everything
+   * the device still holds. The danger these cover is a delta being read the
+   * way a whole-account push is read — under that reading every row the client
+   * did not resend is absent, and absence means delete.
+   */
+  it("keeps rows a delta did not resend, because the manifest still names them", async () => {
+    const t0 = new Date(Date.now() - 60_000);
+    await mergeCollection({
+      model: ExpenseModel,
+      userId: USER,
+      items: [expense("exp_a", 100), expense("exp_b", 200)],
+      since: null,
+      now: t0,
+    });
+
+    // Only exp_a changed. exp_b is unchanged and deliberately not resent.
+    await mergeCollection({
+      model: ExpenseModel,
+      userId: USER,
+      items: [expense("exp_a", 150)],
+      manifestIds: ["exp_a", "exp_b"],
+      since: new Date(),
+      now: new Date(),
+    });
+
+    expect(await liveIds()).toEqual(["exp_a", "exp_b"]);
+  });
+
+  it("applies the edit a delta did carry", async () => {
+    const t0 = new Date(Date.now() - 60_000);
+    await mergeCollection({
+      model: ExpenseModel,
+      userId: USER,
+      items: [expense("exp_a", 100), expense("exp_b", 200)],
+      since: null,
+      now: t0,
+    });
+
+    await mergeCollection({
+      model: ExpenseModel,
+      userId: USER,
+      items: [expense("exp_a", 150)],
+      manifestIds: ["exp_a", "exp_b"],
+      since: new Date(),
+      now: new Date(),
+    });
+
+    const row = await ExpenseModel.findOne({ userId: USER, clientId: "exp_a" }).lean();
+    expect((row as { amount: number }).amount).toBe(150);
+  });
+
+  it("deletes a row the delta dropped from its manifest without resending anything", async () => {
+    const t0 = new Date(Date.now() - 60_000);
+    await mergeCollection({
+      model: ExpenseModel,
+      userId: USER,
+      items: [expense("exp_a", 100), expense("exp_b", 200)],
+      since: null,
+      now: t0,
+    });
+
+    // Nothing changed except that exp_b was deleted: no rows, shorter manifest.
+    await mergeCollection({
+      model: ExpenseModel,
+      userId: USER,
+      items: [],
+      manifestIds: ["exp_a"],
+      since: new Date(),
+      now: new Date(),
+    });
+
+    expect(await liveIds()).toEqual(["exp_a"]);
+  });
+
+  it("still protects a row another device added after this client's watermark", async () => {
+    const t0 = new Date(Date.now() - 60_000);
+    await mergeCollection({
+      model: ExpenseModel,
+      userId: USER,
+      items: [expense("exp_shared", 100)],
+      since: null,
+      now: t0,
+    });
+
+    // The other device adds one now, after t0.
+    await mergeCollection({
+      model: ExpenseModel,
+      userId: USER,
+      items: [expense("exp_from_iphone", 250)],
+      manifestIds: ["exp_shared", "exp_from_iphone"],
+      since: t0,
+      now: new Date(),
+    });
+
+    // This device pushes a delta from the stale t0 watermark. Its manifest
+    // cannot name a row it has never seen, so the `since` guard is the only
+    // thing standing between exp_from_iphone and deletion.
+    await mergeCollection({
+      model: ExpenseModel,
+      userId: USER,
+      items: [],
+      manifestIds: ["exp_shared"],
+      since: t0,
+      now: new Date(),
+    });
+
+    expect(await liveIds()).toEqual(["exp_from_iphone", "exp_shared"]);
+  });
 });
