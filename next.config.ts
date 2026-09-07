@@ -133,6 +133,32 @@ const nextConfig: NextConfig = {
         source: "/api/:path*",
         headers: [{ key: "Cache-Control", value: "private, no-store, max-age=0" }],
       },
+
+      /*
+       * The one API route that must stay revalidatable.
+       *
+       * A header set here overrides one the route handler sets itself — the
+       * response wins on ETag, which has no rule here, but loses on
+       * Cache-Control, which does. So the blanket `no-store` above was silently
+       * replacing the `no-cache` that /api/notifications asks for, and
+       * `no-store` forbids keeping the response at all: with nothing stored the
+       * browser has no `If-None-Match` to send, the route's 304 branch can
+       * never be reached, and all fifty rows were re-sent on every poll —
+       * on load, on focus, and every five minutes.
+       *
+       * `no-cache` is not weaker here. It still forces revalidation on every
+       * single request, so a stale balance can never be shown; it only lets the
+       * browser keep the copy it must already have in order to be told that
+       * nothing changed. Still `private`, so shared caches store nothing either
+       * way.
+       *
+       * Must stay after the `/api/:path*` rule: matching rules apply in order
+       * and the last one to set a key wins.
+       */
+      {
+        source: "/api/notifications",
+        headers: [{ key: "Cache-Control", value: "private, no-cache" }],
+      },
     ];
   },
 };
